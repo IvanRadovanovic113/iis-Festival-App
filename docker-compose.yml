@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: festival-postgres
+    environment:
+      POSTGRES_DB: festival_db
+      POSTGRES_USER: festival_user
+      POSTGRES_PASSWORD: festival_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - festival-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U festival_user -d festival_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: festival-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/festival_db
+      SPRING_DATASOURCE_USERNAME: festival_user
+      SPRING_DATASOURCE_PASSWORD: festival_pass
+      JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      JWT_EXPIRATION: 86400000
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - festival-network
+
+  frontend:
+    build: ./frontend
+    container_name: festival-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - festival-network
+
+networks:
+  festival-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

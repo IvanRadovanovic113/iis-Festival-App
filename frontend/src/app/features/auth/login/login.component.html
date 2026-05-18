@@ -1,0 +1,21 @@
+<div class="login-container">
+  <div class="login-card">
+    <h2>Festival App</h2>
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="username">Korisnicko ime</label>
+        <input id="username" type="text" formControlName="username" placeholder="Unesite korisnicko ime">
+      </div>
+      <div class="form-group">
+        <label for="password">Lozinka</label>
+        <input id="password" type="password" formControlName="password" placeholder="Unesite lozinku">
+      </div>
+      @if (error) {
+        <div class="error-msg">{{ error }}</div>
+      }
+      <button type="submit" [disabled]="loading">
+        {{ loading ? 'Prijava...' : 'Prijavi se' }}
+      </button>
+    </form>
+  </div>
+</div>

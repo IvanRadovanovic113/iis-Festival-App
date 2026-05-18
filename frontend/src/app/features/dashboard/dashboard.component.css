@@ -1,0 +1,72 @@
+.dashboard {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background: #1976d2;
+  color: white;
+  padding: 0 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 64px;
+}
+
+h1 {
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-info span {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+button {
+  padding: 0.4rem 1rem;
+  background: rgba(255,255,255,0.15);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+.main {
+  flex: 1;
+  padding: 2rem 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.welcome-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.welcome-card h2 {
+  margin-bottom: 0.5rem;
+  color: #1976d2;
+}

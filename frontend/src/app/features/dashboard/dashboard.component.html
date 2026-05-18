@@ -1,0 +1,19 @@
+<div class="dashboard">
+  <header class="header">
+    <div class="header-content">
+      <h1>Festival App</h1>
+      <div class="user-info">
+        @if (currentUser) {
+          <span>{{ currentUser.username }} ({{ currentUser.role }})</span>
+        }
+        <button (click)="logout()">Odjavi se</button>
+      </div>
+    </div>
+  </header>
+  <main class="main">
+    <div class="welcome-card">
+      <h2>Admin Panel</h2>
+      <p>Dobrodosli u Festival App administraciju.</p>
+    </div>
+  </main>
+</div>
