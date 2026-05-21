@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
-import { LoginRequest, LoginResponse, User } from '../models/user.model';
+import { LoginRequest, LoginResponse, RegisterRequest, User } from '../models/user.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -18,12 +18,29 @@ export class AuthService {
     return this.currentUser$.asObservable();
   }
 
+  getCurrentUser(): User | null {
+    return this.currentUser$.getValue();
+  }
+
   login(request: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.API}/login`, request).pipe(
       tap(response => {
         localStorage.setItem(this.TOKEN_KEY, response.token);
         localStorage.setItem(this.USER_KEY, JSON.stringify(response.user));
         this.currentUser$.next(response.user);
+      })
+    );
+  }
+
+  register(request: RegisterRequest): Observable<User> {
+    return this.http.post<User>(`${this.API}/register`, request);
+  }
+
+  refreshCurrentUser(): Observable<User> {
+    return this.http.get<User>(`${this.API}/me`).pipe(
+      tap(user => {
+        localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+        this.currentUser$.next(user);
       })
     );
   }

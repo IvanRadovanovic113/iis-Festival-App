@@ -70,3 +70,46 @@ button:hover {
   margin-bottom: 0.5rem;
   color: #1976d2;
 }
+
+.nav-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.nav-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: white;
+  padding: 1.2rem 1.6rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  text-decoration: none;
+  color: #333;
+  min-width: 220px;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.nav-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
+}
+
+.nav-card-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.nav-card-title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #1976d2;
+  margin-bottom: 0.2rem;
+}
+
+.nav-card-desc {
+  font-size: 0.82rem;
+  color: #777;
+}

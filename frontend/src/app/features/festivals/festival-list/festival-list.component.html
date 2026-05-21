@@ -1,0 +1,61 @@
+<div class="page">
+  <header class="header">
+    <div class="header-content">
+      <h1>Festival App</h1>
+      <div class="user-info">
+        <a routerLink="/dashboard" class="nav-link">← Dashboard</a>
+        <button (click)="logout()">Odjavi se</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="content-card">
+      <div class="card-header">
+        <h2>Festivali</h2>
+        <a routerLink="/admin/festivals/new" class="btn-primary">+ Dodaj festival</a>
+      </div>
+
+      @if (errorMessage) {
+        <div class="error-banner">{{ errorMessage }}</div>
+      }
+
+      @if (festivals.length === 0) {
+        <p class="empty-state">Nema festivala. Dodajte prvi festival klikom na dugme iznad.</p>
+      } @else {
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Naziv</th>
+                <th>Lokacija</th>
+                <th>Status</th>
+                <th>Datum početka</th>
+                <th>Datum završetka</th>
+                <th>Akcije</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (festival of festivals; track festival.festivalId) {
+                <tr>
+                  <td>{{ festival.naziv }}</td>
+                  <td>{{ festival.lokacija }}</td>
+                  <td>
+                    <span class="badge badge-{{ festival.status.toLowerCase() }}">
+                      {{ statusLabels[festival.status] }}
+                    </span>
+                  </td>
+                  <td>{{ festival.datumPocetka | date:'dd.MM.yyyy' }}</td>
+                  <td>{{ festival.datumZavrsetka | date:'dd.MM.yyyy' }}</td>
+                  <td>
+                    <button class="btn-danger" (click)="delete(festival)">Obriši</button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </main>
+</div>

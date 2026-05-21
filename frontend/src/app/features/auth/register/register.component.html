@@ -1,0 +1,50 @@
+<div class="register-container">
+  <div class="register-card">
+    <h2>Festival App</h2>
+    <h3>Registracija</h3>
+
+    @if (success) {
+      <div class="success-msg">
+        Registracija uspešna! Preusmerjavanje na prijavu...
+      </div>
+    } @else {
+      <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label for="username">Korisničko ime</label>
+          <input id="username" type="text" formControlName="username" placeholder="Unesite korisničko ime" />
+          @if (username.invalid && username.touched) {
+            <span class="field-error">Min. 3 karaktera.</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input id="email" type="email" formControlName="email" placeholder="Unesite email adresu" />
+          @if (email.invalid && email.touched) {
+            <span class="field-error">Unesite ispravnu email adresu.</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="password">Lozinka</label>
+          <input id="password" type="password" formControlName="password" placeholder="Min. 6 karaktera" />
+          @if (password.invalid && password.touched) {
+            <span class="field-error">Min. 6 karaktera.</span>
+          }
+        </div>
+
+        @if (error) {
+          <div class="error-msg">{{ error }}</div>
+        }
+
+        <button type="submit" [disabled]="loading">
+          {{ loading ? 'Registracija...' : 'Registruj se' }}
+        </button>
+      </form>
+
+      <p class="login-link">
+        Već imate nalog? <a routerLink="/login">Prijavite se</a>
+      </p>
+    }
+  </div>
+</div>

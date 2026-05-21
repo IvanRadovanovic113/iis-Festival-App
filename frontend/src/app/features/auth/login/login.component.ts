@@ -1,14 +1,14 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { LoginRequest } from '../../../core/models/user.model';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css']
 })
@@ -30,7 +30,13 @@ export class LoginComponent {
     this.loading = true;
     this.error = '';
     this.authService.login(this.form.value as LoginRequest).subscribe({
-      next: () => this.router.navigate(['/dashboard']),
+      next: (response) => {
+        if (response.user.role === 'ADMIN') {
+          this.router.navigate(['/dashboard']);
+        } else {
+          this.router.navigate(['/pending']);
+        }
+      },
       error: () => {
         this.error = 'Pogresno korisnicko ime ili lozinka.';
         this.loading = false;

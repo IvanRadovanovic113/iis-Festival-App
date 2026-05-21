@@ -1,8 +1,15 @@
+export interface AssignmentDto {
+  festivalId: number;
+  festivalNaziv: string;
+  festivalRole: string;
+}
+
 export interface User {
   id: number;
   username: string;
   email: string;
-  role: 'ADMIN';
+  role: string | null;
+  assignment: AssignmentDto | null;
 }
 
 export interface LoginRequest {
@@ -13,4 +20,10 @@ export interface LoginRequest {
 export interface LoginResponse {
   token: string;
   user: User;
+}
+
+export interface RegisterRequest {
+  username: string;
+  email: string;
+  password: string;
 }

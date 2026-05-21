@@ -1,0 +1,45 @@
+<div class="page">
+  <header class="header">
+    <div class="header-content">
+      <h1>Festival App</h1>
+      <div class="user-info">
+        @if (currentUser) {
+          <span>{{ currentUser.username }}</span>
+        }
+        <button (click)="logout()">Odjavi se</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    @if (currentUser?.assignment) {
+      <div class="status-card assigned">
+        <div class="icon">✓</div>
+        <h2>Dodela primljena</h2>
+        <p>Dodeljeni ste na sledeći festival:</p>
+        <div class="assignment-details">
+          <div class="detail-row">
+            <span class="detail-label">Festival</span>
+            <span class="detail-value">{{ currentUser!.assignment!.festivalNaziv }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Uloga</span>
+            <span class="detail-value">{{ currentUser!.assignment!.festivalRole }}</span>
+          </div>
+        </div>
+        <button class="btn-refresh" (click)="refresh()" [disabled]="refreshing">
+          {{ refreshing ? 'Osvežavanje...' : 'Osveži' }}
+        </button>
+      </div>
+    } @else {
+      <div class="status-card pending">
+        <div class="icon">⏳</div>
+        <h2>Čekajte dodelu uloge</h2>
+        <p>Vaš nalog je kreiran. Administrator će vam dodeliti festival i ulogu.</p>
+        <button class="btn-refresh" (click)="refresh()" [disabled]="refreshing">
+          {{ refreshing ? 'Osvežavanje...' : 'Osveži status' }}
+        </button>
+      </div>
+    }
+  </main>
+</div>

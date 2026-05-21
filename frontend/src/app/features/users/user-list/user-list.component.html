@@ -1,0 +1,118 @@
+<div class="page">
+  <header class="header">
+    <div class="header-content">
+      <h1>Festival App</h1>
+      <div class="user-info">
+        <a routerLink="/dashboard" class="nav-link">← Dashboard</a>
+        <button (click)="logout()">Odjavi se</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="content-card">
+      <div class="card-header">
+        <h2>Korisnici</h2>
+      </div>
+
+      @if (errorMessage) {
+        <div class="error-banner">{{ errorMessage }}</div>
+      }
+
+      @if (users.length === 0) {
+        <p class="empty-state">Nema registrovanih korisnika.</p>
+      } @else {
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Korisničko ime</th>
+                <th>Email</th>
+                <th>Festival</th>
+                <th>Uloga u festivalu</th>
+                <th>Akcije</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (user of users; track user.id) {
+                <tr [class.selected-row]="selectedUser?.id === user.id">
+                  <td>{{ user.username }}</td>
+                  <td>{{ user.email }}</td>
+                  <td>
+                    @if (user.assignment) {
+                      {{ user.assignment.festivalNaziv }}
+                    } @else {
+                      <span class="not-assigned">Nije dodeljen</span>
+                    }
+                  </td>
+                  <td>
+                    @if (user.assignment) {
+                      <span class="role-badge">{{ user.assignment.festivalRole }}</span>
+                    } @else {
+                      <span class="not-assigned">—</span>
+                    }
+                  </td>
+                  <td class="actions">
+                    <button class="btn-assign" (click)="openAssign(user)">
+                      {{ user.assignment ? 'Izmeni' : 'Dodeli' }}
+                    </button>
+                    @if (user.assignment) {
+                      <button class="btn-remove" (click)="deleteAssignment(user)">Ukloni</button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+
+    @if (selectedUser) {
+      <div class="assign-panel">
+        <h3>
+          {{ selectedUser.assignment ? 'Izmeni dodelu' : 'Dodeli festival' }} —
+          <span class="username">{{ selectedUser.username }}</span>
+        </h3>
+
+        <form [formGroup]="form" (ngSubmit)="saveAssign()">
+          <div class="form-row">
+            <div class="field">
+              <label>Festival *</label>
+              <select formControlName="festivalId">
+                <option [ngValue]="null" disabled>Izaberite festival</option>
+                @for (f of festivals; track f.festivalId) {
+                  <option [ngValue]="f.festivalId">{{ f.naziv }}</option>
+                }
+              </select>
+              @if (form.get('festivalId')!.invalid && form.get('festivalId')!.touched) {
+                <span class="field-error">Festival je obavezan.</span>
+              }
+            </div>
+
+            <div class="field">
+              <label>Uloga *</label>
+              <select formControlName="role">
+                <option value="" disabled>Izaberite ulogu</option>
+                @for (r of roles; track r) {
+                  <option [value]="r">{{ r }}</option>
+                }
+              </select>
+              @if (form.get('role')!.invalid && form.get('role')!.touched) {
+                <span class="field-error">Uloga je obavezna.</span>
+              }
+              @if (roles.length === 0) {
+                <span class="field-error">Nema dostupnih uloga. Dodajte uloge u Role.java enum.</span>
+              }
+            </div>
+          </div>
+
+          <div class="panel-actions">
+            <button type="button" class="btn-cancel" (click)="cancelAssign()">Otkaži</button>
+            <button type="submit" class="btn-save">Sačuvaj</button>
+          </div>
+        </form>
+      </div>
+    }
+  </main>
+</div>
