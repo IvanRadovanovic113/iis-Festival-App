@@ -23,6 +23,15 @@ public class BinaService {
     private final BinaRepository binaRepository;
     private final UserFestivalAssignmentRepository assignmentRepository;
 
+    private Festival requireAssignedFestival(User user) {
+        UserFestivalAssignment assignment = assignmentRepository.findByUser_Id(user.getId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Nemate dodelu festivala"));
+        if (assignment.getRole() != Role.DIREKTOR_PRODAJE && assignment.getRole() != Role.EVENT_ORGANIZER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Nemate pristup binama");
+        }
+        return assignment.getFestival();
+    }
+
     private Festival requireDirectorFestival(User user) {
         UserFestivalAssignment assignment = assignmentRepository.findByUser_Id(user.getId())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Nemate dodelu festivala"));
@@ -33,7 +42,7 @@ public class BinaService {
     }
 
     public List<BinaResponse> getAll(User user) {
-        Festival festival = requireDirectorFestival(user);
+        Festival festival = requireAssignedFestival(user);
         return binaRepository.findByFestival_FestivalId(festival.getFestivalId())
             .stream().map(BinaResponse::from).toList();
     }
