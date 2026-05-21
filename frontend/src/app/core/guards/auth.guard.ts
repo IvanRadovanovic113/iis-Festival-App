@@ -13,8 +13,14 @@ export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   const user = authService.getCurrentUser();
   const isAdmin = user?.role === 'ADMIN';
   const adminOnly = route.data?.['adminOnly'] === true;
+  const allowedRoles = route.data?.['roles'] as string[] | undefined;
+  const effectiveRole = user?.assignment?.festivalRole ?? user?.role ?? null;
 
   if (adminOnly && !isAdmin) {
+    return router.createUrlTree(['/pending']);
+  }
+
+  if (allowedRoles && (!effectiveRole || !allowedRoles.includes(effectiveRole))) {
     return router.createUrlTree(['/pending']);
   }
 
