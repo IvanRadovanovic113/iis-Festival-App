@@ -1,0 +1,83 @@
+<div class="content-card">
+  <div class="card-header">
+    <h2>Bine</h2>
+    @if (formMode === null) {
+      <button class="btn-primary" (click)="openCreate()">+ Dodaj binu</button>
+    }
+  </div>
+
+  @if (errorMessage) {
+    <div class="error-banner">{{ errorMessage }}</div>
+  }
+
+  @if (bine.length === 0) {
+    <p class="empty-state">Nema bina na ovom festivalu. Dodajte prvu binu.</p>
+  } @else {
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Naziv</th>
+            <th>Kapacitet</th>
+            <th>Lokacija</th>
+            <th>Akcije</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (bina of bine; track bina.binaId) {
+            <tr [class.selected-row]="selectedBina?.binaId === bina.binaId">
+              <td>{{ bina.naziv }}</td>
+              <td>{{ bina.kapacitet | number }}</td>
+              <td>{{ bina.lokacija }}</td>
+              <td class="actions">
+                <button class="btn-edit" (click)="openEdit(bina)">Izmeni</button>
+                <button class="btn-danger" (click)="delete(bina)">Obriši</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+@if (formMode !== null) {
+  <div class="form-panel">
+    <h3>{{ formMode === 'create' ? 'Nova bina' : 'Izmena bine — ' + selectedBina?.naziv }}</h3>
+
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <div class="form-row">
+        <div class="field">
+          <label>Naziv *</label>
+          <input type="text" formControlName="naziv" placeholder="Naziv bine" />
+          @if (naziv.invalid && naziv.touched) {
+            <span class="field-error">Naziv je obavezan (min. 2 karaktera).</span>
+          }
+        </div>
+
+        <div class="field">
+          <label>Kapacitet *</label>
+          <input type="number" formControlName="kapacitet" placeholder="Broj mesta" min="1" />
+          @if (kapacitet.invalid && kapacitet.touched) {
+            <span class="field-error">Kapacitet mora biti pozitivan broj.</span>
+          }
+        </div>
+      </div>
+
+      <div class="field full-width">
+        <label>Lokacija *</label>
+        <input type="text" formControlName="lokacija" placeholder="Lokacija bine unutar festivala" />
+        @if (lokacija.invalid && lokacija.touched) {
+          <span class="field-error">Lokacija je obavezna (min. 2 karaktera).</span>
+        }
+      </div>
+
+      <div class="panel-actions">
+        <button type="button" class="btn-cancel" (click)="cancelForm()">Otkaži</button>
+        <button type="submit" class="btn-save">
+          {{ formMode === 'create' ? 'Kreiraj binu' : 'Sačuvaj izmene' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}

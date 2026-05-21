@@ -27,6 +27,9 @@
             <span class="detail-value">{{ currentUser!.assignment!.festivalRole }}</span>
           </div>
         </div>
+        @if (currentUser?.assignment?.festivalRole === 'DIREKTOR_PRODAJE') {
+          <a routerLink="/prodaja" class="btn-work">Upravljaj binama</a>
+        }
         <button class="btn-refresh" (click)="refresh()" [disabled]="refreshing">
           {{ refreshing ? 'Osvežavanje...' : 'Osveži' }}
         </button>

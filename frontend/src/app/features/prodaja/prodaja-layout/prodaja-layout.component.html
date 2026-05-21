@@ -1,0 +1,35 @@
+<div class="shell">
+  <header class="top-bar">
+    <span class="brand">Festival App</span>
+    <div class="user-actions">
+      @if (currentUser) {
+        <span class="username">{{ currentUser.username }}</span>
+      }
+      <button (click)="logout()">Odjavi se</button>
+    </div>
+  </header>
+
+  <div class="body">
+    <nav class="sidebar">
+      @if (currentUser?.assignment) {
+        <div class="festival-name">{{ currentUser!.assignment!.festivalNaziv }}</div>
+      }
+      <ul class="nav-list">
+        <li>
+          <a routerLink="bine" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">🎪</span> Bine
+          </a>
+        </li>
+        <li>
+          <a routerLink="segmenti" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">🗂</span> Segmenti
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <main class="content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

@@ -47,5 +47,24 @@ export const routes: Routes = [
     canActivate: [authGuard],
     data: { adminOnly: true }
   },
+  {
+    path: 'prodaja',
+    loadComponent: () =>
+      import('./features/prodaja/prodaja-layout/prodaja-layout.component').then(m => m.ProdajaLayoutComponent),
+    canActivate: [authGuard],
+    children: [
+      { path: '', redirectTo: 'bine', pathMatch: 'full' },
+      {
+        path: 'bine',
+        loadComponent: () =>
+          import('./features/stages/stage-list/stage-list.component').then(m => m.StageListComponent)
+      },
+      {
+        path: 'segmenti',
+        loadComponent: () =>
+          import('./features/prodaja/segmenti/segmenti.component').then(m => m.SegmentiComponent)
+      }
+    ]
+  },
   { path: '**', redirectTo: '/dashboard' }
 ];
