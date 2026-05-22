@@ -153,7 +153,53 @@
       </section>
     }
 
-    @if (activeTab === 'timetable' || activeTab === 'tasks' || activeTab === 'analytics') {
+    @if (activeTab === 'timetable') {
+      <section class="page-heading timetable-heading">
+        <h1>Stage timetable</h1>
+        <div class="week-filter" aria-label="Week filter">
+          <button type="button" aria-label="Previous week" (click)="previousWeek()">&lt;</button>
+          <span>{{ timetableWeekLabel }}</span>
+          <button type="button" aria-label="Next week" (click)="nextWeek()">&gt;</button>
+        </div>
+      </section>
+
+      <div class="stage-tabs timetable-stage-tabs" aria-label="Timetable stages">
+        @for (stage of stages; track stage.binaId) {
+          <button type="button" [class.active]="selectedStageId === stage.binaId" (click)="selectStage(stage.binaId)">
+            {{ stage.naziv }}
+          </button>
+        }
+      </div>
+
+      <section class="weekly-timetable" aria-label="Weekly stage timetable">
+        <div class="time-grid timetable-header">
+          <div class="day-heading">Day</div>
+          @for (hour of timetableHours; track hour) {
+            <div>{{ hour }}</div>
+          }
+        </div>
+
+        @for (day of timetableDays; track day.key) {
+          <div class="time-grid timetable-row">
+            <div class="day-cell">
+              <strong>{{ day.dayName }}</strong>
+              <span>{{ day.dateLabel }}</span>
+            </div>
+            @for (hour of timetableHours; track hour) {
+              <div class="free-slot">Free</div>
+            }
+          </div>
+        }
+      </section>
+
+      <section class="legend" aria-label="Timetable legend">
+        <strong>Legend:</strong>
+        <span><i class="legend-box occupied"></i>Occupied</span>
+        <span><i class="legend-box free"></i>Free slot</span>
+      </section>
+    }
+
+    @if (activeTab === 'tasks' || activeTab === 'analytics') {
       <section class="placeholder-page">
         <h1>{{ activeTab | titlecase }}</h1>
         <p>This area is outside the current resource management scope.</p>

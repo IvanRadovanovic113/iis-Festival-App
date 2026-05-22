@@ -20,6 +20,12 @@ interface InventoryRow {
   shared: boolean;
 }
 
+interface TimetableDay {
+  key: string;
+  dayName: string;
+  dateLabel: string;
+}
+
 @Component({
   selector: 'app-event-organization',
   standalone: true,
@@ -52,6 +58,8 @@ export class EventOrganizationComponent implements OnInit {
 
   inventorySearch = '';
   inventoryStageFilter = 'All';
+  timetableWeekOffset = 0;
+  timetableHours = ['14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
 
   resourceForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
@@ -97,6 +105,29 @@ export class EventOrganizationComponent implements OnInit {
 
   get sharedResourceCount(): number {
     return this.inventoryRows.filter(row => row.shared).length;
+  }
+
+  get timetableDays(): TimetableDay[] {
+    const start = this.weekStartDate();
+
+    return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((dayName, index) => {
+      const date = new Date(start);
+      date.setDate(start.getDate() + index);
+
+      return {
+        key: date.toISOString(),
+        dayName,
+        dateLabel: this.formatShortDate(date)
+      };
+    });
+  }
+
+  get timetableWeekLabel(): string {
+    const start = this.weekStartDate();
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+
+    return `${this.formatLongDate(start)} - ${this.formatLongDate(end)}`;
   }
 
   stageNameById(stageId: number): string {
@@ -290,6 +321,14 @@ export class EventOrganizationComponent implements OnInit {
     this.inventoryStageFilter = (event.target as HTMLSelectElement).value;
   }
 
+  previousWeek(): void {
+    this.timetableWeekOffset -= 1;
+  }
+
+  nextWeek(): void {
+    this.timetableWeekOffset += 1;
+  }
+
   logout(): void {
     this.authService.logout();
   }
@@ -307,5 +346,24 @@ export class EventOrganizationComponent implements OnInit {
   private clearMessages(): void {
     this.errorMessage = '';
     this.successMessage = '';
+  }
+
+  private weekStartDate(): Date {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() + this.timetableWeekOffset * 7);
+
+    const day = date.getDay();
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    date.setDate(date.getDate() + mondayOffset);
+    return date;
+  }
+
+  private formatShortDate(date: Date): string {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  private formatLongDate(date: Date): string {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 }
