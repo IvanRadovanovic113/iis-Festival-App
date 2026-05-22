@@ -8,6 +8,7 @@
       <button type="button" [class.active]="activeTab === 'tasks'" (click)="setTab('tasks')">Tasks</button>
       <button type="button" [class.active]="activeTab === 'analytics'" (click)="setTab('analytics')">Analytics</button>
     </nav>
+    <button type="button" class="logout-button" (click)="logout()">Log out</button>
   </header>
 
   @if (activeTab === 'requests') {
