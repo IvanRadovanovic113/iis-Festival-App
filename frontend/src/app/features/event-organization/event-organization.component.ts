@@ -1,12 +1,24 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { forkJoin, of, switchMap } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { BinaService } from '../../core/services/bina.service';
 import { EventOrganizationService } from '../../core/services/event-organization.service';
 import { Bina } from '../../core/models/bina.model';
-import { EventResource, StageResource, TimetableSlot } from '../../core/models/event-organization.model';
+import { EventResource, StageResource } from '../../core/models/event-organization.model';
 import { User } from '../../core/models/user.model';
+
+type MainTab = 'requests' | 'timetable' | 'resources' | 'tasks' | 'analytics';
+type ResourceTab = 'manage' | 'inventory';
+type ResourceModalMode = 'add' | 'edit';
+
+interface InventoryRow {
+  resource: EventResource;
+  assignedQuantity: number;
+  stageNames: string[];
+  shared: boolean;
+}
 
 @Component({
   selector: 'app-event-organization',
@@ -22,43 +34,73 @@ export class EventOrganizationComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
 
   currentUser: User | null = null;
-  activeTab: 'resources' | 'timetable' = 'resources';
+  activeTab: MainTab = 'requests';
+  activeRequestFilter = 'All';
+  activeResourceTab: ResourceTab = 'manage';
   errorMessage = '';
   successMessage = '';
 
   stages: Bina[] = [];
   resources: EventResource[] = [];
   stageResources: StageResource[] = [];
-  timetableSlots: TimetableSlot[] = [];
-
+  allStageResources: StageResource[] = [];
   selectedStageId: number | null = null;
-  editingResource: EventResource | null = null;
+
+  modalMode: ResourceModalMode | null = null;
   editingStageResource: StageResource | null = null;
+  deletingStageResource: StageResource | null = null;
+
+  inventorySearch = '';
+  inventoryStageFilter = 'All';
 
   resourceForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
-    type: ['', [Validators.required, Validators.minLength(2)]],
-    description: [''],
-    totalQuantity: [1, [Validators.required, Validators.min(1)]]
-  });
-
-  stageResourceForm = this.fb.group({
-    resourceId: [null as number | null, Validators.required],
-    quantity: [1, [Validators.required, Validators.min(1)]]
-  });
-
-  timetableForm = this.fb.group({
+    type: ['Equipment', Validators.required],
+    quantity: [1, [Validators.required, Validators.min(1)]],
     stageId: [null as number | null, Validators.required],
-    date: [this.today(), Validators.required]
+    shareable: [false],
+    note: ['']
   });
 
   get selectedStage(): Bina | null {
     return this.stages.find(stage => stage.binaId === this.selectedStageId) ?? null;
   }
 
-  get assignableResources(): EventResource[] {
-    const assignedIds = new Set(this.stageResources.map(item => item.resourceId));
-    return this.resources.filter(resource => !assignedIds.has(resource.id));
+  get inventoryRows(): InventoryRow[] {
+    const rows = this.resources.map(resource => {
+      const assignments = this.allStageResources.filter(item => item.resourceId === resource.id);
+      const stageNames = assignments
+        .map(item => this.stages.find(stage => stage.binaId === item.stageId)?.naziv)
+        .filter((name): name is string => Boolean(name));
+
+      return {
+        resource,
+        assignedQuantity: assignments.reduce((sum, item) => sum + item.quantity, 0),
+        stageNames,
+        shared: new Set(stageNames).size > 1
+      };
+    });
+
+    return rows.filter(row => {
+      const query = this.inventorySearch.trim().toLowerCase();
+      const matchesSearch = !query
+        || row.resource.name.toLowerCase().includes(query)
+        || row.resource.type.toLowerCase().includes(query);
+      const matchesStage = this.inventoryStageFilter === 'All' || row.stageNames.includes(this.inventoryStageFilter);
+      return matchesSearch && matchesStage;
+    });
+  }
+
+  get totalUnits(): number {
+    return this.resources.reduce((sum, resource) => sum + resource.totalQuantity, 0);
+  }
+
+  get sharedResourceCount(): number {
+    return this.inventoryRows.filter(row => row.shared).length;
+  }
+
+  stageNameById(stageId: number): string {
+    return this.stages.find(stage => stage.binaId === stageId)?.naziv ?? 'this stage';
   }
 
   ngOnInit(): void {
@@ -68,39 +110,92 @@ export class EventOrganizationComponent implements OnInit {
 
   loadInitialData(): void {
     this.clearMessages();
-    this.stageService.getAll().subscribe({
-      next: stages => {
+    forkJoin({
+      stages: this.stageService.getAll(),
+      resources: this.eventOrganizationService.getResources()
+    }).subscribe({
+      next: ({ stages, resources }) => {
         this.stages = stages;
+        this.resources = resources;
         this.selectedStageId = stages[0]?.binaId ?? null;
-        this.timetableForm.patchValue({ stageId: this.selectedStageId });
-        if (this.selectedStageId) {
-          this.loadStageResources(this.selectedStageId);
-          this.loadTimetable();
-        }
+        this.resourceForm.patchValue({ stageId: this.selectedStageId });
+        this.refreshStageData();
       },
-      error: () => this.errorMessage = 'Unable to load stages.'
-    });
-    this.loadResources();
-  }
-
-  loadResources(): void {
-    this.eventOrganizationService.getResources().subscribe({
-      next: resources => this.resources = resources,
-      error: () => this.errorMessage = 'Unable to load resources.'
+      error: () => this.errorMessage = 'Unable to load event organization data.'
     });
   }
 
-  selectStage(stageIdValue: string): void {
-    this.selectedStageId = Number(stageIdValue);
-    this.cancelStageResourceEdit();
-    this.stageResourceForm.reset({ resourceId: null, quantity: 1 });
-    this.loadStageResources(this.selectedStageId);
-  }
+  refreshStageData(): void {
+    const allAssignments$ = this.stages.length
+      ? forkJoin(this.stages.map(stage => this.eventOrganizationService.getStageResources(stage.binaId)))
+      : of([] as StageResource[][]);
 
-  loadStageResources(stageId: number): void {
-    this.eventOrganizationService.getStageResources(stageId).subscribe({
-      next: resources => this.stageResources = resources,
+    allAssignments$.subscribe({
+      next: stageResourceGroups => {
+        this.allStageResources = stageResourceGroups.flat();
+        this.stageResources = this.selectedStageId
+          ? this.allStageResources.filter(item => item.stageId === this.selectedStageId)
+          : [];
+      },
       error: () => this.errorMessage = 'Unable to load stage resources.'
+    });
+  }
+
+  selectStage(stageId: number): void {
+    this.selectedStageId = stageId;
+    this.resourceForm.patchValue({ stageId });
+    this.stageResources = this.allStageResources.filter(item => item.stageId === stageId);
+    this.clearMessages();
+  }
+
+  setTab(tab: MainTab): void {
+    this.activeTab = tab;
+    this.clearMessages();
+  }
+
+  setResourceTab(tab: ResourceTab): void {
+    this.activeTab = 'resources';
+    this.activeResourceTab = tab;
+    this.clearMessages();
+  }
+
+  openAddResource(): void {
+    this.modalMode = 'add';
+    this.editingStageResource = null;
+    this.resourceForm.reset({
+      name: '',
+      type: 'Equipment',
+      quantity: 1,
+      stageId: this.selectedStageId,
+      shareable: false,
+      note: ''
+    });
+  }
+
+  openEditResource(stageResource: StageResource): void {
+    const resource = this.resources.find(item => item.id === stageResource.resourceId);
+    this.modalMode = 'edit';
+    this.editingStageResource = stageResource;
+    this.resourceForm.reset({
+      name: stageResource.resourceName,
+      type: stageResource.resourceType,
+      quantity: stageResource.quantity,
+      stageId: stageResource.stageId,
+      shareable: this.inventoryRows.find(row => row.resource.id === stageResource.resourceId)?.shared ?? false,
+      note: resource?.description ?? ''
+    });
+  }
+
+  closeResourceModal(): void {
+    this.modalMode = null;
+    this.editingStageResource = null;
+    this.resourceForm.reset({
+      name: '',
+      type: 'Equipment',
+      quantity: 1,
+      stageId: this.selectedStageId,
+      shareable: false,
+      note: ''
     });
   }
 
@@ -109,130 +204,108 @@ export class EventOrganizationComponent implements OnInit {
       this.resourceForm.markAllAsTouched();
       return;
     }
+
     const value = this.resourceForm.getRawValue();
-    const request = {
+    const stageId = Number(value.stageId);
+    const quantity = Number(value.quantity);
+    const resourceRequest = {
       name: value.name!,
       type: value.type!,
-      description: value.description || null,
-      totalQuantity: Number(value.totalQuantity)
+      description: value.note || null,
+      totalQuantity: quantity
     };
-    const operation = this.editingResource
-      ? this.eventOrganizationService.updateResource(this.editingResource.id, request)
-      : this.eventOrganizationService.createResource(request);
+
+    const operation = this.editingStageResource
+      ? this.eventOrganizationService.updateResource(this.editingStageResource.resourceId, resourceRequest).pipe(
+          switchMap(() => {
+            const updateAssignment = this.eventOrganizationService.updateStageResource(
+              this.editingStageResource!.stageId,
+              this.editingStageResource!.resourceId,
+              { resourceId: this.editingStageResource!.resourceId, quantity }
+            );
+
+            if (stageId === this.editingStageResource!.stageId) {
+              return updateAssignment;
+            }
+
+            return updateAssignment.pipe(
+              switchMap(() => this.eventOrganizationService.removeResourceFromStage(
+                this.editingStageResource!.stageId,
+                this.editingStageResource!.resourceId
+              )),
+              switchMap(() => this.eventOrganizationService.assignResourceToStage(stageId, {
+                resourceId: this.editingStageResource!.resourceId,
+                quantity
+              }))
+            );
+          })
+        )
+      : this.eventOrganizationService.createResource(resourceRequest).pipe(
+          switchMap(resource => this.eventOrganizationService.assignResourceToStage(stageId, {
+            resourceId: resource.id,
+            quantity
+          }))
+        );
 
     operation.subscribe({
       next: () => {
-        this.successMessage = this.editingResource ? 'Resource updated.' : 'Resource created.';
-        this.cancelResourceEdit();
-        this.loadResources();
-        if (this.selectedStageId) this.loadStageResources(this.selectedStageId);
+        this.successMessage = this.modalMode === 'edit' ? 'Resource updated.' : 'Resource added.';
+        this.selectedStageId = stageId;
+        this.closeResourceModal();
+        this.reloadResourcesAndAssignments();
       },
       error: err => this.errorMessage = err.error?.message || 'Unable to save resource.'
     });
   }
 
-  editResource(resource: EventResource): void {
-    this.editingResource = resource;
-    this.resourceForm.patchValue({
-      name: resource.name,
-      type: resource.type,
-      description: resource.description ?? '',
-      totalQuantity: resource.totalQuantity
-    });
+  confirmDelete(stageResource: StageResource): void {
+    this.deletingStageResource = stageResource;
   }
 
-  cancelResourceEdit(): void {
-    this.editingResource = null;
-    this.resourceForm.reset({ name: '', type: '', description: '', totalQuantity: 1 });
+  closeDeleteModal(): void {
+    this.deletingStageResource = null;
   }
 
-  deleteResource(resource: EventResource): void {
-    if (!confirm(`Delete resource "${resource.name}"?`)) return;
-    this.eventOrganizationService.deleteResource(resource.id).subscribe({
-      next: () => {
-        this.successMessage = 'Resource deleted.';
-        this.loadResources();
-        if (this.selectedStageId) this.loadStageResources(this.selectedStageId);
-      },
-      error: () => this.errorMessage = 'Unable to delete resource.'
-    });
-  }
+  deleteStageResource(): void {
+    if (!this.deletingStageResource) return;
 
-  saveStageResource(): void {
-    if (!this.selectedStageId || this.stageResourceForm.invalid) {
-      this.stageResourceForm.markAllAsTouched();
-      return;
-    }
-    const value = this.stageResourceForm.getRawValue();
-    const request = {
-      resourceId: this.editingStageResource?.resourceId ?? Number(value.resourceId),
-      quantity: Number(value.quantity)
-    };
-    const operation = this.editingStageResource
-      ? this.eventOrganizationService.updateStageResource(this.selectedStageId, this.editingStageResource.resourceId, request)
-      : this.eventOrganizationService.assignResourceToStage(this.selectedStageId, request);
-
-    operation.subscribe({
-      next: () => {
-        this.successMessage = this.editingStageResource ? 'Stage resource updated.' : 'Resource assigned to stage.';
-        this.cancelStageResourceEdit();
-        this.loadStageResources(this.selectedStageId!);
-      },
-      error: err => this.errorMessage = err.error?.message || 'Unable to save stage resource.'
-    });
-  }
-
-  editStageResource(stageResource: StageResource): void {
-    this.editingStageResource = stageResource;
-    this.stageResourceForm.patchValue({
-      resourceId: stageResource.resourceId,
-      quantity: stageResource.quantity
-    });
-  }
-
-  cancelStageResourceEdit(): void {
-    this.editingStageResource = null;
-    this.stageResourceForm.reset({ resourceId: null, quantity: 1 });
-  }
-
-  removeStageResource(stageResource: StageResource): void {
-    if (!this.selectedStageId || !confirm(`Remove "${stageResource.resourceName}" from this stage?`)) return;
-    this.eventOrganizationService.removeResourceFromStage(this.selectedStageId, stageResource.resourceId).subscribe({
+    this.eventOrganizationService.removeResourceFromStage(
+      this.deletingStageResource.stageId,
+      this.deletingStageResource.resourceId
+    ).subscribe({
       next: () => {
         this.successMessage = 'Resource removed from stage.';
-        this.loadStageResources(this.selectedStageId!);
+        this.closeDeleteModal();
+        this.refreshStageData();
       },
-      error: () => this.errorMessage = 'Unable to remove stage resource.'
+      error: () => this.errorMessage = 'Unable to delete resource from stage.'
     });
   }
 
-  loadTimetable(): void {
-    if (this.timetableForm.invalid) {
-      this.timetableForm.markAllAsTouched();
-      return;
-    }
-    const value = this.timetableForm.getRawValue();
-    this.eventOrganizationService.getTimetable(Number(value.stageId), value.date!).subscribe({
-      next: slots => this.timetableSlots = slots,
-      error: () => this.errorMessage = 'Unable to load timetable.'
-    });
+  updateInventorySearch(event: Event): void {
+    this.inventorySearch = (event.target as HTMLInputElement).value;
+  }
+
+  updateInventoryStageFilter(event: Event): void {
+    this.inventoryStageFilter = (event.target as HTMLSelectElement).value;
   }
 
   logout(): void {
     this.authService.logout();
   }
 
-  setTab(tab: 'resources' | 'timetable'): void {
-    this.activeTab = tab;
-    this.clearMessages();
+  private reloadResourcesAndAssignments(): void {
+    this.eventOrganizationService.getResources().subscribe({
+      next: resources => {
+        this.resources = resources;
+        this.refreshStageData();
+      },
+      error: () => this.errorMessage = 'Unable to reload resources.'
+    });
   }
 
   private clearMessages(): void {
     this.errorMessage = '';
     this.successMessage = '';
-  }
-
-  private today(): string {
-    return new Date().toISOString().slice(0, 10);
   }
 }

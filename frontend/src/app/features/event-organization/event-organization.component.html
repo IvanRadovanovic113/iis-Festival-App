@@ -1,23 +1,31 @@
 <div class="event-shell">
-  <header class="top-bar">
-    <div>
-      <p class="eyebrow">Event Organization</p>
-      <h1>{{ currentUser?.assignment?.festivalNaziv || 'Festival' }}</h1>
-    </div>
-    <div class="user-actions">
-      @if (currentUser) {
-        <span>{{ currentUser.username }}</span>
-      }
-      <button type="button" class="ghost-button" (click)="logout()">Log out</button>
-    </div>
+  <header class="top-nav">
+    <strong class="brand">EventOrg</strong>
+    <nav aria-label="Event organizer navigation">
+      <button type="button" [class.active]="activeTab === 'requests'" (click)="setTab('requests')">Requests</button>
+      <button type="button" [class.active]="activeTab === 'timetable'" (click)="setTab('timetable')">Timetable</button>
+      <button type="button" [class.active]="activeTab === 'resources'" (click)="setResourceTab('manage')">Resources</button>
+      <button type="button" [class.active]="activeTab === 'tasks'" (click)="setTab('tasks')">Tasks</button>
+      <button type="button" [class.active]="activeTab === 'analytics'" (click)="setTab('analytics')">Analytics</button>
+    </nav>
   </header>
 
-  <main class="content">
-    <nav class="tabs" aria-label="Event organization sections">
-      <button type="button" [class.active]="activeTab === 'resources'" (click)="setTab('resources')">Resources</button>
-      <button type="button" [class.active]="activeTab === 'timetable'" (click)="setTab('timetable')">Timetable</button>
-    </nav>
+  @if (activeTab === 'requests') {
+    <section class="sub-nav">
+      @for (filter of ['All', 'Pending', 'Confirmed', 'Past']; track filter) {
+        <button type="button" [class.active]="activeRequestFilter === filter" (click)="activeRequestFilter = filter">{{ filter }}</button>
+      }
+    </section>
+  }
 
+  @if (activeTab === 'resources') {
+    <section class="sub-nav">
+      <button type="button" [class.active]="activeResourceTab === 'manage'" (click)="setResourceTab('manage')">Manage resources</button>
+      <button type="button" [class.active]="activeResourceTab === 'inventory'" (click)="setResourceTab('inventory')">Inventory</button>
+    </section>
+  }
+
+  <main class="content">
     @if (errorMessage) {
       <div class="alert error">{{ errorMessage }}</div>
     }
@@ -25,165 +33,210 @@
       <div class="alert success">{{ successMessage }}</div>
     }
 
-    @if (activeTab === 'resources') {
-      <section class="grid two-columns">
-        <form class="panel" [formGroup]="resourceForm" (ngSubmit)="saveResource()">
-          <div class="panel-heading">
-            <h2>{{ editingResource ? 'Edit resource' : 'Create resource' }}</h2>
-            @if (editingResource) {
-              <button type="button" class="text-button" (click)="cancelResourceEdit()">Cancel</button>
-            }
-          </div>
-          <label>
-            Name
-            <input type="text" formControlName="name" placeholder="Camera, sound system, stage crew" />
-          </label>
-          <label>
-            Type
-            <input type="text" formControlName="type" placeholder="Equipment, crew, special effects" />
-          </label>
-          <label>
-            Description
-            <textarea rows="4" formControlName="description" placeholder="Optional notes"></textarea>
-          </label>
-          <label>
-            Total quantity
-            <input type="number" min="1" formControlName="totalQuantity" />
-          </label>
-          <button type="submit" class="primary-button">{{ editingResource ? 'Save changes' : 'Create resource' }}</button>
-        </form>
-
-        <section class="panel">
-          <div class="panel-heading">
-            <h2>Resource catalog</h2>
-            <span class="count">{{ resources.length }} total</span>
-          </div>
-          <div class="table">
-            <div class="table-row table-head">
-              <span>Name</span>
-              <span>Type</span>
-              <span>Quantity</span>
-              <span></span>
-            </div>
-            @for (resource of resources; track resource.id) {
-              <div class="table-row">
-                <span>{{ resource.name }}</span>
-                <span>{{ resource.type }}</span>
-                <span>{{ resource.totalQuantity }}</span>
-                <span class="row-actions">
-                  <button type="button" class="text-button" (click)="editResource(resource)">Edit</button>
-                  <button type="button" class="danger-button" (click)="deleteResource(resource)">Delete</button>
-                </span>
-              </div>
-            } @empty {
-              <p class="empty-state">No resources have been created yet.</p>
-            }
-          </div>
-        </section>
+    @if (activeTab === 'requests') {
+      <section class="page-heading">
+        <h1>Reservation requests</h1>
+        <p>All incoming reservation requests</p>
       </section>
 
-      <section class="panel stage-panel">
-        <div class="panel-heading">
-          <div>
-            <h2>Stage resources</h2>
-            <p>Assign available festival resources to a selected stage.</p>
-          </div>
-          <label class="compact-label">
-            Stage
-            <select [value]="selectedStageId" (change)="selectStage($any($event.target).value)">
-              @for (stage of stages; track stage.binaId) {
-                <option [value]="stage.binaId">{{ stage.naziv }}</option>
-              }
-            </select>
-          </label>
-        </div>
+      <div class="search-box">
+        <span class="search-icon" aria-hidden="true"></span>
+        <input type="search" placeholder="Search by performer, stage..." disabled />
+      </div>
 
-        <div class="grid two-columns">
-          <form class="assignment-form" [formGroup]="stageResourceForm" (ngSubmit)="saveStageResource()">
-            <label>
-              Resource
-              <select formControlName="resourceId">
-                <option [ngValue]="null">Select resource</option>
-                @if (editingStageResource) {
-                  <option [ngValue]="editingStageResource.resourceId">{{ editingStageResource.resourceName }}</option>
-                }
-                @for (resource of assignableResources; track resource.id) {
-                  <option [ngValue]="resource.id">{{ resource.name }} ({{ resource.type }})</option>
-                }
-              </select>
-            </label>
-            <label>
-              Quantity
-              <input type="number" min="1" formControlName="quantity" />
-            </label>
-            <div class="form-actions">
-              <button type="submit" class="primary-button">{{ editingStageResource ? 'Update assignment' : 'Assign resource' }}</button>
-              @if (editingStageResource) {
-                <button type="button" class="ghost-light-button" (click)="cancelStageResourceEdit()">Cancel</button>
-              }
-            </div>
-          </form>
-
-          <div class="table">
-            <div class="table-row table-head">
-              <span>Resource</span>
-              <span>Type</span>
-              <span>Assigned</span>
-              <span></span>
-            </div>
-            @for (stageResource of stageResources; track stageResource.id) {
-              <div class="table-row">
-                <span>{{ stageResource.resourceName }}</span>
-                <span>{{ stageResource.resourceType }}</span>
-                <span>{{ stageResource.quantity }} / {{ stageResource.totalQuantity }}</span>
-                <span class="row-actions">
-                  <button type="button" class="text-button" (click)="editStageResource(stageResource)">Edit</button>
-                  <button type="button" class="danger-button" (click)="removeStageResource(stageResource)">Remove</button>
-                </span>
-              </div>
-            } @empty {
-              <p class="empty-state">No resources are assigned to this stage.</p>
-            }
-          </div>
-        </div>
+      <section class="empty-requests">
+        <h2>Requests are not implemented yet</h2>
+        <p>This tab is intentionally empty for the current resource management sprint.</p>
       </section>
     }
 
-    @if (activeTab === 'timetable') {
-      <section class="panel">
-        <div class="panel-heading">
-          <div>
-            <h2>Stage timetable</h2>
-            <p>All slots are available in this sprint.</p>
-          </div>
-          <form class="filter-form" [formGroup]="timetableForm" (ngSubmit)="loadTimetable()">
-            <label>
-              Stage
-              <select formControlName="stageId">
-                @for (stage of stages; track stage.binaId) {
-                  <option [ngValue]="stage.binaId">{{ stage.naziv }}</option>
-                }
-              </select>
-            </label>
-            <label>
-              Date
-              <input type="date" formControlName="date" />
-            </label>
-            <button type="submit" class="primary-button">Load timetable</button>
-          </form>
+    @if (activeTab === 'resources' && activeResourceTab === 'manage') {
+      <section class="page-heading row-heading">
+        <div>
+          <h1>Stage resources</h1>
+          <p>Manage equipment and personnel assigned to each stage</p>
         </div>
+        <button type="button" class="primary-button" (click)="openAddResource()">+ Add Resource</button>
+      </section>
 
-        <div class="slot-grid">
-          @for (slot of timetableSlots; track slot.startTime) {
-            <div class="slot-card">
-              <strong>{{ slot.startTime.slice(0, 5) }} - {{ slot.endTime === '00:00:00' ? '24:00' : slot.endTime.slice(0, 5) }}</strong>
-              <span>{{ slot.status }}</span>
+      <div class="stage-tabs" aria-label="Stages">
+        @for (stage of stages; track stage.binaId) {
+          <button type="button" [class.active]="selectedStageId === stage.binaId" (click)="selectStage(stage.binaId)">
+            {{ stage.naziv }}
+          </button>
+        }
+      </div>
+
+      <section class="resource-grid">
+        @for (stageResource of stageResources; track stageResource.id) {
+          <article class="resource-card">
+            <div class="resource-card-main">
+              <div>
+                <h2>{{ stageResource.resourceName }}</h2>
+                <p>{{ stageResource.quantity }} {{ stageResource.resourceType === 'Personnel' ? 'people' : stageResource.quantity === 1 ? 'set' : 'units' }}</p>
+              </div>
+              <span class="pill" [class.personnel]="stageResource.resourceType === 'Personnel'" [class.fx]="stageResource.resourceType === 'Special FX'">
+                {{ stageResource.resourceType }}
+              </span>
             </div>
-          } @empty {
-            <p class="empty-state">Choose a stage and date to view the timetable.</p>
-          }
+            <div class="card-actions">
+              <button type="button" class="outline-button" (click)="openEditResource(stageResource)">Edit</button>
+              <button type="button" class="outline-button danger" (click)="confirmDelete(stageResource)">Delete</button>
+            </div>
+          </article>
+        } @empty {
+          <section class="empty-card">
+            <h2>No resources on this stage</h2>
+            <p>Add the first resource for {{ selectedStage?.naziv || 'a stage' }}.</p>
+          </section>
+        }
+      </section>
+    }
+
+    @if (activeTab === 'resources' && activeResourceTab === 'inventory') {
+      <section class="page-heading">
+        <h1>Resource inventory</h1>
+        <p>Overview of all resources available in the system across all stages</p>
+      </section>
+
+      <section class="metric-grid">
+        <article class="metric pink">
+          <strong>{{ resources.length }}</strong>
+          <span>Total resource types</span>
+        </article>
+        <article class="metric green">
+          <strong>{{ totalUnits }}</strong>
+          <span>Total units</span>
+        </article>
+        <article class="metric orange">
+          <strong>{{ sharedResourceCount }}</strong>
+          <span>Shared resources</span>
+        </article>
+        <article class="metric purple">
+          <strong>{{ stages.length }}</strong>
+          <span>Stages</span>
+        </article>
+      </section>
+
+      <section class="inventory-filters">
+        <input type="search" placeholder="Search resources..." [value]="inventorySearch" (input)="updateInventorySearch($event)" />
+        <label>
+          <span>Filter by stage:</span>
+          <select [value]="inventoryStageFilter" (change)="updateInventoryStageFilter($event)">
+            <option value="All">All</option>
+            @for (stage of stages; track stage.binaId) {
+              <option [value]="stage.naziv">{{ stage.naziv }}</option>
+            }
+          </select>
+        </label>
+      </section>
+
+      <section class="inventory-table" aria-label="Resource inventory table">
+        <div class="inventory-row inventory-head">
+          <span>Resource name</span>
+          <span>Type</span>
+          <span>Total</span>
+          <span>Shared</span>
+          <span>Stage</span>
         </div>
+        @for (row of inventoryRows; track row.resource.id) {
+          <div class="inventory-row">
+            <span>{{ row.resource.name }}</span>
+            <span>{{ row.resource.type }}</span>
+            <span>{{ row.resource.totalQuantity }}</span>
+            <span [class.yes]="row.shared" [class.no]="!row.shared">{{ row.shared ? 'Yes' : 'No' }}</span>
+            <span>{{ row.stageNames.length ? row.stageNames.join(', ') : '-' }}</span>
+          </div>
+        } @empty {
+          <p class="empty-table">No resources match the selected filters.</p>
+        }
+      </section>
+    }
+
+    @if (activeTab === 'timetable' || activeTab === 'tasks' || activeTab === 'analytics') {
+      <section class="placeholder-page">
+        <h1>{{ activeTab | titlecase }}</h1>
+        <p>This area is outside the current resource management scope.</p>
       </section>
     }
   </main>
+
+  @if (modalMode) {
+    <div class="modal-backdrop" role="presentation">
+      <form class="resource-modal" [formGroup]="resourceForm" (ngSubmit)="saveResource()">
+        <header>
+          <h2>{{ modalMode === 'edit' ? 'Edit resource' : 'Add resource' }}</h2>
+          <button type="button" class="close-button" aria-label="Close" (click)="closeResourceModal()">x</button>
+        </header>
+
+        <div class="modal-body">
+          <label class="full">
+            <span>Resource name *</span>
+            <input type="text" formControlName="name" placeholder="e.g. Smoke machine, LED display..." />
+          </label>
+
+          <label>
+            <span>Resource type *</span>
+            <select formControlName="type">
+              <option>Equipment</option>
+              <option>Personnel</option>
+              <option>Special FX</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Quantity *</span>
+            <input type="number" min="1" formControlName="quantity" />
+          </label>
+
+          <label class="full">
+            <span>Stage *</span>
+            <select formControlName="stageId">
+              @for (stage of stages; track stage.binaId) {
+                <option [ngValue]="stage.binaId">{{ stage.naziv }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="share-row full">
+            <input type="checkbox" formControlName="shareable" />
+            <span>Resource is sharable between different stages</span>
+          </label>
+
+          <label class="full">
+            <span>Note (optional)</span>
+            <input type="text" formControlName="note" placeholder="Additional resource information" />
+          </label>
+        </div>
+
+        <footer>
+          <button type="button" class="cancel-button" (click)="closeResourceModal()">Cancel</button>
+          <button type="submit" class="primary-button">{{ modalMode === 'edit' ? 'Save changes' : 'Add resource' }}</button>
+        </footer>
+      </form>
+    </div>
+  }
+
+  @if (deletingStageResource) {
+    <div class="modal-backdrop" role="presentation">
+      <section class="delete-modal">
+        <header>
+          <h2>Delete resource</h2>
+          <button type="button" class="close-button" aria-label="Close" (click)="closeDeleteModal()">x</button>
+        </header>
+        <div class="delete-body">
+          <div class="warning-box">
+            <strong>Are you sure you want to delete this resource?</strong>
+            <p>"{{ deletingStageResource.resourceName }}" from {{ stageNameById(deletingStageResource.stageId) }} will be permanently removed.</p>
+            <span>! This resource is currently assigned to 2 upcoming bookings.</span>
+          </div>
+          <p class="info-box">Deleting will automatically remove it from these requests.</p>
+        </div>
+        <footer>
+          <button type="button" class="cancel-button" (click)="closeDeleteModal()">Cancel</button>
+          <button type="button" class="delete-button" (click)="deleteStageResource()">Delete Resource</button>
+        </footer>
+      </section>
+    </div>
+  }
 </div>
