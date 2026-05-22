@@ -1,8 +1,8 @@
 <div class="content-card">
   <div class="card-header">
-    <h2>Bine</h2>
+    <h2>Stages</h2>
     @if (formMode === null) {
-      <button class="btn-primary" (click)="openCreate()">+ Dodaj binu</button>
+      <button class="btn-primary" (click)="openCreate()">+ Add stage</button>
     }
   </div>
 
@@ -10,28 +10,28 @@
     <div class="error-banner">{{ errorMessage }}</div>
   }
 
-  @if (bine.length === 0) {
-    <p class="empty-state">Nema bina na ovom festivalu. Dodajte prvu binu.</p>
+  @if (stages.length === 0) {
+    <p class="empty-state">No stages at this festival. Add the first stage.</p>
   } @else {
     <div class="table-wrapper">
       <table>
         <thead>
           <tr>
-            <th>Naziv</th>
-            <th>Kapacitet</th>
-            <th>Lokacija</th>
-            <th>Akcije</th>
+            <th>Name</th>
+            <th>Capacity</th>
+            <th>Location</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          @for (bina of bine; track bina.binaId) {
-            <tr [class.selected-row]="selectedBina?.binaId === bina.binaId">
-              <td>{{ bina.naziv }}</td>
-              <td>{{ bina.kapacitet | number }}</td>
-              <td>{{ bina.lokacija }}</td>
+          @for (stage of stages; track stage.stageId) {
+            <tr [class.selected-row]="selectedStage?.stageId === stage.stageId">
+              <td>{{ stage.name }}</td>
+              <td>{{ stage.capacity | number }}</td>
+              <td>{{ stage.location }}</td>
               <td class="actions">
-                <button class="btn-edit" (click)="openEdit(bina)">Izmeni</button>
-                <button class="btn-danger" (click)="delete(bina)">Obriši</button>
+                <button class="btn-edit" (click)="openEdit(stage)">Edit</button>
+                <button class="btn-danger" (click)="delete(stage)">Delete</button>
               </td>
             </tr>
           }
@@ -43,39 +43,39 @@
 
 @if (formMode !== null) {
   <div class="form-panel">
-    <h3>{{ formMode === 'create' ? 'Nova bina' : 'Izmena bine — ' + selectedBina?.naziv }}</h3>
+    <h3>{{ formMode === 'create' ? 'New stage' : 'Edit stage — ' + selectedStage?.name }}</h3>
 
     <form [formGroup]="form" (ngSubmit)="submit()">
       <div class="form-row">
         <div class="field">
-          <label>Naziv *</label>
-          <input type="text" formControlName="naziv" placeholder="Naziv bine" />
-          @if (naziv.invalid && naziv.touched) {
-            <span class="field-error">Naziv je obavezan (min. 2 karaktera).</span>
+          <label>Name *</label>
+          <input type="text" formControlName="name" placeholder="Stage name" />
+          @if (name.invalid && name.touched) {
+            <span class="field-error">Name is required (min. 2 characters).</span>
           }
         </div>
 
         <div class="field">
-          <label>Kapacitet *</label>
-          <input type="number" formControlName="kapacitet" placeholder="Broj mesta" min="1" />
-          @if (kapacitet.invalid && kapacitet.touched) {
-            <span class="field-error">Kapacitet mora biti pozitivan broj.</span>
+          <label>Capacity *</label>
+          <input type="number" formControlName="capacity" placeholder="Number of seats" min="1" />
+          @if (capacity.invalid && capacity.touched) {
+            <span class="field-error">Capacity must be a positive number.</span>
           }
         </div>
       </div>
 
       <div class="field full-width">
-        <label>Lokacija *</label>
-        <input type="text" formControlName="lokacija" placeholder="Lokacija bine unutar festivala" />
-        @if (lokacija.invalid && lokacija.touched) {
-          <span class="field-error">Lokacija je obavezna (min. 2 karaktera).</span>
+        <label>Location *</label>
+        <input type="text" formControlName="location" placeholder="Stage location within the festival" />
+        @if (location.invalid && location.touched) {
+          <span class="field-error">Location is required (min. 2 characters).</span>
         }
       </div>
 
       <div class="panel-actions">
-        <button type="button" class="btn-cancel" (click)="cancelForm()">Otkaži</button>
+        <button type="button" class="btn-cancel" (click)="cancelForm()">Cancel</button>
         <button type="submit" class="btn-save">
-          {{ formMode === 'create' ? 'Kreiraj binu' : 'Sačuvaj izmene' }}
+          {{ formMode === 'create' ? 'Create stage' : 'Save changes' }}
         </button>
       </div>
     </form>

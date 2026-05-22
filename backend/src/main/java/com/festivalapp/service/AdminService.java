@@ -43,12 +43,12 @@ public class AdminService {
     @Transactional
     public UserDto assign(Long userId, AssignmentRequest request) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Korisnik nije pronađen"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         if (user.getRole() == Role.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ne možete dodeliti festival adminu");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot assign a festival to an admin");
         }
         Festival festival = festivalRepository.findById(request.getFestivalId())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Festival nije pronađen"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Festival not found"));
 
         UserFestivalAssignment assignment = assignmentRepository.findByUser_Id(userId)
             .orElse(UserFestivalAssignment.builder().user(user).build());
@@ -60,7 +60,7 @@ public class AdminService {
     @Transactional
     public void deleteAssignment(Long userId) {
         if (!assignmentRepository.existsByUser_Id(userId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Dodela ne postoji");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found");
         }
         assignmentRepository.deleteByUser_Id(userId);
     }

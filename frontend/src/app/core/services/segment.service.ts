@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Segment, BinaSegment } from '../models/segment.model';
+import { Segment, StageSegment } from '../models/segment.model';
 
 @Injectable({ providedIn: 'root' })
 export class SegmentService {
@@ -11,24 +11,24 @@ export class SegmentService {
     return this.http.get<Segment[]>(`/api/festivals/${festivalId}/segments`);
   }
 
-  createSegment(festivalId: number, naziv: string): Observable<Segment> {
-    return this.http.post<Segment>(`/api/festivals/${festivalId}/segments`, { naziv });
+  createSegment(festivalId: number, name: string): Observable<Segment> {
+    return this.http.post<Segment>(`/api/festivals/${festivalId}/segments`, { name });
   }
 
   deleteSegment(festivalId: number, segmentId: number): Observable<void> {
     return this.http.delete<void>(`/api/festivals/${festivalId}/segments/${segmentId}`);
   }
 
-  getStageSegments(stageId: number): Observable<BinaSegment[]> {
-    return this.http.get<BinaSegment[]>(`/api/stages/${stageId}/segments`);
+  getStageSegments(stageId: number): Observable<StageSegment[]> {
+    return this.http.get<StageSegment[]>(`/api/stages/${stageId}/segments`);
   }
 
-  assignSegment(stageId: number, segmentId: number, kapacitet: number): Observable<BinaSegment> {
-    return this.http.post<BinaSegment>(`/api/stages/${stageId}/segments`, { segmentId, kapacitet });
+  assignSegment(stageId: number, segmentId: number, capacity: number): Observable<StageSegment> {
+    return this.http.post<StageSegment>(`/api/stages/${stageId}/segments`, { segmentId, capacity });
   }
 
-  updateAssignment(stageId: number, segmentId: number, kapacitet: number): Observable<BinaSegment> {
-    return this.http.put<BinaSegment>(`/api/stages/${stageId}/segments/${segmentId}`, { kapacitet });
+  updateAssignment(stageId: number, segmentId: number, capacity: number): Observable<StageSegment> {
+    return this.http.put<StageSegment>(`/api/stages/${stageId}/segments/${segmentId}`, { capacity });
   }
 
   removeFromStage(stageId: number, segmentId: number): Observable<void> {

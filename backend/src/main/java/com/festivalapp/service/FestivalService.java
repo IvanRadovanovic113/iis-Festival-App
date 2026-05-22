@@ -18,18 +18,18 @@ public class FestivalService {
     private final FestivalRepository festivalRepository;
 
     public FestivalResponse create(FestivalRequest request) {
-        if (!request.getDatumZavrsetka().isAfter(request.getDatumPocetka())) {
+        if (!request.getEndDate().isAfter(request.getStartDate())) {
             throw new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
-                "Datum završetka mora biti posle datuma početka"
+                "End date must be after start date"
             );
         }
         Festival festival = Festival.builder()
-            .naziv(request.getNaziv())
-            .lokacija(request.getLokacija())
+            .name(request.getName())
+            .location(request.getLocation())
             .status(request.getStatus())
-            .datumPocetka(request.getDatumPocetka())
-            .datumZavrsetka(request.getDatumZavrsetka())
+            .startDate(request.getStartDate())
+            .endDate(request.getEndDate())
             .build();
         return FestivalResponse.from(festivalRepository.save(festival));
     }
@@ -43,12 +43,12 @@ public class FestivalService {
     public FestivalResponse getById(Long id) {
         return festivalRepository.findById(id)
             .map(FestivalResponse::from)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Festival nije pronađen"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Festival not found"));
     }
 
     public void delete(Long id) {
         if (!festivalRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Festival nije pronađen");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Festival not found");
         }
         festivalRepository.deleteById(id);
     }

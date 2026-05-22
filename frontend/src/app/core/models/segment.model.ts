@@ -1,13 +1,16 @@
 export interface Segment {
   segmentId: number;
-  naziv: string;
+  name: string;
   festivalId: number;
-  festivalNaziv: string;
+  festivalName: string;
 }
 
-export interface BinaSegment {
+export interface StageSegment {
   id: number;
   segmentId: number;
-  segmentNaziv: string;
-  kapacitet: number;
+  segmentName: string;
+  capacity: number;
 }
+
+// Backwards compatibility alias
+export type BinaSegment = StageSegment;

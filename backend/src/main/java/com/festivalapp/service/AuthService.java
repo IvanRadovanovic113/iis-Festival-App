@@ -39,10 +39,10 @@ public class AuthService {
 
     public UserDto register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Korisničko ime je zauzeto");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username is already taken");
         }
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email je već registrovan");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already registered");
         }
         User user = User.builder()
             .username(request.getUsername())

@@ -4,7 +4,7 @@
       <h1>Festival App</h1>
       <div class="user-info">
         <a routerLink="/dashboard" class="nav-link">← Dashboard</a>
-        <button (click)="logout()">Odjavi se</button>
+        <button (click)="logout()">Sign out</button>
       </div>
     </div>
   </header>
@@ -12,8 +12,8 @@
   <main class="main">
     <div class="content-card">
       <div class="card-header">
-        <h2>Festivali</h2>
-        <a routerLink="/admin/festivals/new" class="btn-primary">+ Dodaj festival</a>
+        <h2>Festivals</h2>
+        <a routerLink="/admin/festivals/new" class="btn-primary">+ Add festival</a>
       </div>
 
       @if (errorMessage) {
@@ -21,34 +21,34 @@
       }
 
       @if (festivals.length === 0) {
-        <p class="empty-state">Nema festivala. Dodajte prvi festival klikom na dugme iznad.</p>
+        <p class="empty-state">No festivals found. Add the first festival using the button above.</p>
       } @else {
         <div class="table-wrapper">
           <table>
             <thead>
               <tr>
-                <th>Naziv</th>
-                <th>Lokacija</th>
+                <th>Name</th>
+                <th>Location</th>
                 <th>Status</th>
-                <th>Datum početka</th>
-                <th>Datum završetka</th>
-                <th>Akcije</th>
+                <th>Start date</th>
+                <th>End date</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               @for (festival of festivals; track festival.festivalId) {
                 <tr>
-                  <td>{{ festival.naziv }}</td>
-                  <td>{{ festival.lokacija }}</td>
+                  <td>{{ festival.name }}</td>
+                  <td>{{ festival.location }}</td>
                   <td>
                     <span class="badge badge-{{ festival.status.toLowerCase() }}">
                       {{ statusLabels[festival.status] }}
                     </span>
                   </td>
-                  <td>{{ festival.datumPocetka | date:'dd.MM.yyyy' }}</td>
-                  <td>{{ festival.datumZavrsetka | date:'dd.MM.yyyy' }}</td>
+                  <td>{{ festival.startDate | date:'dd.MM.yyyy' }}</td>
+                  <td>{{ festival.endDate | date:'dd.MM.yyyy' }}</td>
                   <td>
-                    <button class="btn-danger" (click)="delete(festival)">Obriši</button>
+                    <button class="btn-danger" (click)="delete(festival)">Delete</button>
                   </td>
                 </tr>
               }

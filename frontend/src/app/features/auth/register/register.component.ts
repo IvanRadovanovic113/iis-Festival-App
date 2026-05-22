@@ -44,7 +44,7 @@ export class RegisterComponent {
         setTimeout(() => this.router.navigate(['/login']), 2000);
       },
       error: (err) => {
-        this.error = err.error?.message || 'Greška pri registraciji.';
+        this.error = err.error?.message || 'Registration error.';
         this.loading = false;
       }
     });

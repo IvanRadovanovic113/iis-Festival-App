@@ -12,20 +12,20 @@ import java.time.LocalDate;
 public class FestivalResponse {
 
     private Long festivalId;
-    private String naziv;
-    private String lokacija;
+    private String name;
+    private String location;
     private FestivalStatus status;
-    private LocalDate datumPocetka;
-    private LocalDate datumZavrsetka;
+    private LocalDate startDate;
+    private LocalDate endDate;
 
     public static FestivalResponse from(Festival festival) {
         FestivalResponse response = new FestivalResponse();
         response.festivalId = festival.getFestivalId();
-        response.naziv = festival.getNaziv();
-        response.lokacija = festival.getLokacija();
+        response.name = festival.getName();
+        response.location = festival.getLocation();
         response.status = festival.getStatus();
-        response.datumPocetka = festival.getDatumPocetka();
-        response.datumZavrsetka = festival.getDatumZavrsetka();
+        response.startDate = festival.getStartDate();
+        response.endDate = festival.getEndDate();
         return response;
     }
 }

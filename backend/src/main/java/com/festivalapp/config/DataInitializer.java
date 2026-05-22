@@ -28,7 +28,7 @@ public class DataInitializer implements ApplicationRunner {
                     .role(Role.ADMIN)
                     .build();
             userRepository.save(admin);
-            log.info("Admin korisnik kreiran: admin / admin123");
+            log.info("Admin user created: admin / admin123");
         }
     }
 }

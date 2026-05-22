@@ -1,19 +1,19 @@
 package com.festivalapp.prodaja.service;
 
-import com.festivalapp.model.Bina;
 import com.festivalapp.model.Festival;
 import com.festivalapp.model.Role;
+import com.festivalapp.model.Segment;
+import com.festivalapp.model.Stage;
 import com.festivalapp.model.User;
 import com.festivalapp.model.UserFestivalAssignment;
-import com.festivalapp.prodaja.dto.BinaSegmentRequest;
-import com.festivalapp.prodaja.dto.BinaSegmentResponse;
+import com.festivalapp.prodaja.dto.StageSegmentRequest;
+import com.festivalapp.prodaja.dto.StageSegmentResponse;
 import com.festivalapp.prodaja.dto.SegmentRequest;
 import com.festivalapp.prodaja.dto.SegmentResponse;
-import com.festivalapp.prodaja.model.BinaSegment;
-import com.festivalapp.prodaja.model.Segment;
-import com.festivalapp.prodaja.repository.BinaSegmentRepository;
+import com.festivalapp.prodaja.model.StageSegment;
+import com.festivalapp.prodaja.repository.StageSegmentRepository;
 import com.festivalapp.prodaja.repository.SegmentRepository;
-import com.festivalapp.repository.BinaRepository;
+import com.festivalapp.repository.StageRepository;
 import com.festivalapp.repository.UserFestivalAssignmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -28,40 +28,40 @@ import java.util.List;
 public class SegmentService {
 
     private final SegmentRepository segmentRepository;
-    private final BinaSegmentRepository binaSegmentRepository;
-    private final BinaRepository binaRepository;
+    private final StageSegmentRepository stageSegmentRepository;
+    private final StageRepository stageRepository;
     private final UserFestivalAssignmentRepository assignmentRepository;
 
-    private Festival requireDirectorFestival(User user) {
+    private Festival requireSalesDirectorFestival(User user) {
         UserFestivalAssignment assignment = assignmentRepository.findByUser_Id(user.getId())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Nemate dodelu festivala"));
-        if (assignment.getRole() != Role.DIREKTOR_PRODAJE) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Samo direktor prodaje može upravljati segmentima");
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "No festival assignment found"));
+        if (assignment.getRole() != Role.SALES_DIRECTOR) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the sales director can manage segments");
         }
         return assignment.getFestival();
     }
 
     private void validateFestivalAccess(Festival userFestival, Long festivalId) {
         if (!userFestival.getFestivalId().equals(festivalId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Nemate pristup ovom festivalu");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to this festival");
         }
     }
 
     public List<SegmentResponse> getFestivalSegments(Long festivalId, User user) {
-        Festival festival = requireDirectorFestival(user);
+        Festival festival = requireSalesDirectorFestival(user);
         validateFestivalAccess(festival, festivalId);
         return segmentRepository.findByFestival_FestivalId(festivalId)
             .stream().map(SegmentResponse::from).toList();
     }
 
     public SegmentResponse createSegment(Long festivalId, SegmentRequest request, User user) {
-        Festival festival = requireDirectorFestival(user);
+        Festival festival = requireSalesDirectorFestival(user);
         validateFestivalAccess(festival, festivalId);
-        if (segmentRepository.existsByNazivAndFestival_FestivalId(request.getNaziv(), festivalId)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Segment sa ovim nazivom već postoji na festivalu");
+        if (segmentRepository.existsByNameAndFestival_FestivalId(request.getName(), festivalId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A segment with this name already exists at this festival");
         }
         Segment segment = Segment.builder()
-            .naziv(request.getNaziv())
+            .name(request.getName())
             .festival(festival)
             .build();
         return SegmentResponse.from(segmentRepository.save(segment));
@@ -69,76 +69,76 @@ public class SegmentService {
 
     @Transactional
     public void deleteSegment(Long festivalId, Long segmentId, User user) {
-        Festival festival = requireDirectorFestival(user);
+        Festival festival = requireSalesDirectorFestival(user);
         validateFestivalAccess(festival, festivalId);
         Segment segment = segmentRepository.findById(segmentId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Segment nije pronađen"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Segment not found"));
         if (!segment.getFestival().getFestivalId().equals(festivalId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Segment ne pripada ovom festivalu");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Segment does not belong to this festival");
         }
-        binaSegmentRepository.deleteBySegment_SegmentId(segmentId);
+        stageSegmentRepository.deleteBySegment_SegmentId(segmentId);
         segmentRepository.deleteById(segmentId);
     }
 
-    public List<BinaSegmentResponse> getStageSegments(Long stageId, User user) {
-        Festival festival = requireDirectorFestival(user);
-        Bina bina = binaRepository.findById(stageId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bina nije pronađena"));
-        if (!bina.getFestival().getFestivalId().equals(festival.getFestivalId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bina ne pripada vašem festivalu");
+    public List<StageSegmentResponse> getStageSegments(Long stageId, User user) {
+        Festival festival = requireSalesDirectorFestival(user);
+        Stage stage = stageRepository.findById(stageId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Stage not found"));
+        if (!stage.getFestival().getFestivalId().equals(festival.getFestivalId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Stage does not belong to your festival");
         }
-        return binaSegmentRepository.findByBina_BinaId(stageId)
-            .stream().map(BinaSegmentResponse::from).toList();
+        return stageSegmentRepository.findByStage_StageId(stageId)
+            .stream().map(StageSegmentResponse::from).toList();
     }
 
-    public BinaSegmentResponse assignSegment(Long stageId, BinaSegmentRequest request, User user) {
-        Festival festival = requireDirectorFestival(user);
-        Bina bina = binaRepository.findById(stageId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bina nije pronađena"));
-        if (!bina.getFestival().getFestivalId().equals(festival.getFestivalId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bina ne pripada vašem festivalu");
+    public StageSegmentResponse assignSegment(Long stageId, StageSegmentRequest request, User user) {
+        Festival festival = requireSalesDirectorFestival(user);
+        Stage stage = stageRepository.findById(stageId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Stage not found"));
+        if (!stage.getFestival().getFestivalId().equals(festival.getFestivalId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Stage does not belong to your festival");
         }
         Segment segment = segmentRepository.findById(request.getSegmentId())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Segment nije pronađen"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Segment not found"));
         if (!segment.getFestival().getFestivalId().equals(festival.getFestivalId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Segment ne pripada vašem festivalu");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Segment does not belong to your festival");
         }
-        if (binaSegmentRepository.existsByBina_BinaIdAndSegment_SegmentId(stageId, request.getSegmentId())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ovaj segment je već dodeljen ovoj bini");
+        if (stageSegmentRepository.existsByStage_StageIdAndSegment_SegmentId(stageId, request.getSegmentId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This segment is already assigned to this stage");
         }
-        BinaSegment binaSegment = BinaSegment.builder()
-            .bina(bina)
+        StageSegment stageSegment = StageSegment.builder()
+            .stage(stage)
             .segment(segment)
-            .kapacitet(request.getKapacitet())
+            .capacity(request.getCapacity())
             .build();
-        return BinaSegmentResponse.from(binaSegmentRepository.save(binaSegment));
+        return StageSegmentResponse.from(stageSegmentRepository.save(stageSegment));
     }
 
-    public BinaSegmentResponse updateAssignment(Long stageId, Long segmentId, BinaSegmentRequest request, User user) {
-        Festival festival = requireDirectorFestival(user);
-        Bina bina = binaRepository.findById(stageId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bina nije pronađena"));
-        if (!bina.getFestival().getFestivalId().equals(festival.getFestivalId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bina ne pripada vašem festivalu");
+    public StageSegmentResponse updateAssignment(Long stageId, Long segmentId, StageSegmentRequest request, User user) {
+        Festival festival = requireSalesDirectorFestival(user);
+        Stage stage = stageRepository.findById(stageId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Stage not found"));
+        if (!stage.getFestival().getFestivalId().equals(festival.getFestivalId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Stage does not belong to your festival");
         }
-        BinaSegment binaSegment = binaSegmentRepository
-            .findByBina_BinaIdAndSegment_SegmentId(stageId, segmentId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dodela nije pronađena"));
-        binaSegment.setKapacitet(request.getKapacitet());
-        return BinaSegmentResponse.from(binaSegmentRepository.save(binaSegment));
+        StageSegment stageSegment = stageSegmentRepository
+            .findByStage_StageIdAndSegment_SegmentId(stageId, segmentId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found"));
+        stageSegment.setCapacity(request.getCapacity());
+        return StageSegmentResponse.from(stageSegmentRepository.save(stageSegment));
     }
 
     @Transactional
     public void removeFromStage(Long stageId, Long segmentId, User user) {
-        Festival festival = requireDirectorFestival(user);
-        Bina bina = binaRepository.findById(stageId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bina nije pronađena"));
-        if (!bina.getFestival().getFestivalId().equals(festival.getFestivalId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bina ne pripada vašem festivalu");
+        Festival festival = requireSalesDirectorFestival(user);
+        Stage stage = stageRepository.findById(stageId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Stage not found"));
+        if (!stage.getFestival().getFestivalId().equals(festival.getFestivalId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Stage does not belong to your festival");
         }
-        if (!binaSegmentRepository.existsByBina_BinaIdAndSegment_SegmentId(stageId, segmentId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Dodela nije pronađena");
+        if (!stageSegmentRepository.existsByStage_StageIdAndSegment_SegmentId(stageId, segmentId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found");
         }
-        binaSegmentRepository.deleteByBina_BinaIdAndSegment_SegmentId(stageId, segmentId);
+        stageSegmentRepository.deleteByStage_StageIdAndSegment_SegmentId(stageId, segmentId);
     }
 }

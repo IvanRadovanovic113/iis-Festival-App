@@ -9,5 +9,5 @@ import lombok.Setter;
 public class SegmentRequest {
 
     @NotBlank
-    private String naziv;
+    private String name;
 }

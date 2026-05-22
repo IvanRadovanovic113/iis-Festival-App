@@ -3,15 +3,15 @@
     <div class="header-content">
       <h1>Festival App</h1>
       <div class="user-info">
-        <a routerLink="/admin/festivals" class="nav-link">← Festivali</a>
-        <button (click)="logout()">Odjavi se</button>
+        <a routerLink="/admin/festivals" class="nav-link">← Festivals</a>
+        <button (click)="logout()">Sign out</button>
       </div>
     </div>
   </header>
 
   <main class="main">
     <div class="form-card">
-      <h2>Novi festival</h2>
+      <h2>New festival</h2>
 
       @if (errorMessage) {
         <div class="error-banner">{{ errorMessage }}</div>
@@ -20,60 +20,60 @@
       <form [formGroup]="form" (ngSubmit)="submit()">
 
         <div class="field">
-          <label for="naziv">Naziv *</label>
-          <input id="naziv" type="text" formControlName="naziv" placeholder="Naziv festivala" />
-          @if (naziv.invalid && naziv.touched) {
-            <span class="field-error">Naziv je obavezan (min. 2 karaktera).</span>
+          <label for="name">Name *</label>
+          <input id="name" type="text" formControlName="name" placeholder="Festival name" />
+          @if (name.invalid && name.touched) {
+            <span class="field-error">Name is required (min. 2 characters).</span>
           }
         </div>
 
         <div class="field">
-          <label for="lokacija">Lokacija *</label>
-          <input id="lokacija" type="text" formControlName="lokacija" placeholder="Grad, adresa..." />
-          @if (lokacija.invalid && lokacija.touched) {
-            <span class="field-error">Lokacija je obavezna (min. 2 karaktera).</span>
+          <label for="location">Location *</label>
+          <input id="location" type="text" formControlName="location" placeholder="City, address..." />
+          @if (location.invalid && location.touched) {
+            <span class="field-error">Location is required (min. 2 characters).</span>
           }
         </div>
 
         <div class="field">
           <label for="status">Status *</label>
           <select id="status" formControlName="status">
-            <option value="" disabled>Izaberite status</option>
-            @for (s of statusi; track s) {
+            <option value="" disabled>Select status</option>
+            @for (s of statuses; track s) {
               <option [value]="s">{{ statusLabels[s] }}</option>
             }
           </select>
           @if (status.invalid && status.touched) {
-            <span class="field-error">Status je obavezan.</span>
+            <span class="field-error">Status is required.</span>
           }
         </div>
 
         <div class="field-row">
           <div class="field">
-            <label for="datumPocetka">Datum početka *</label>
-            <input id="datumPocetka" type="date" formControlName="datumPocetka" />
-            @if (datumPocetka.invalid && datumPocetka.touched) {
-              <span class="field-error">Datum početka je obavezan.</span>
+            <label for="startDate">Start date *</label>
+            <input id="startDate" type="date" formControlName="startDate" />
+            @if (startDate.invalid && startDate.touched) {
+              <span class="field-error">Start date is required.</span>
             }
           </div>
 
           <div class="field">
-            <label for="datumZavrsetka">Datum završetka *</label>
-            <input id="datumZavrsetka" type="date" formControlName="datumZavrsetka" />
-            @if (datumZavrsetka.invalid && datumZavrsetka.touched) {
-              <span class="field-error">Datum završetka je obavezan.</span>
+            <label for="endDate">End date *</label>
+            <input id="endDate" type="date" formControlName="endDate" />
+            @if (endDate.invalid && endDate.touched) {
+              <span class="field-error">End date is required.</span>
             }
           </div>
         </div>
 
-        @if (form.errors?.['dateRange'] && (datumPocetka.touched || datumZavrsetka.touched)) {
-          <div class="error-banner">Datum završetka mora biti posle datuma početka.</div>
+        @if (form.errors?.['dateRange'] && (startDate.touched || endDate.touched)) {
+          <div class="error-banner">End date must be after start date.</div>
         }
 
         <div class="form-actions">
-          <a routerLink="/admin/festivals" class="btn-secondary">Otkaži</a>
+          <a routerLink="/admin/festivals" class="btn-secondary">Cancel</a>
           <button type="submit" class="btn-submit" [disabled]="submitting">
-            {{ submitting ? 'Čuvanje...' : 'Sačuvaj festival' }}
+            {{ submitting ? 'Saving...' : 'Save festival' }}
           </button>
         </div>
 

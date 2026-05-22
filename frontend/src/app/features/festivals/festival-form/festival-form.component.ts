@@ -7,8 +7,8 @@ import { AuthService } from '../../../core/services/auth.service';
 import { FestivalStatus, FESTIVAL_STATUS_LABELS } from '../../../core/models/festival.model';
 
 function dateRangeValidator(control: AbstractControl): ValidationErrors | null {
-  const start = control.get('datumPocetka')?.value;
-  const end = control.get('datumZavrsetka')?.value;
+  const start = control.get('startDate')?.value;
+  const end = control.get('endDate')?.value;
   if (start && end && end <= start) {
     return { dateRange: true };
   }
@@ -28,24 +28,24 @@ export class FestivalFormComponent {
   private router = inject(Router);
   private authService = inject(AuthService);
 
-  statusi: FestivalStatus[] = ['AKTIVAN', 'NEAKTIVAN', 'NADOLAZECI', 'ZAVRSEN', 'OTKAZAN'];
+  statuses: FestivalStatus[] = ['ACTIVE', 'INACTIVE', 'UPCOMING', 'COMPLETED', 'CANCELLED'];
   statusLabels = FESTIVAL_STATUS_LABELS;
   submitting = false;
   errorMessage = '';
 
   form = this.fb.group({
-    naziv: ['', [Validators.required, Validators.minLength(2)]],
-    lokacija: ['', [Validators.required, Validators.minLength(2)]],
+    name: ['', [Validators.required, Validators.minLength(2)]],
+    location: ['', [Validators.required, Validators.minLength(2)]],
     status: ['' as FestivalStatus, Validators.required],
-    datumPocetka: ['', Validators.required],
-    datumZavrsetka: ['', Validators.required]
+    startDate: ['', Validators.required],
+    endDate: ['', Validators.required]
   }, { validators: dateRangeValidator });
 
-  get naziv() { return this.form.get('naziv')!; }
-  get lokacija() { return this.form.get('lokacija')!; }
+  get name() { return this.form.get('name')!; }
+  get location() { return this.form.get('location')!; }
   get status() { return this.form.get('status')!; }
-  get datumPocetka() { return this.form.get('datumPocetka')!; }
-  get datumZavrsetka() { return this.form.get('datumZavrsetka')!; }
+  get startDate() { return this.form.get('startDate')!; }
+  get endDate() { return this.form.get('endDate')!; }
 
   submit(): void {
     if (this.form.invalid) {
@@ -57,7 +57,7 @@ export class FestivalFormComponent {
     this.festivalService.create(this.form.value as any).subscribe({
       next: () => this.router.navigate(['/admin/festivals']),
       error: (err) => {
-        this.errorMessage = err.error?.message || 'Greška pri kreiranju festivala.';
+        this.errorMessage = err.error?.message || 'Error creating festival.';
         this.submitting = false;
       }
     });

@@ -28,15 +28,15 @@ export class FestivalListComponent implements OnInit {
     this.errorMessage = '';
     this.festivalService.getAll().subscribe({
       next: data => this.festivals = data,
-      error: () => this.errorMessage = 'Greška pri učitavanju festivala.'
+      error: () => this.errorMessage = 'Error loading festivals.'
     });
   }
 
   delete(festival: Festival): void {
-    if (!confirm(`Da li ste sigurni da želite da obrišete festival "${festival.naziv}"?`)) return;
+    if (!confirm(`Are you sure you want to delete festival "${festival.name}"?`)) return;
     this.festivalService.delete(festival.festivalId).subscribe({
       next: () => this.load(),
-      error: () => this.errorMessage = 'Greška pri brisanju festivala.'
+      error: () => this.errorMessage = 'Error deleting festival.'
     });
   }
 

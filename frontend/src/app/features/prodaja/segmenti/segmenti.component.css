@@ -251,7 +251,7 @@
 
 .btn-edit-sm:hover { background: #e3f2fd; }
 
-.edit-kapacitet {
+.edit-capacity {
   display: flex;
   align-items: center;
   gap: 0.3rem;

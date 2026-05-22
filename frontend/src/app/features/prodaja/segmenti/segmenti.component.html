@@ -4,71 +4,71 @@
 
 <div class="page-grid">
 
-  <!-- Leva kolona: segmenti festivala -->
+  <!-- Left column: festival segments -->
   <div class="card">
     <div class="card-header">
-      <h2>Segmenti festivala</h2>
+      <h2>Festival segments</h2>
       @if (!showSegmentForm) {
-        <button class="btn-primary" (click)="showSegmentForm = true">+ Dodaj</button>
+        <button class="btn-primary" (click)="showSegmentForm = true">+ Add</button>
       }
     </div>
 
     @if (showSegmentForm) {
       <div class="inline-form" [formGroup]="segmentForm">
-        <input type="text" formControlName="naziv" placeholder="Naziv segmenta" />
-        @if (segmentForm.get('naziv')!.invalid && segmentForm.get('naziv')!.touched) {
-          <span class="field-error">Min. 2 karaktera.</span>
+        <input type="text" formControlName="name" placeholder="Segment name" />
+        @if (segmentForm.get('name')!.invalid && segmentForm.get('name')!.touched) {
+          <span class="field-error">Min. 2 characters.</span>
         }
         <div class="inline-actions">
-          <button class="btn-cancel-sm" type="button" (click)="showSegmentForm = false; segmentForm.reset()">Otkaži</button>
-          <button class="btn-save-sm" type="button" (click)="createSegment()">Sačuvaj</button>
+          <button class="btn-cancel-sm" type="button" (click)="showSegmentForm = false; segmentForm.reset()">Cancel</button>
+          <button class="btn-save-sm" type="button" (click)="createSegment()">Save</button>
         </div>
       </div>
     }
 
-    @if (festivalSegmenti.length === 0) {
-      <p class="empty">Nema segmenata. Dodajte prvi segment.</p>
+    @if (festivalSegments.length === 0) {
+      <p class="empty">No segments. Add the first segment.</p>
     } @else {
       <ul class="segment-list">
-        @for (s of festivalSegmenti; track s.segmentId) {
+        @for (s of festivalSegments; track s.segmentId) {
           <li class="segment-item">
-            <span>{{ s.naziv }}</span>
-            <button class="btn-remove-sm" (click)="deleteSegment(s)" title="Obriši segment">✕</button>
+            <span>{{ s.name }}</span>
+            <button class="btn-remove-sm" (click)="deleteSegment(s)" title="Delete segment">✕</button>
           </li>
         }
       </ul>
     }
   </div>
 
-  <!-- Desna kolona: dodela segmenata bini -->
+  <!-- Right column: stage segment assignment -->
   <div class="card">
     <div class="card-header">
-      <h2>Segmenti bine</h2>
+      <h2>Stage segments</h2>
     </div>
 
     <div class="bina-select">
-      <label>Izaberi binu:</label>
+      <label>Select stage:</label>
       <div class="bina-chips">
-        @for (b of bine; track b.binaId) {
+        @for (stage of stages; track stage.stageId) {
           <button
             class="chip"
-            [class.chip-active]="selectedBina?.binaId === b.binaId"
-            (click)="selectBina(b)">
-            {{ b.naziv }}
+            [class.chip-active]="selectedStage?.stageId === stage.stageId"
+            (click)="selectStage(stage)">
+            {{ stage.name }}
           </button>
         }
-        @if (bine.length === 0) {
-          <span class="empty-inline">Nema bina na festivalu.</span>
+        @if (stages.length === 0) {
+          <span class="empty-inline">No stages at this festival.</span>
         }
       </div>
     </div>
 
-    @if (selectedBina) {
+    @if (selectedStage) {
       <div class="bina-content">
         <div class="bina-content-header">
-          <span class="bina-label">{{ selectedBina.naziv }}</span>
+          <span class="bina-label">{{ selectedStage.name }}</span>
           @if (!showAssignForm && availableSegmentsForAssign.length > 0) {
-            <button class="btn-primary" (click)="openAssignForm()">+ Dodeli segment</button>
+            <button class="btn-primary" (click)="openAssignForm()">+ Assign segment</button>
           }
         </div>
 
@@ -78,54 +78,54 @@
               <div class="field">
                 <label>Segment</label>
                 <select formControlName="segmentId">
-                  <option [ngValue]="null" disabled>Izaberi segment</option>
+                  <option [ngValue]="null" disabled>Select segment</option>
                   @for (s of availableSegmentsForAssign; track s.segmentId) {
-                    <option [ngValue]="s.segmentId">{{ s.naziv }}</option>
+                    <option [ngValue]="s.segmentId">{{ s.name }}</option>
                   }
                 </select>
               </div>
               <div class="field">
-                <label>Kapacitet</label>
-                <input type="number" formControlName="kapacitet" placeholder="Broj mesta" min="1" />
+                <label>Capacity</label>
+                <input type="number" formControlName="capacity" placeholder="Number of seats" min="1" />
               </div>
             </div>
             <div class="inline-actions">
-              <button class="btn-cancel-sm" type="button" (click)="cancelAssignForm()">Otkaži</button>
-              <button class="btn-save-sm" type="button" (click)="assign()">Dodeli</button>
+              <button class="btn-cancel-sm" type="button" (click)="cancelAssignForm()">Cancel</button>
+              <button class="btn-save-sm" type="button" (click)="assign()">Assign</button>
             </div>
           </div>
         }
 
-        @if (binaSegmenti.length === 0) {
-          <p class="empty">Nema dodeljenih segmenata.</p>
+        @if (stageSegments.length === 0) {
+          <p class="empty">No segments assigned.</p>
         } @else {
           <table class="assign-table">
             <thead>
               <tr>
                 <th>Segment</th>
-                <th>Kapacitet</th>
-                <th>Akcije</th>
+                <th>Capacity</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              @for (bs of binaSegmenti; track bs.id) {
+              @for (ss of stageSegments; track ss.id) {
                 <tr>
-                  <td>{{ bs.segmentNaziv }}</td>
+                  <td>{{ ss.segmentName }}</td>
                   <td>
-                    @if (editingAssignment?.id === bs.id) {
-                      <div class="edit-kapacitet" [formGroup]="editForm">
-                        <input type="number" formControlName="kapacitet" min="1" style="width:80px" />
+                    @if (editingAssignment?.id === ss.id) {
+                      <div class="edit-capacity" [formGroup]="editForm">
+                        <input type="number" formControlName="capacity" min="1" style="width:80px" />
                         <button class="btn-save-sm" (click)="saveEdit()">✓</button>
                         <button class="btn-cancel-sm" (click)="cancelEdit()">✕</button>
                       </div>
                     } @else {
-                      {{ bs.kapacitet | number }}
+                      {{ ss.capacity | number }}
                     }
                   </td>
                   <td class="actions">
-                    @if (editingAssignment?.id !== bs.id) {
-                      <button class="btn-edit-sm" (click)="openEdit(bs)">Izmeni</button>
-                      <button class="btn-remove-sm" (click)="removeFromStage(bs)">Ukloni</button>
+                    @if (editingAssignment?.id !== ss.id) {
+                      <button class="btn-edit-sm" (click)="openEdit(ss)">Edit</button>
+                      <button class="btn-remove-sm" (click)="removeFromStage(ss)">Remove</button>
                     }
                   </td>
                 </tr>
@@ -135,7 +135,7 @@
         }
       </div>
     } @else {
-      <p class="empty">Izaberite binu da biste videli njene segmente.</p>
+      <p class="empty">Select a stage to view its segments.</p>
     }
   </div>
 

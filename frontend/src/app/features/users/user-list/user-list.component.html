@@ -4,7 +4,7 @@
       <h1>Festival App</h1>
       <div class="user-info">
         <a routerLink="/dashboard" class="nav-link">← Dashboard</a>
-        <button (click)="logout()">Odjavi se</button>
+        <button (click)="logout()">Sign out</button>
       </div>
     </div>
   </header>
@@ -12,7 +12,7 @@
   <main class="main">
     <div class="content-card">
       <div class="card-header">
-        <h2>Korisnici</h2>
+        <h2>Users</h2>
       </div>
 
       @if (errorMessage) {
@@ -20,17 +20,17 @@
       }
 
       @if (users.length === 0) {
-        <p class="empty-state">Nema registrovanih korisnika.</p>
+        <p class="empty-state">No registered users.</p>
       } @else {
         <div class="table-wrapper">
           <table>
             <thead>
               <tr>
-                <th>Korisničko ime</th>
+                <th>Username</th>
                 <th>Email</th>
                 <th>Festival</th>
-                <th>Uloga u festivalu</th>
-                <th>Akcije</th>
+                <th>Festival role</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -40,9 +40,9 @@
                   <td>{{ user.email }}</td>
                   <td>
                     @if (user.assignment) {
-                      {{ user.assignment.festivalNaziv }}
+                      {{ user.assignment.festivalName }}
                     } @else {
-                      <span class="not-assigned">Nije dodeljen</span>
+                      <span class="not-assigned">Not assigned</span>
                     }
                   </td>
                   <td>
@@ -54,10 +54,10 @@
                   </td>
                   <td class="actions">
                     <button class="btn-assign" (click)="openAssign(user)">
-                      {{ user.assignment ? 'Izmeni' : 'Dodeli' }}
+                      {{ user.assignment ? 'Edit' : 'Assign' }}
                     </button>
                     @if (user.assignment) {
-                      <button class="btn-remove" (click)="deleteAssignment(user)">Ukloni</button>
+                      <button class="btn-remove" (click)="deleteAssignment(user)">Remove</button>
                     }
                   </td>
                 </tr>
@@ -71,7 +71,7 @@
     @if (selectedUser) {
       <div class="assign-panel">
         <h3>
-          {{ selectedUser.assignment ? 'Izmeni dodelu' : 'Dodeli festival' }} —
+          {{ selectedUser.assignment ? 'Edit assignment' : 'Assign festival' }} —
           <span class="username">{{ selectedUser.username }}</span>
         </h3>
 
@@ -80,36 +80,36 @@
             <div class="field">
               <label>Festival *</label>
               <select formControlName="festivalId">
-                <option [ngValue]="null" disabled>Izaberite festival</option>
+                <option [ngValue]="null" disabled>Select festival</option>
                 @for (f of festivals; track f.festivalId) {
-                  <option [ngValue]="f.festivalId">{{ f.naziv }}</option>
+                  <option [ngValue]="f.festivalId">{{ f.name }}</option>
                 }
               </select>
               @if (form.get('festivalId')!.invalid && form.get('festivalId')!.touched) {
-                <span class="field-error">Festival je obavezan.</span>
+                <span class="field-error">Festival is required.</span>
               }
             </div>
 
             <div class="field">
-              <label>Uloga *</label>
+              <label>Role *</label>
               <select formControlName="role">
-                <option value="" disabled>Izaberite ulogu</option>
+                <option value="" disabled>Select role</option>
                 @for (r of roles; track r) {
                   <option [value]="r">{{ r }}</option>
                 }
               </select>
               @if (form.get('role')!.invalid && form.get('role')!.touched) {
-                <span class="field-error">Uloga je obavezna.</span>
+                <span class="field-error">Role is required.</span>
               }
               @if (roles.length === 0) {
-                <span class="field-error">Nema dostupnih uloga. Dodajte uloge u Role.java enum.</span>
+                <span class="field-error">No roles available. Add roles to the Role.java enum.</span>
               }
             </div>
           </div>
 
           <div class="panel-actions">
-            <button type="button" class="btn-cancel" (click)="cancelAssign()">Otkaži</button>
-            <button type="submit" class="btn-save">Sačuvaj</button>
+            <button type="button" class="btn-cancel" (click)="cancelAssign()">Cancel</button>
+            <button type="submit" class="btn-save">Save</button>
           </div>
         </form>
       </div>

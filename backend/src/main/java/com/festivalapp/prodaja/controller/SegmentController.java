@@ -1,8 +1,8 @@
 package com.festivalapp.prodaja.controller;
 
 import com.festivalapp.model.User;
-import com.festivalapp.prodaja.dto.BinaSegmentRequest;
-import com.festivalapp.prodaja.dto.BinaSegmentResponse;
+import com.festivalapp.prodaja.dto.StageSegmentRequest;
+import com.festivalapp.prodaja.dto.StageSegmentResponse;
 import com.festivalapp.prodaja.dto.SegmentRequest;
 import com.festivalapp.prodaja.dto.SegmentResponse;
 import com.festivalapp.prodaja.service.SegmentService;
@@ -47,26 +47,26 @@ public class SegmentController {
     }
 
     @GetMapping("/api/stages/{stageId}/segments")
-    public ResponseEntity<List<BinaSegmentResponse>> getStageSegments(
+    public ResponseEntity<List<StageSegmentResponse>> getStageSegments(
             @PathVariable Long stageId,
             @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(segmentService.getStageSegments(stageId, user));
     }
 
     @PostMapping("/api/stages/{stageId}/segments")
-    public ResponseEntity<BinaSegmentResponse> assignSegment(
+    public ResponseEntity<StageSegmentResponse> assignSegment(
             @PathVariable Long stageId,
-            @Valid @RequestBody BinaSegmentRequest request,
+            @Valid @RequestBody StageSegmentRequest request,
             @AuthenticationPrincipal User user) {
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(segmentService.assignSegment(stageId, request, user));
     }
 
     @PutMapping("/api/stages/{stageId}/segments/{segmentId}")
-    public ResponseEntity<BinaSegmentResponse> updateAssignment(
+    public ResponseEntity<StageSegmentResponse> updateAssignment(
             @PathVariable Long stageId,
             @PathVariable Long segmentId,
-            @Valid @RequestBody BinaSegmentRequest request,
+            @Valid @RequestBody StageSegmentRequest request,
             @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(segmentService.updateAssignment(stageId, segmentId, request, user));
     }

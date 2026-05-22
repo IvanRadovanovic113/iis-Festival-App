@@ -3,22 +3,22 @@
     <h2>Festival App</h2>
     <form [formGroup]="form" (ngSubmit)="onSubmit()">
       <div class="form-group">
-        <label for="username">Korisnicko ime</label>
-        <input id="username" type="text" formControlName="username" placeholder="Unesite korisnicko ime">
+        <label for="username">Username</label>
+        <input id="username" type="text" formControlName="username" placeholder="Enter your username">
       </div>
       <div class="form-group">
-        <label for="password">Lozinka</label>
-        <input id="password" type="password" formControlName="password" placeholder="Unesite lozinku">
+        <label for="password">Password</label>
+        <input id="password" type="password" formControlName="password" placeholder="Enter your password">
       </div>
       @if (error) {
         <div class="error-msg">{{ error }}</div>
       }
       <button type="submit" [disabled]="loading">
-        {{ loading ? 'Prijava...' : 'Prijavi se' }}
+        {{ loading ? 'Signing in...' : 'Sign in' }}
       </button>
     </form>
     <p class="register-link">
-      Nemate nalog? <a routerLink="/register">Registrujte se</a>
+      Don't have an account? <a routerLink="/register">Register</a>
     </p>
   </div>
 </div>

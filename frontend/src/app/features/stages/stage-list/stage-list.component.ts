@@ -1,10 +1,11 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { BinaService } from '../../../core/services/bina.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { Bina, BinaRequest } from '../../../core/models/bina.model';
+import { Stage, StageRequest } from '../../../core/models/bina.model';
 import { User } from '../../../core/models/user.model';
 
 @Component({
@@ -15,63 +16,66 @@ import { User } from '../../../core/models/user.model';
   styleUrls: ['./stage-list.component.css']
 })
 export class StageListComponent implements OnInit {
-  private binaService = inject(BinaService);
+  private stageService = inject(BinaService);
   private authService = inject(AuthService);
+  private destroyRef = inject(DestroyRef);
   private fb = inject(FormBuilder);
 
-  bine: Bina[] = [];
+  stages: Stage[] = [];
   currentUser: User | null = null;
   errorMessage = '';
 
   formMode: 'create' | 'edit' | null = null;
-  selectedBina: Bina | null = null;
+  selectedStage: Stage | null = null;
 
   form = this.fb.group({
-    naziv: ['', [Validators.required, Validators.minLength(2)]],
-    kapacitet: [null as number | null, [Validators.required, Validators.min(1)]],
-    lokacija: ['', [Validators.required, Validators.minLength(2)]]
+    name: ['', [Validators.required, Validators.minLength(2)]],
+    capacity: [null as number | null, [Validators.required, Validators.min(1)]],
+    location: ['', [Validators.required, Validators.minLength(2)]]
   });
 
-  get naziv() { return this.form.get('naziv')!; }
-  get kapacitet() { return this.form.get('kapacitet')!; }
-  get lokacija() { return this.form.get('lokacija')!; }
+  get name() { return this.form.get('name')!; }
+  get capacity() { return this.form.get('capacity')!; }
+  get location() { return this.form.get('location')!; }
 
-  get festivalNaziv(): string {
-    return this.currentUser?.assignment?.festivalNaziv ?? '';
+  get festivalName(): string {
+    return this.currentUser?.assignment?.festivalName ?? '';
   }
 
   ngOnInit(): void {
-    this.authService.currentUser.subscribe(user => this.currentUser = user);
+    this.authService.currentUser.pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(user => this.currentUser = user);
     this.load();
   }
 
   load(): void {
     this.errorMessage = '';
-    this.binaService.getAll().subscribe({
-      next: data => this.bine = data,
-      error: () => this.errorMessage = 'Greška pri učitavanju bina.'
+    this.stageService.getAll().subscribe({
+      next: data => this.stages = data,
+      error: () => this.errorMessage = 'Error loading stages.'
     });
   }
 
   openCreate(): void {
     this.formMode = 'create';
-    this.selectedBina = null;
+    this.selectedStage = null;
     this.form.reset();
   }
 
-  openEdit(bina: Bina): void {
+  openEdit(stage: Stage): void {
     this.formMode = 'edit';
-    this.selectedBina = bina;
+    this.selectedStage = stage;
     this.form.patchValue({
-      naziv: bina.naziv,
-      kapacitet: bina.kapacitet,
-      lokacija: bina.lokacija
+      name: stage.name,
+      capacity: stage.capacity,
+      location: stage.location
     });
   }
 
   cancelForm(): void {
     this.formMode = null;
-    this.selectedBina = null;
+    this.selectedStage = null;
     this.form.reset();
     this.errorMessage = '';
   }
@@ -81,10 +85,10 @@ export class StageListComponent implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
-    const request = this.form.value as BinaRequest;
-    const op = this.formMode === 'edit' && this.selectedBina
-      ? this.binaService.update(this.selectedBina.binaId, request)
-      : this.binaService.create(request);
+    const request = this.form.value as StageRequest;
+    const op = this.formMode === 'edit' && this.selectedStage
+      ? this.stageService.update(this.selectedStage.stageId, request)
+      : this.stageService.create(request);
 
     op.subscribe({
       next: () => {
@@ -92,16 +96,16 @@ export class StageListComponent implements OnInit {
         this.load();
       },
       error: (err) => {
-        this.errorMessage = err.error?.message || 'Greška pri čuvanju bine.';
+        this.errorMessage = err.error?.message || 'Error saving stage.';
       }
     });
   }
 
-  delete(bina: Bina): void {
-    if (!confirm(`Da li ste sigurni da želite da obrišete binu "${bina.naziv}"?`)) return;
-    this.binaService.delete(bina.binaId).subscribe({
+  delete(stage: Stage): void {
+    if (!confirm(`Are you sure you want to delete stage "${stage.name}"?`)) return;
+    this.stageService.delete(stage.stageId).subscribe({
       next: () => this.load(),
-      error: () => this.errorMessage = 'Greška pri brisanju bine.'
+      error: () => this.errorMessage = 'Error deleting stage.'
     });
   }
 

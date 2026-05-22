@@ -2,34 +2,30 @@ package com.festivalapp.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.LocalDate;
 
 @Entity
-@Table(name = "festivals")
+@Table(name = "stages")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Festival {
+public class Stage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long festivalId;
+    private Long stageId;
 
     @Column(nullable = false)
     private String name;
 
     @Column(nullable = false)
+    private Integer capacity;
+
+    @Column(nullable = false)
     private String location;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private FestivalStatus status;
-
-    @Column(nullable = false)
-    private LocalDate startDate;
-
-    @Column(nullable = false)
-    private LocalDate endDate;
+    @ManyToOne
+    @JoinColumn(name = "festival_id", nullable = false)
+    private Festival festival;
 }

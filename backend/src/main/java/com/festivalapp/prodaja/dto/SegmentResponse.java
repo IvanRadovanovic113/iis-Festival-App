@@ -1,6 +1,6 @@
 package com.festivalapp.prodaja.dto;
 
-import com.festivalapp.prodaja.model.Segment;
+import com.festivalapp.model.Segment;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,16 +9,16 @@ import lombok.Setter;
 public class SegmentResponse {
 
     private Long segmentId;
-    private String naziv;
+    private String name;
     private Long festivalId;
-    private String festivalNaziv;
+    private String festivalName;
 
     public static SegmentResponse from(Segment s) {
         SegmentResponse r = new SegmentResponse();
         r.segmentId = s.getSegmentId();
-        r.naziv = s.getNaziv();
+        r.name = s.getName();
         r.festivalId = s.getFestival().getFestivalId();
-        r.festivalNaziv = s.getFestival().getNaziv();
+        r.festivalName = s.getFestival().getName();
         return r;
     }
 }

@@ -1,6 +1,6 @@
 export interface AssignmentDto {
   festivalId: number;
-  festivalNaziv: string;
+  festivalName: string;
   festivalRole: string;
 }
 

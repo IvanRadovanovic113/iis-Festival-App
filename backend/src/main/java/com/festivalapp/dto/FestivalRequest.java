@@ -13,17 +13,17 @@ import java.time.LocalDate;
 public class FestivalRequest {
 
     @NotBlank
-    private String naziv;
+    private String name;
 
     @NotBlank
-    private String lokacija;
+    private String location;
 
     @NotNull
     private FestivalStatus status;
 
     @NotNull
-    private LocalDate datumPocetka;
+    private LocalDate startDate;
 
     @NotNull
-    private LocalDate datumZavrsetka;
+    private LocalDate endDate;
 }

@@ -43,7 +43,7 @@ export class UserListComponent implements OnInit {
     this.errorMessage = '';
     this.assignmentService.getUsers().subscribe({
       next: data => this.users = data,
-      error: () => this.errorMessage = 'Greška pri učitavanju korisnika.'
+      error: () => this.errorMessage = 'Error loading users.'
     });
   }
 
@@ -79,15 +79,15 @@ export class UserListComponent implements OnInit {
         this.form.reset();
         this.load();
       },
-      error: () => this.errorMessage = 'Greška pri čuvanju dodele.'
+      error: () => this.errorMessage = 'Error saving assignment.'
     });
   }
 
   deleteAssignment(user: User): void {
-    if (!confirm(`Ukloniti dodelu za korisnika "${user.username}"?`)) return;
+    if (!confirm(`Remove assignment for user "${user.username}"?`)) return;
     this.assignmentService.deleteAssignment(user.id).subscribe({
       next: () => this.load(),
-      error: () => this.errorMessage = 'Greška pri uklanjanju dodele.'
+      error: () => this.errorMessage = 'Error removing assignment.'
     });
   }
 

@@ -32,12 +32,12 @@ public class User implements UserDetails {
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column
+    @Column(nullable = true)
     private Role role;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        if (role == null) return List.of(new SimpleGrantedAuthority("ROLE_KORISNIK"));
+        if (role == null) return List.of(new SimpleGrantedAuthority("ROLE_USER"));
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 

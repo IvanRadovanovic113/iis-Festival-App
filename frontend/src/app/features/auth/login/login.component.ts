@@ -38,7 +38,7 @@ export class LoginComponent {
         }
       },
       error: () => {
-        this.error = 'Pogresno korisnicko ime ili lozinka.';
+        this.error = 'Incorrect username or password.';
         this.loading = false;
       }
     });

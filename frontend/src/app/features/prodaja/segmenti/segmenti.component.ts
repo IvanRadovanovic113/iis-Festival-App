@@ -1,11 +1,12 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { SegmentService } from '../../../core/services/segment.service';
 import { BinaService } from '../../../core/services/bina.service';
-import { Segment, BinaSegment } from '../../../core/models/segment.model';
-import { Bina } from '../../../core/models/bina.model';
+import { Segment, StageSegment } from '../../../core/models/segment.model';
+import { Stage } from '../../../core/models/bina.model';
 import { User } from '../../../core/models/user.model';
 
 @Component({
@@ -19,32 +20,33 @@ export class SegmentiComponent implements OnInit {
   private authService = inject(AuthService);
   private segmentService = inject(SegmentService);
   private binaService = inject(BinaService);
+  private destroyRef = inject(DestroyRef);
   private fb = inject(FormBuilder);
 
   currentUser: User | null = null;
   errorMessage = '';
 
-  // Festival segmenti
-  festivalSegmenti: Segment[] = [];
+  // Festival segments
+  festivalSegments: Segment[] = [];
   showSegmentForm = false;
   segmentForm = this.fb.group({
-    naziv: ['', [Validators.required, Validators.minLength(2)]]
+    name: ['', [Validators.required, Validators.minLength(2)]]
   });
 
-  // Bine i dodela
-  bine: Bina[] = [];
-  selectedBina: Bina | null = null;
-  binaSegmenti: BinaSegment[] = [];
+  // Stages and assignments
+  stages: Stage[] = [];
+  selectedStage: Stage | null = null;
+  stageSegments: StageSegment[] = [];
   showAssignForm = false;
-  editingAssignment: BinaSegment | null = null;
+  editingAssignment: StageSegment | null = null;
 
   assignForm = this.fb.group({
     segmentId: [null as number | null, Validators.required],
-    kapacitet: [null as number | null, [Validators.required, Validators.min(1)]]
+    capacity: [null as number | null, [Validators.required, Validators.min(1)]]
   });
 
   editForm = this.fb.group({
-    kapacitet: [null as number | null, [Validators.required, Validators.min(1)]]
+    capacity: [null as number | null, [Validators.required, Validators.min(1)]]
   });
 
   get festivalId(): number {
@@ -52,61 +54,65 @@ export class SegmentiComponent implements OnInit {
   }
 
   get availableSegmentsForAssign(): Segment[] {
-    const assigned = new Set(this.binaSegmenti.map(bs => bs.segmentId));
-    return this.festivalSegmenti.filter(s => !assigned.has(s.segmentId));
+    const assigned = new Set(this.stageSegments.map(ss => ss.segmentId));
+    return this.festivalSegments.filter(s => !assigned.has(s.segmentId));
   }
 
   ngOnInit(): void {
-    this.authService.currentUser.subscribe(user => {
+    this.authService.currentUser.pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(user => {
       this.currentUser = user;
       if (user?.assignment?.festivalId) {
-        this.loadFestivalSegmenti();
+        this.loadFestivalSegments();
+        this.binaService.getAll().pipe(
+          takeUntilDestroyed(this.destroyRef)
+        ).subscribe({ next: s => this.stages = s });
       }
     });
-    this.binaService.getAll().subscribe({ next: b => this.bine = b });
   }
 
-  loadFestivalSegmenti(): void {
+  loadFestivalSegments(): void {
     this.segmentService.getFestivalSegments(this.festivalId).subscribe({
-      next: data => this.festivalSegmenti = data,
-      error: () => this.errorMessage = 'Greška pri učitavanju segmenata.'
+      next: data => this.festivalSegments = data,
+      error: () => this.errorMessage = 'Error loading segments.'
     });
   }
 
   createSegment(): void {
     if (this.segmentForm.invalid) { this.segmentForm.markAllAsTouched(); return; }
-    this.segmentService.createSegment(this.festivalId, this.segmentForm.value.naziv!).subscribe({
+    this.segmentService.createSegment(this.festivalId, this.segmentForm.value.name!).subscribe({
       next: () => {
         this.segmentForm.reset();
         this.showSegmentForm = false;
-        this.loadFestivalSegmenti();
+        this.loadFestivalSegments();
       },
-      error: (err) => this.errorMessage = err.error?.message || 'Greška pri kreiranju segmenta.'
+      error: (err) => this.errorMessage = err.error?.message || 'Error creating segment.'
     });
   }
 
   deleteSegment(s: Segment): void {
-    if (!confirm(`Obrisati segment "${s.naziv}"? Ovo će ukloniti i sve dodele ovog segmenta binama.`)) return;
+    if (!confirm(`Delete segment "${s.name}"? This will also remove all stage assignments for this segment.`)) return;
     this.segmentService.deleteSegment(this.festivalId, s.segmentId).subscribe({
       next: () => {
-        this.loadFestivalSegmenti();
-        if (this.selectedBina) this.loadBinaSegmenti(this.selectedBina);
+        this.loadFestivalSegments();
+        if (this.selectedStage) this.loadStageSegments(this.selectedStage);
       },
-      error: () => this.errorMessage = 'Greška pri brisanju segmenta.'
+      error: () => this.errorMessage = 'Error deleting segment.'
     });
   }
 
-  selectBina(bina: Bina): void {
-    this.selectedBina = bina;
+  selectStage(stage: Stage): void {
+    this.selectedStage = stage;
     this.showAssignForm = false;
     this.editingAssignment = null;
-    this.loadBinaSegmenti(bina);
+    this.loadStageSegments(stage);
   }
 
-  loadBinaSegmenti(bina: Bina): void {
-    this.segmentService.getStageSegments(bina.binaId).subscribe({
-      next: data => this.binaSegmenti = data,
-      error: () => this.errorMessage = 'Greška pri učitavanju segmenata bine.'
+  loadStageSegments(stage: Stage): void {
+    this.segmentService.getStageSegments(stage.stageId).subscribe({
+      next: data => this.stageSegments = data,
+      error: () => this.errorMessage = 'Error loading stage segments.'
     });
   }
 
@@ -122,21 +128,21 @@ export class SegmentiComponent implements OnInit {
   }
 
   assign(): void {
-    if (this.assignForm.invalid || !this.selectedBina) { this.assignForm.markAllAsTouched(); return; }
-    const { segmentId, kapacitet } = this.assignForm.value;
-    this.segmentService.assignSegment(this.selectedBina.binaId, segmentId!, kapacitet!).subscribe({
+    if (this.assignForm.invalid || !this.selectedStage) { this.assignForm.markAllAsTouched(); return; }
+    const { segmentId, capacity } = this.assignForm.value;
+    this.segmentService.assignSegment(this.selectedStage.stageId, segmentId!, capacity!).subscribe({
       next: () => {
         this.cancelAssignForm();
-        this.loadBinaSegmenti(this.selectedBina!);
+        this.loadStageSegments(this.selectedStage!);
       },
-      error: (err) => this.errorMessage = err.error?.message || 'Greška pri dodeli segmenta.'
+      error: (err) => this.errorMessage = err.error?.message || 'Error assigning segment.'
     });
   }
 
-  openEdit(bs: BinaSegment): void {
-    this.editingAssignment = bs;
+  openEdit(ss: StageSegment): void {
+    this.editingAssignment = ss;
     this.showAssignForm = false;
-    this.editForm.patchValue({ kapacitet: bs.kapacitet });
+    this.editForm.patchValue({ capacity: ss.capacity });
   }
 
   cancelEdit(): void {
@@ -145,25 +151,25 @@ export class SegmentiComponent implements OnInit {
   }
 
   saveEdit(): void {
-    if (this.editForm.invalid || !this.selectedBina || !this.editingAssignment) return;
+    if (this.editForm.invalid || !this.selectedStage || !this.editingAssignment) return;
     this.segmentService.updateAssignment(
-      this.selectedBina.binaId,
+      this.selectedStage.stageId,
       this.editingAssignment.segmentId,
-      this.editForm.value.kapacitet!
+      this.editForm.value.capacity!
     ).subscribe({
       next: () => {
         this.cancelEdit();
-        this.loadBinaSegmenti(this.selectedBina!);
+        this.loadStageSegments(this.selectedStage!);
       },
-      error: () => this.errorMessage = 'Greška pri izmeni kapaciteta.'
+      error: () => this.errorMessage = 'Error updating capacity.'
     });
   }
 
-  removeFromStage(bs: BinaSegment): void {
-    if (!confirm(`Ukloniti segment "${bs.segmentNaziv}" sa bine?`)) return;
-    this.segmentService.removeFromStage(this.selectedBina!.binaId, bs.segmentId).subscribe({
-      next: () => this.loadBinaSegmenti(this.selectedBina!),
-      error: () => this.errorMessage = 'Greška pri uklanjanju segmenta.'
+  removeFromStage(ss: StageSegment): void {
+    if (!confirm(`Remove segment "${ss.segmentName}" from this stage?`)) return;
+    this.segmentService.removeFromStage(this.selectedStage!.stageId, ss.segmentId).subscribe({
+      next: () => this.loadStageSegments(this.selectedStage!),
+      error: () => this.errorMessage = 'Error removing segment.'
     });
   }
 }

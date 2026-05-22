@@ -5,13 +5,13 @@ import com.festivalapp.model.UserFestivalAssignment;
 
 public record UserDto(Long id, String username, String email, String role, AssignmentDto assignment) {
 
-    public record AssignmentDto(Long festivalId, String festivalNaziv, String festivalRole) {}
+    public record AssignmentDto(Long festivalId, String festivalName, String festivalRole) {}
 
     public static UserDto from(User user, UserFestivalAssignment assignment) {
         AssignmentDto assignmentDto = assignment == null ? null :
             new AssignmentDto(
                 assignment.getFestival().getFestivalId(),
-                assignment.getFestival().getNaziv(),
+                assignment.getFestival().getName(),
                 assignment.getRole().name()
             );
         return new UserDto(

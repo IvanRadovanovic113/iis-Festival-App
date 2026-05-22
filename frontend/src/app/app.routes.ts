@@ -48,19 +48,20 @@ export const routes: Routes = [
     data: { adminOnly: true }
   },
   {
-    path: 'prodaja',
+    path: 'sales',
     loadComponent: () =>
       import('./features/prodaja/prodaja-layout/prodaja-layout.component').then(m => m.ProdajaLayoutComponent),
     canActivate: [authGuard],
+    data: { festivalRoles: ['SALES_DIRECTOR'] },
     children: [
-      { path: '', redirectTo: 'bine', pathMatch: 'full' },
+      { path: '', redirectTo: 'stages', pathMatch: 'full' },
       {
-        path: 'bine',
+        path: 'stages',
         loadComponent: () =>
           import('./features/stages/stage-list/stage-list.component').then(m => m.StageListComponent)
       },
       {
-        path: 'segmenti',
+        path: 'segments',
         loadComponent: () =>
           import('./features/prodaja/segmenti/segmenti.component').then(m => m.SegmentiComponent)
       }
