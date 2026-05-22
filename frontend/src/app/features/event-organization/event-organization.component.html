@@ -1,0 +1,289 @@
+<div class="event-shell">
+  <header class="top-nav">
+    <strong class="brand">EventOrg</strong>
+    <nav aria-label="Event organizer navigation">
+      <button type="button" [class.active]="activeTab === 'requests'" (click)="setTab('requests')">Requests</button>
+      <button type="button" [class.active]="activeTab === 'timetable'" (click)="setTab('timetable')">Timetable</button>
+      <button type="button" [class.active]="activeTab === 'resources'" (click)="setResourceTab('manage')">Resources</button>
+      <button type="button" [class.active]="activeTab === 'tasks'" (click)="setTab('tasks')">Tasks</button>
+      <button type="button" [class.active]="activeTab === 'analytics'" (click)="setTab('analytics')">Analytics</button>
+    </nav>
+    <button type="button" class="logout-button" (click)="logout()">Log out</button>
+  </header>
+
+  @if (activeTab === 'requests') {
+    <section class="sub-nav">
+      @for (filter of ['All', 'Pending', 'Confirmed', 'Past']; track filter) {
+        <button type="button" [class.active]="activeRequestFilter === filter" (click)="activeRequestFilter = filter">{{ filter }}</button>
+      }
+    </section>
+  }
+
+  @if (activeTab === 'resources') {
+    <section class="sub-nav">
+      <button type="button" [class.active]="activeResourceTab === 'manage'" (click)="setResourceTab('manage')">Manage resources</button>
+      <button type="button" [class.active]="activeResourceTab === 'inventory'" (click)="setResourceTab('inventory')">Inventory</button>
+    </section>
+  }
+
+  <main class="content">
+    @if (errorMessage) {
+      <div class="alert error">{{ errorMessage }}</div>
+    }
+    @if (successMessage) {
+      <div class="alert success">{{ successMessage }}</div>
+    }
+
+    @if (activeTab === 'requests') {
+      <section class="page-heading">
+        <h1>Reservation requests</h1>
+        <p>All incoming reservation requests</p>
+      </section>
+
+      <div class="search-box">
+        <span class="search-icon" aria-hidden="true"></span>
+        <input type="search" placeholder="Search by performer, stage..." disabled />
+      </div>
+
+      <section class="empty-requests">
+        <h2>Requests are not implemented yet</h2>
+        <p>This tab is intentionally empty for the current resource management sprint.</p>
+      </section>
+    }
+
+    @if (activeTab === 'resources' && activeResourceTab === 'manage') {
+      <section class="page-heading row-heading">
+        <div>
+          <h1>Stage resources</h1>
+          <p>Manage equipment and personnel assigned to each stage</p>
+        </div>
+        <button type="button" class="primary-button" (click)="openAddResource()">+ Add Resource</button>
+      </section>
+
+      <div class="stage-tabs" aria-label="Stages">
+        @for (stage of stages; track stage.stageId) {
+          <button type="button" [class.active]="selectedStageId === stage.stageId" (click)="selectStage(stage.stageId)">
+            {{ stage.name }}
+          </button>
+        }
+      </div>
+
+      <section class="resource-grid">
+        @for (stageResource of stageResources; track stageResource.id) {
+          <article class="resource-card">
+            <div class="resource-card-main">
+              <div>
+                <h2>{{ stageResource.resourceName }}</h2>
+                <p>{{ stageResource.quantity }} {{ stageResource.resourceType === 'Personnel' ? 'people' : stageResource.quantity === 1 ? 'set' : 'units' }}</p>
+              </div>
+              <span class="pill" [class.personnel]="stageResource.resourceType === 'Personnel'" [class.fx]="stageResource.resourceType === 'Special FX'">
+                {{ stageResource.resourceType }}
+              </span>
+            </div>
+            <div class="card-actions">
+              <button type="button" class="outline-button" (click)="openEditResource(stageResource)">Edit</button>
+              <button type="button" class="outline-button danger" (click)="confirmDelete(stageResource)">Delete</button>
+            </div>
+          </article>
+        } @empty {
+          <section class="empty-card">
+            <h2>No resources on this stage</h2>
+            <p>Add the first resource for {{ selectedStage?.name || 'a stage' }}.</p>
+          </section>
+        }
+      </section>
+    }
+
+    @if (activeTab === 'resources' && activeResourceTab === 'inventory') {
+      <section class="page-heading">
+        <h1>Resource inventory</h1>
+        <p>Overview of all resources available in the system across all stages</p>
+      </section>
+
+      <section class="metric-grid">
+        <article class="metric pink">
+          <strong>{{ resources.length }}</strong>
+          <span>Total resource types</span>
+        </article>
+        <article class="metric green">
+          <strong>{{ totalUnits }}</strong>
+          <span>Total units</span>
+        </article>
+        <article class="metric orange">
+          <strong>{{ sharedResourceCount }}</strong>
+          <span>Shared resources</span>
+        </article>
+        <article class="metric purple">
+          <strong>{{ stages.length }}</strong>
+          <span>Stages</span>
+        </article>
+      </section>
+
+      <section class="inventory-filters">
+        <input type="search" placeholder="Search resources..." [value]="inventorySearch" (input)="updateInventorySearch($event)" />
+        <label>
+          <span>Filter by stage:</span>
+          <select [value]="inventoryStageFilter" (change)="updateInventoryStageFilter($event)">
+            <option value="All">All</option>
+            @for (stage of stages; track stage.stageId) {
+              <option [value]="stage.name">{{ stage.name }}</option>
+            }
+          </select>
+        </label>
+      </section>
+
+      <section class="inventory-table" aria-label="Resource inventory table">
+        <div class="inventory-row inventory-head">
+          <span>Resource name</span>
+          <span>Type</span>
+          <span>Total</span>
+          <span>Shared</span>
+          <span>Stage</span>
+        </div>
+        @for (row of inventoryRows; track row.resource.id) {
+          <div class="inventory-row">
+            <span>{{ row.resource.name }}</span>
+            <span>{{ row.resource.type }}</span>
+            <span>{{ row.resource.totalQuantity }}</span>
+            <span [class.yes]="row.shared" [class.no]="!row.shared">{{ row.shared ? 'Yes' : 'No' }}</span>
+            <span>{{ row.stageNames.length ? row.stageNames.join(', ') : '-' }}</span>
+          </div>
+        } @empty {
+          <p class="empty-table">No resources match the selected filters.</p>
+        }
+      </section>
+    }
+
+    @if (activeTab === 'timetable') {
+      <section class="page-heading timetable-heading">
+        <h1>Stage timetable</h1>
+        <div class="week-filter" aria-label="Week filter">
+          <button type="button" aria-label="Previous week" (click)="previousWeek()">&lt;</button>
+          <span>{{ timetableWeekLabel }}</span>
+          <button type="button" aria-label="Next week" (click)="nextWeek()">&gt;</button>
+        </div>
+      </section>
+
+      <div class="stage-tabs timetable-stage-tabs" aria-label="Timetable stages">
+        @for (stage of stages; track stage.stageId) {
+          <button type="button" [class.active]="selectedStageId === stage.stageId" (click)="selectStage(stage.stageId)">
+            {{ stage.name }}
+          </button>
+        }
+      </div>
+
+      <section class="weekly-timetable" aria-label="Weekly stage timetable">
+        <div class="time-grid timetable-header">
+          <div class="day-heading">Day</div>
+          @for (hour of timetableHours; track hour) {
+            <div>{{ hour }}</div>
+          }
+        </div>
+
+        @for (day of timetableDays; track day.key) {
+          <div class="time-grid timetable-row">
+            <div class="day-cell">
+              <strong>{{ day.dayName }}</strong>
+              <span>{{ day.dateLabel }}</span>
+            </div>
+            @for (hour of timetableHours; track hour) {
+              <div class="free-slot">Free</div>
+            }
+          </div>
+        }
+      </section>
+
+      <section class="legend" aria-label="Timetable legend">
+        <strong>Legend:</strong>
+        <span><i class="legend-box occupied"></i>Occupied</span>
+        <span><i class="legend-box free"></i>Free slot</span>
+      </section>
+    }
+
+    @if (activeTab === 'tasks' || activeTab === 'analytics') {
+      <section class="placeholder-page">
+        <h1>{{ activeTab | titlecase }}</h1>
+        <p>This area is outside the current resource management scope.</p>
+      </section>
+    }
+  </main>
+
+  @if (modalMode) {
+    <div class="modal-backdrop" role="presentation">
+      <form class="resource-modal" [formGroup]="resourceForm" (ngSubmit)="saveResource()">
+        <header>
+          <h2>{{ modalMode === 'edit' ? 'Edit resource' : 'Add resource' }}</h2>
+          <button type="button" class="close-button" aria-label="Close" (click)="closeResourceModal()">x</button>
+        </header>
+
+        <div class="modal-body">
+          <label class="full">
+            <span>Resource name *</span>
+            <input type="text" formControlName="name" placeholder="e.g. Smoke machine, LED display..." />
+          </label>
+
+          <label>
+            <span>Resource type *</span>
+            <select formControlName="type">
+              <option>Equipment</option>
+              <option>Personnel</option>
+              <option>Special FX</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Quantity *</span>
+            <input type="number" min="1" formControlName="quantity" />
+          </label>
+
+          <label class="full">
+            <span>Stage *</span>
+            <select formControlName="stageId">
+              @for (stage of stages; track stage.stageId) {
+                <option [ngValue]="stage.stageId">{{ stage.name }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="share-row full">
+            <input type="checkbox" formControlName="shareable" />
+            <span>Resource is sharable between different stages</span>
+          </label>
+
+          <label class="full">
+            <span>Note (optional)</span>
+            <input type="text" formControlName="note" placeholder="Additional resource information" />
+          </label>
+        </div>
+
+        <footer>
+          <button type="button" class="cancel-button" (click)="closeResourceModal()">Cancel</button>
+          <button type="submit" class="primary-button">{{ modalMode === 'edit' ? 'Save changes' : 'Add resource' }}</button>
+        </footer>
+      </form>
+    </div>
+  }
+
+  @if (deletingStageResource) {
+    <div class="modal-backdrop" role="presentation">
+      <section class="delete-modal">
+        <header>
+          <h2>Delete resource</h2>
+          <button type="button" class="close-button" aria-label="Close" (click)="closeDeleteModal()">x</button>
+        </header>
+        <div class="delete-body">
+          <div class="warning-box">
+            <strong>Are you sure you want to delete this resource?</strong>
+            <p>"{{ deletingStageResource.resourceName }}" from {{ stageNameById(deletingStageResource.stageId) }} will be permanently removed.</p>
+            <span>! This resource is currently assigned to 2 upcoming bookings.</span>
+          </div>
+          <p class="info-box">Deleting will automatically remove it from these requests.</p>
+        </div>
+        <footer>
+          <button type="button" class="cancel-button" (click)="closeDeleteModal()">Cancel</button>
+          <button type="button" class="delete-button" (click)="deleteStageResource()">Delete Resource</button>
+        </footer>
+      </section>
+    </div>
+  }
+</div>

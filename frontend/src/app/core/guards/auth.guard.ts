@@ -20,7 +20,7 @@ export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   }
 
   // If the route declares required festival roles, block anyone whose
-  // assignment role is not in that list — including users with no assignment.
+  // assignment role is not in that list, including users with no assignment.
   if (allowedFestivalRoles) {
     const festivalRole = user?.assignment?.festivalRole;
     if (!festivalRole || !allowedFestivalRoles.includes(festivalRole)) {

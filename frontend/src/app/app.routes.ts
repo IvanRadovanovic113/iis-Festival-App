@@ -67,5 +67,12 @@ export const routes: Routes = [
       }
     ]
   },
+  {
+    path: 'event-organization',
+    loadComponent: () =>
+      import('./features/event-organization/event-organization.component').then(m => m.EventOrganizationComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['EVENT_ORGANIZER'] }
+  },
   { path: '**', redirectTo: '/dashboard' }
 ];

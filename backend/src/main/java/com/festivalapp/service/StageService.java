@@ -23,6 +23,15 @@ public class StageService {
     private final StageRepository stageRepository;
     private final UserFestivalAssignmentRepository assignmentRepository;
 
+    private Festival requireAssignedFestival(User user) {
+        UserFestivalAssignment assignment = assignmentRepository.findByUser_Id(user.getId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "No festival assignment found"));
+        if (assignment.getRole() != Role.SALES_DIRECTOR && assignment.getRole() != Role.EVENT_ORGANIZER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not have access to stages");
+        }
+        return assignment.getFestival();
+    }
+
     private Festival requireSalesDirectorFestival(User user) {
         UserFestivalAssignment assignment = assignmentRepository.findByUser_Id(user.getId())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "No festival assignment found"));
@@ -33,7 +42,7 @@ public class StageService {
     }
 
     public List<StageResponse> getAll(User user) {
-        Festival festival = requireSalesDirectorFestival(user);
+        Festival festival = requireAssignedFestival(user);
         return stageRepository.findByFestival_FestivalId(festival.getFestivalId())
             .stream().map(StageResponse::from).toList();
     }
