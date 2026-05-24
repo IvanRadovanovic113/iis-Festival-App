@@ -30,6 +30,15 @@
         @if (currentUser?.assignment?.festivalRole === 'SALES_DIRECTOR') {
           <a routerLink="/sales" class="btn-work">Manage stages</a>
         }
+        @if (currentUser?.assignment?.festivalRole === 'FESTIVAL_DIRECTOR') {
+          <a routerLink="/director/festivals" class="btn-work">Manage campaigns</a>
+        }
+        @if (currentUser?.assignment?.festivalRole === 'FESTIVAL_MANAGER') {
+          <a routerLink="/manager/festivals" class="btn-work">Open campaigns</a>
+        }
+        @if (currentUser?.assignment?.festivalRole === 'PRODUCT_DESIGNER' || currentUser?.assignment?.festivalRole === 'TECHNICAL_SUPPORT') {
+          <a routerLink="/creative/ads" class="btn-work">Open assigned ads</a>
+        }
         <button class="btn-refresh" (click)="refresh()" [disabled]="refreshing">
           {{ refreshing ? 'Refreshing...' : 'Refresh' }}
         </button>

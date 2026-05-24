@@ -1,0 +1,100 @@
+<div class="page-shell">
+  <aside class="sidebar">
+    <div class="avatar">JV</div>
+    <div class="nav-card active">Festivals</div>
+    <div class="nav-card">Notifications</div>
+    <div class="nav-card">Statistics</div>
+    <button class="logout-btn" type="button" (click)="logout()">Log out</button>
+  </aside>
+
+  <main class="page-content">
+    <header class="page-header">
+      <a [routerLink]="backLink" class="back-link">← Back to add view</a>
+    </header>
+
+    @if (errorMessage) {
+      <div class="error-banner">{{ errorMessage }}</div>
+    }
+
+    @if (review) {
+      <section class="summary-layout">
+        <div class="summary-card primary">
+          <h1>{{ review.ad.name }}</h1>
+          <div class="meta-row">{{ review.ad.typeName }}</div>
+          <div class="meta-row">{{ review.ad.status }}</div>
+        </div>
+
+        <div class="summary-card">
+          <div class="block">
+            <span class="label">Festival</span>
+            <strong>{{ review.ad.festivalName }}</strong>
+          </div>
+          <div class="block">
+            <span class="label">Campaign</span>
+            <strong>{{ review.ad.campaignName }}</strong>
+          </div>
+        </div>
+
+        <div class="flow-card">
+          <h2>Flow</h2>
+          <div class="flow-list">
+            @for (phase of review.flow; track phase.phaseId) {
+              <div class="flow-item" [class.completed]="isCompleted(phase)" [class.current]="isCurrent(phase)">
+                <span class="flow-dot">{{ isCompleted(phase) ? '✓' : isCurrent(phase) ? '•' : '○' }}</span>
+                <div>
+                  <strong>{{ phase.name }}</strong>
+                  <p>{{ phase.description }}</p>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </section>
+
+      <section class="preview-card">
+        <div class="content-preview" [class.text-preview]="review.ad.contentType === 'Text'">
+          @if (review.ad.contentType === 'Text') {
+            <p>{{ review.ad.contentValue || 'No text content added yet.' }}</p>
+          } @else {
+            <div>
+              <strong>{{ review.ad.contentType }} preview</strong>
+              <p>{{ review.ad.contentValue || 'No uploaded content yet.' }}</p>
+            </div>
+          }
+        </div>
+      </section>
+
+      <section class="history-card">
+        <div class="history-header">
+          <h2>History</h2>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Version</th>
+                <th>Date</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (version of review.versions; track version.versionNumber) {
+                <tr>
+                  <td>Version {{ version.versionNumber }}</td>
+                  <td>{{ version.changedAt | date:'dd.MM.yyyy' }}</td>
+                  <td>
+                    @if (version.current) {
+                      <span class="current-chip">Current</span>
+                    } @else {
+                      <a class="view-link" [routerLink]="versionLink(version.versionNumber)">👁</a>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+  </main>
+</div>

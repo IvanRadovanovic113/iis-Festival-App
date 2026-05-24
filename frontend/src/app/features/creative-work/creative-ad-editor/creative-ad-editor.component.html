@@ -1,0 +1,95 @@
+<div class="page-shell">
+  <header class="topbar">
+    <div>
+      <a routerLink="/creative/ads" class="back-link">← Back to assigned ads</a>
+      <div class="eyebrow">{{ roleLabel }}</div>
+      <h1>Edit ad content</h1>
+    </div>
+    <div class="topbar-actions">
+      @if (currentUser) {
+        <span class="user-chip">{{ currentUser.username }}</span>
+      }
+      <button type="button" (click)="logout()">Sign out</button>
+    </div>
+  </header>
+
+  <main class="page-content">
+    @if (errorMessage) {
+      <div class="error-banner">{{ errorMessage }}</div>
+    }
+
+    @if (ad) {
+      <section class="ad-summary">
+        <div>
+          <span class="summary-label">Festival</span>
+          <strong>{{ ad.festivalName }}</strong>
+        </div>
+        <div>
+          <span class="summary-label">Campaign</span>
+          <strong>{{ ad.campaignName }}</strong>
+        </div>
+        <div>
+          <span class="summary-label">Phase</span>
+          <strong>{{ ad.status }}</strong>
+        </div>
+        <div>
+          <span class="summary-label">Type</span>
+          <strong>{{ ad.typeName }} · {{ ad.contentType }}</strong>
+        </div>
+      </section>
+
+      <section class="form-card">
+        <form [formGroup]="form" (ngSubmit)="save()">
+          <div class="grid">
+            <label class="field">
+              <span>Ad name *</span>
+              <input type="text" formControlName="name" />
+            </label>
+
+            <label class="field">
+              <span>Ad type</span>
+              <input type="text" [value]="ad.typeName + ' · ' + ad.contentType" readonly />
+            </label>
+
+            <label class="field field-full">
+              <span>Ad description *</span>
+              <textarea rows="5" formControlName="description"></textarea>
+            </label>
+
+            <div class="field field-full">
+              <span>{{ contentLabel }} *</span>
+              @if (expectsTextContent) {
+                <div class="text-content-box">
+                  <textarea rows="10" formControlName="contentValue" placeholder="Enter the final text content"></textarea>
+                  <small>{{ uploadHint }}</small>
+                </div>
+              } @else if (usesFileUpload) {
+                <label class="upload-box">
+                  <input type="file" [accept]="fileAccept" (change)="onFileSelected($event)" hidden />
+                  <strong>Upload content</strong>
+                  <small>{{ selectedFileName || uploadHint }}</small>
+                </label>
+              } @else {
+                <div class="text-content-box">
+                  <textarea rows="8" formControlName="contentValue" placeholder="Enter the final content value"></textarea>
+                  <small>{{ uploadHint }}</small>
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="hint-box">
+            The ad type is locked at this stage. You can only update the ad name, description, and content.
+          </div>
+
+          <div class="actions">
+            <a class="btn-secondary" routerLink="/creative/ads">Cancel</a>
+            <button class="btn-primary" type="submit" [disabled]="saving">
+              {{ saving ? 'Saving...' : 'Save changes' }}
+            </button>
+          </div>
+        </form>
+      </section>
+    }
+  </main>
+</div>

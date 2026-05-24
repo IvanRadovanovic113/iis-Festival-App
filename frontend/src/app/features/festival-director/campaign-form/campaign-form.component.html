@@ -1,0 +1,70 @@
+<div class="page-shell">
+  <header class="topbar">
+    <div>
+      <a routerLink="/director/festivals" class="back-link">← Back to festivals</a>
+      <h1>Create campaign</h1>
+    </div>
+    <button type="button" (click)="logout()">Sign out</button>
+  </header>
+
+  <main class="page-content">
+    @if (festival) {
+      <section class="festival-summary">
+        <span class="summary-label">Selected festival</span>
+        <strong>{{ festival.name }}</strong>
+        <span>{{ festival.location }} · {{ festival.startDate | date:'dd.MM.yyyy' }} - {{ festival.endDate | date:'dd.MM.yyyy' }}</span>
+      </section>
+    }
+
+    @if (errorMessage) {
+      <div class="error-banner">{{ errorMessage }}</div>
+    }
+
+    <section class="form-card">
+      <form [formGroup]="form" (ngSubmit)="save()">
+        <div class="grid">
+          <label class="field">
+            <span>Campaign name *</span>
+            <input type="text" formControlName="name" placeholder="Summer launch campaign" />
+          </label>
+
+          <label class="field">
+            <span>Manager *</span>
+            <select formControlName="managerUserId">
+              <option [ngValue]="null" disabled>Select festival manager</option>
+              @for (manager of managers; track manager.userId) {
+                <option [ngValue]="manager.userId">{{ manager.username }} · {{ manager.email }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="field field-full">
+            <span>Campaign description *</span>
+            <textarea rows="6" formControlName="description" placeholder="Describe the campaign goals, tone and target audience"></textarea>
+          </label>
+
+          <label class="field">
+            <span>Start date *</span>
+            <input type="date" formControlName="startDate" />
+          </label>
+
+          <label class="field">
+            <span>End date *</span>
+            <input type="date" formControlName="endDate" />
+          </label>
+        </div>
+
+        <div class="hint-box">
+          Campaign dates must stay within the selected festival dates. Only managers assigned to this festival are available here.
+        </div>
+
+        <div class="actions">
+          <a routerLink="/director/festivals" class="btn-secondary">Cancel</a>
+          <button type="submit" class="btn-primary" [disabled]="saving">
+            {{ saving ? 'Creating...' : 'Create campaign' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  </main>
+</div>

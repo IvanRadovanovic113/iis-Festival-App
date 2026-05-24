@@ -2,6 +2,10 @@ package com.festivalapp.model;
 
 public enum Role {
     ADMIN,
+    FESTIVAL_DIRECTOR,
+    FESTIVAL_MANAGER,
+    PRODUCT_DESIGNER,
+    TECHNICAL_SUPPORT,
     SALES_DIRECTOR,
     SALES_MANAGER,
     EVENT_ORGANIZER,

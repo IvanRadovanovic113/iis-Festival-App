@@ -1,0 +1,82 @@
+<div class="form-page">
+  <aside class="sidebar">
+    <div class="avatar">JV</div>
+    <div class="nav-card active">Festivals</div>
+    <div class="nav-card">Notifications</div>
+    <div class="nav-card">Statistics</div>
+    <button class="logout-btn" type="button" (click)="logout()">Log out</button>
+  </aside>
+
+  <main class="content">
+    <header class="header">
+      <a [routerLink]="workspace ? ['/manager/festivals', workspace.campaign.festivalId, 'campaign'] : ['/manager/festivals']" class="back-link">← Back to adds</a>
+      <h1>{{ isEditMode ? 'Edit add' : 'Create add' }}</h1>
+    </header>
+
+    @if (errorMessage) {
+      <div class="error-banner">{{ errorMessage }}</div>
+    }
+
+    <section class="card">
+      <form [formGroup]="form" (ngSubmit)="save()">
+        <div class="grid">
+          <label class="field">
+            <span>Add name *</span>
+            <input type="text" formControlName="name" />
+          </label>
+
+          <label class="field field-tall">
+            <span>Add description *</span>
+            <textarea rows="6" formControlName="description"></textarea>
+          </label>
+
+          <div class="field">
+            <span>Add type *</span>
+            <div class="inline-field">
+              @if (isEditMode) {
+                <input type="text" [value]="selectedAdType ? selectedAdType.name + ' · ' + selectedAdType.contentType : ''" readonly />
+              } @else {
+                <select formControlName="adTypeId" (change)="onAdTypeChanged()">
+                  <option [ngValue]="null" disabled>Select type</option>
+                  @for (type of adTypes; track type.adTypeId) {
+                    <option [ngValue]="type.adTypeId">{{ type.name }} · {{ type.contentType }}</option>
+                  }
+                </select>
+                <a class="secondary-btn" [routerLink]="['/manager/campaigns', workspace?.campaign?.campaignId ?? 0, 'ad-types', 'new']">New type</a>
+              }
+            </div>
+          </div>
+
+          <div class="field field-full">
+            <span>{{ isEditMode ? 'Locked content' : 'Content handoff' }}</span>
+            <div class="content-placeholder">
+              @if (isEditMode && ad) {
+                <div>
+                  <strong>Content cannot be edited by the manager</strong>
+                  <p>{{ ad.contentValue || 'Content has not been added yet.' }}</p>
+                </div>
+              } @else if (selectedAdType) {
+                <div>
+                  <strong>{{ selectedAdType.contentType }} content will be added later</strong>
+                  <p>The assigned product designer or technical support teammate will upload or enter the final content in their workflow.</p>
+                </div>
+              } @else {
+                <div>
+                  <strong>Select an add type first</strong>
+                  <p>The manager only chooses the type here. Content is added later by the assigned specialist.</p>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <a class="cancel-btn" [routerLink]="workspace ? ['/manager/festivals', workspace.campaign.festivalId, 'campaign'] : ['/manager/festivals']">Cancel</a>
+          <button class="create-btn" type="submit" [disabled]="saving">
+            {{ saving ? (isEditMode ? 'Saving...' : 'Creating...') : (isEditMode ? 'Save changes' : 'Create') }}
+          </button>
+        </div>
+      </form>
+    </section>
+  </main>
+</div>

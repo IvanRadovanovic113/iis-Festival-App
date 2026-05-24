@@ -1,0 +1,97 @@
+<div class="page-shell">
+  <aside class="sidebar">
+    <div class="avatar">JV</div>
+    <nav class="nav-stack">
+      <a class="nav-item active">Festivals</a>
+      <a class="nav-item">Notifications</a>
+      <a class="nav-item" routerLink="/manager/statistics">Statistics</a>
+    </nav>
+    <button class="logout-btn" type="button" (click)="logout()">Log out</button>
+  </aside>
+
+  <main class="page-content">
+    <header class="page-header">
+      <div>
+        <p class="eyebrow">Festival manager</p>
+        <h1>Campaign access overview</h1>
+      </div>
+      <div class="header-chip">{{ currentUser?.username }}</div>
+    </header>
+
+    <section class="hero-card">
+      <div>
+        <h2>All festivals in the system</h2>
+        <p>
+          You can browse festivals and open existing campaigns. Campaign creation stays reserved for the festival director.
+        </p>
+      </div>
+      <div class="metrics">
+        <div class="metric-box">
+          <strong>{{ festivals.length }}</strong>
+          <span>Total festivals</span>
+        </div>
+        <div class="metric-box">
+          <strong>{{ campaignsCount }}</strong>
+          <span>Campaigns ready</span>
+        </div>
+      </div>
+    </section>
+
+    @if (errorMessage) {
+      <div class="error-banner">{{ errorMessage }}</div>
+    }
+
+    <section class="table-card">
+      <div class="table-card-header">
+        <div>
+          <p class="eyebrow">Festival registry</p>
+          <h3>View campaign status by festival</h3>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Festival name</th>
+              <th>Location</th>
+              <th>Start date</th>
+              <th>End date</th>
+              <th>Status</th>
+              <th>Campaign</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (festival of festivals; track festival.festivalId) {
+              <tr>
+                <td>{{ festival.name }}</td>
+                <td>{{ festival.location }}</td>
+                <td>{{ festival.startDate | date:'dd.MM.yyyy' }}</td>
+                <td>{{ festival.endDate | date:'dd.MM.yyyy' }}</td>
+                <td><span class="status-pill">{{ getStatusLabel(festival.status) }}</span></td>
+                <td>
+                  @if (festival.hasCampaign) {
+                    <div class="campaign-cell">
+                      <span>{{ festival.campaignName }}</span>
+                      <small>{{ festival.managerName }}</small>
+                    </div>
+                  } @else {
+                    <span class="empty-text">No campaign</span>
+                  }
+                </td>
+                <td class="action-cell">
+                  @if (festival.hasCampaign) {
+                    <a class="view-btn" [routerLink]="['/manager/festivals', festival.festivalId, 'campaign']">View campaign</a>
+                  } @else {
+                    <span class="muted-action">Director creates campaigns</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
