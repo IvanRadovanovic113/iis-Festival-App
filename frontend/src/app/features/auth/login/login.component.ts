@@ -33,6 +33,10 @@ export class LoginComponent {
       next: (response) => {
         if (response.user.role === 'ADMIN') {
           this.router.navigate(['/dashboard']);
+        } else if (response.user.assignment?.festivalRole === 'FESTIVAL_DIRECTOR') {
+          this.router.navigate(['/director/festivals']);
+        } else if (response.user.assignment?.festivalRole === 'FESTIVAL_MANAGER') {
+          this.router.navigate(['/manager/festivals']);
         } else if (response.user.assignment?.festivalRole === 'EVENT_ORGANIZER' || response.user.role === 'EVENT_ORGANIZER') {
           this.router.navigate(['/event-organization']);
         } else {

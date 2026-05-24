@@ -1,0 +1,116 @@
+<div class="page-shell">
+  <aside class="sidebar">
+    <div class="avatar">JV</div>
+    <nav class="nav-stack">
+      <a class="nav-item active">Festivals</a>
+      <a class="nav-item">Notifications</a>
+      <a class="nav-item">Statistics</a>
+    </nav>
+    <button class="logout-btn" type="button" (click)="logout()">Log out</button>
+  </aside>
+
+  <main class="page-content">
+    @if (errorMessage) {
+      <div class="error-banner">{{ errorMessage }}</div>
+    }
+
+    @if (workspace) {
+      <section class="hero-panel">
+        <div class="festival-meta">
+          <h1>{{ workspace.campaign.festivalName }}</h1>
+          <div class="meta-line">{{ workspace.campaign.festivalLocation }}</div>
+          <div class="meta-line">{{ workspace.campaign.startDate | date:'dd.MM.yyyy' }} - {{ workspace.campaign.endDate | date:'dd.MM.yyyy' }}</div>
+        </div>
+
+        <div class="hero-stats">
+          <div class="top-stat">
+            <span class="stat-label">Status campaign</span>
+            <strong>{{ workspace.campaign.festivalStatus }}</strong>
+          </div>
+          <div class="top-stat">
+            <span class="stat-label">Total adds</span>
+            <strong>{{ workspace.stats.totalAds }}</strong>
+          </div>
+          <div class="top-stat">
+            <span class="stat-label">To do</span>
+            <strong>{{ workspace.stats.todo }}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="status-grid">
+        <article class="status-card">
+          <strong>{{ workspace.stats.draft }}</strong>
+          <span>Draft</span>
+        </article>
+        <article class="status-card">
+          <strong>{{ workspace.stats.approvedTechnical }}</strong>
+          <span>Approved technical</span>
+        </article>
+        <article class="status-card">
+          <strong>{{ workspace.stats.approved }}</strong>
+          <span>Approved</span>
+        </article>
+        <article class="status-card">
+          <strong>{{ workspace.stats.rejected }}</strong>
+          <span>Rejected</span>
+        </article>
+      </section>
+
+      <section class="table-card">
+        <div class="table-toolbar">
+          <input [(ngModel)]="search" (ngModelChange)="applyFilters()" placeholder="Search by name" />
+          <select [(ngModel)]="selectedType" (ngModelChange)="applyFilters()">
+            <option value="">All types</option>
+            @for (type of typeOptions; track type) {
+              <option [value]="type">{{ type }}</option>
+            }
+          </select>
+          <select [(ngModel)]="selectedStatus" (ngModelChange)="applyFilters()">
+            <option value="">All status</option>
+            @for (status of statusOptions; track status) {
+              <option [value]="status">{{ status }}</option>
+            }
+          </select>
+          <button class="reset-btn" type="button" (click)="resetFilters()">Restart</button>
+          <a class="create-btn" [routerLink]="['/manager/campaigns', workspace.campaign.campaignId, 'ads', 'new']">Create add</a>
+        </div>
+
+        @if (filteredAds.length === 0) {
+          <div class="empty-state">No ads match the current filters. Create the first ad for this campaign.</div>
+        } @else {
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Last change</th>
+                  <th>Version</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (ad of filteredAds; track ad.adId) {
+                  <tr>
+                    <td>{{ ad.name }}</td>
+                    <td>{{ ad.typeName }}</td>
+                    <td>{{ ad.lastChangeDate | date:'dd.MM.yyyy' }}</td>
+                    <td>Version {{ ad.versionNumber }}</td>
+                    <td><span class="status-dot"></span>{{ ad.status }}</td>
+                    <td class="actions">
+                      <button type="button" class="action-icon" title="Preview">👁</button>
+                      <button type="button" class="action-icon disabled" title="Action coming later">✓</button>
+                      <button type="button" class="action-icon disabled" title="Action coming later">⊖</button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    }
+  </main>
+</div>

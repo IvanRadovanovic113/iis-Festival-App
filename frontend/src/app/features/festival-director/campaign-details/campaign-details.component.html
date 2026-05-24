@@ -1,0 +1,58 @@
+<div class="page-shell">
+  <header class="topbar">
+    <div>
+      <a routerLink="/director/festivals" class="back-link">← Back to festivals</a>
+      <h1>Campaign overview</h1>
+    </div>
+    <button type="button" (click)="logout()">Sign out</button>
+  </header>
+
+  <main class="page-content">
+    @if (errorMessage) {
+      <div class="error-banner">{{ errorMessage }}</div>
+    }
+
+    @if (campaign) {
+      <section class="campaign-card">
+        <div class="campaign-header">
+          <div>
+            <span class="eyebrow">{{ campaign.festivalName }}</span>
+            <h2>{{ campaign.name }}</h2>
+          </div>
+          <span class="manager-chip">{{ campaign.managerName }}</span>
+        </div>
+
+        <div class="campaign-grid">
+          <div class="info-block">
+            <span class="label">Location</span>
+            <strong>{{ campaign.festivalLocation }}</strong>
+          </div>
+          <div class="info-block">
+            <span class="label">Festival status</span>
+            <strong>{{ campaign.festivalStatus }}</strong>
+          </div>
+          <div class="info-block">
+            <span class="label">Start date</span>
+            <strong>{{ campaign.startDate | date:'dd.MM.yyyy' }}</strong>
+          </div>
+          <div class="info-block">
+            <span class="label">End date</span>
+            <strong>{{ campaign.endDate | date:'dd.MM.yyyy' }}</strong>
+          </div>
+          <div class="info-block info-block-wide">
+            <span class="label">Description</span>
+            <p>{{ campaign.description }}</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="placeholder-card">
+        <span class="eyebrow">Next step</span>
+        <h3>Ads will live inside this campaign</h3>
+        <p>
+          Campaign creation is ready. We can add the ad list, ad creation flow and campaign assets in the next step.
+        </p>
+      </section>
+    }
+  </main>
+</div>

@@ -1,0 +1,130 @@
+.page-shell {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f6f8f2 0%, #edf1e7 100%);
+  color: #1d271e;
+}
+
+.topbar,
+.page-content {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.topbar {
+  padding-top: 2rem;
+  padding-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 0.8rem;
+  color: #516250;
+  text-decoration: none;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+button {
+  border: 0;
+  border-radius: 999px;
+  background: #1f5c3c;
+  color: white;
+  padding: 0.8rem 1.2rem;
+  cursor: pointer;
+}
+
+.page-content {
+  padding-top: 0.5rem;
+  padding-bottom: 2rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.campaign-card,
+.placeholder-card,
+.error-banner {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(31, 42, 31, 0.08);
+  border-radius: 28px;
+  box-shadow: 0 22px 50px rgba(31, 42, 31, 0.08);
+}
+
+.campaign-card,
+.placeholder-card {
+  padding: 1.5rem;
+}
+
+.error-banner {
+  padding: 0.9rem 1rem;
+  color: #b42318;
+  background: #fdecec;
+}
+
+.campaign-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.eyebrow,
+.label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  color: #697767;
+}
+
+.manager-chip {
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  background: #eef5ea;
+  color: #1f5c3c;
+  font-weight: 700;
+}
+
+.campaign-grid {
+  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.info-block {
+  padding: 1rem;
+  border-radius: 20px;
+  background: #f7f9f4;
+}
+
+.info-block-wide {
+  grid-column: 1 / -1;
+}
+
+.info-block p {
+  margin: 0.7rem 0 0;
+  color: #495648;
+  line-height: 1.6;
+}
+
+@media (max-width: 700px) {
+  .topbar,
+  .campaign-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .campaign-grid {
+    grid-template-columns: 1fr;
+  }
+}
