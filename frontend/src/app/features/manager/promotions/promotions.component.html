@@ -127,4 +127,8 @@
       </tbody>
     </table>
   }
+
+  @if (currentUser?.assignment?.festivalId) {
+    <app-bundle-deals [festivalId]="currentUser!.assignment!.festivalId" />
+  }
 </div>

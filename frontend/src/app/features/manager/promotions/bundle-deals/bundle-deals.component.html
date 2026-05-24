@@ -1,0 +1,130 @@
+<div class="section">
+  <div class="section-header">
+    <h3>Bundle Deals</h3>
+    <button class="btn-primary" (click)="openAddForm()" [disabled]="showForm">
+      + New Bundle
+    </button>
+  </div>
+
+  @if (errorMessage) {
+    <div class="error-banner">{{ errorMessage }}</div>
+  }
+
+  <!-- Inline form -->
+  @if (showForm) {
+    <div class="form-card" [formGroup]="form">
+      <h4 class="form-title">{{ editingId !== null ? 'Edit Bundle Deal' : 'New Bundle Deal' }}</h4>
+      <div class="form-grid">
+
+        <div class="field field-full">
+          <label>Ticket Type *</label>
+          <select formControlName="ticketTypeId">
+            <option [ngValue]="null" disabled>Select ticket type…</option>
+            @for (tt of ticketTypes; track tt.ticketTypeId) {
+              <option [ngValue]="tt.ticketTypeId">{{ tt.name }}</option>
+            }
+          </select>
+          @if (ticketTypeId.invalid && ticketTypeId.touched) {
+            <span class="field-error">Required.</span>
+          }
+        </div>
+
+        <div class="field">
+          <label>Buy (kupiKarata) *</label>
+          <input type="number" formControlName="kupiKarata" placeholder="e.g. 3" min="1" />
+          @if (kupiKarata.invalid && kupiKarata.touched) {
+            <span class="field-error">Min. 1.</span>
+          }
+        </div>
+
+        <div class="field">
+          <label>Get Free (dobijaKarata) *</label>
+          <input type="number" formControlName="dobijaKarata" placeholder="e.g. 1" min="1" />
+          @if (dobijaKarata.invalid && dobijaKarata.touched) {
+            <span class="field-error">Min. 1.</span>
+          }
+        </div>
+
+        <div class="field">
+          <label>Valid From *</label>
+          <input type="date" formControlName="vaziOd" />
+          @if (vaziOd.invalid && vaziOd.touched) {
+            <span class="field-error">Required.</span>
+          }
+        </div>
+
+        <div class="field">
+          <label>Valid To *</label>
+          <input type="date" formControlName="vaziDo" />
+          @if (vaziDo.invalid && vaziDo.touched) {
+            <span class="field-error">Required.</span>
+          }
+        </div>
+
+        <div class="field">
+          <label>Available (dostupnoAkcija) *</label>
+          <input type="number" formControlName="dostupnoAkcija" placeholder="e.g. 200" min="1" />
+          @if (dostupnoAkcija.invalid && dostupnoAkcija.touched) {
+            <span class="field-error">Min. 1.</span>
+          }
+        </div>
+
+      </div>
+      <div class="form-actions">
+        <button class="btn-save" (click)="submit()" [disabled]="submitting">
+          {{ submitting ? 'Saving...' : 'Save' }}
+        </button>
+        <button class="btn-cancel" (click)="cancelForm()">Cancel</button>
+      </div>
+    </div>
+  }
+
+  <!-- Cards grid -->
+  @if (deals.length === 0 && !showForm) {
+    <div class="empty-state">
+      <p>No bundle deals yet. Create the first one.</p>
+    </div>
+  }
+
+  @if (deals.length > 0) {
+    <div class="cards-grid">
+      @for (deal of deals; track deal.akcijaId) {
+        <div class="deal-card" [class.card-editing]="editingId === deal.akcijaId"
+             [class.card-paused]="deal.status === 'PAUSED'"
+             [class.card-expired]="deal.status === 'EXPIRED' || deal.status === 'EXHAUSTED'">
+          <div class="card-body">
+            <div class="card-title">{{ dealTitle(deal) }}</div>
+            <div class="card-meta">
+              <span class="meta-tt">{{ deal.ticketTypeName }}</span>
+              <span class="meta-sep">·</span>
+              <span class="meta-uses">{{ formatUses(deal) }}</span>
+              <span class="meta-sep">·</span>
+              <span class="status-text"
+                [class.status-active]="deal.status === 'ACTIVE'"
+                [class.status-paused]="deal.status === 'PAUSED'"
+                [class.status-expired]="deal.status === 'EXPIRED' || deal.status === 'EXHAUSTED'">
+                {{ deal.status | titlecase }}
+              </span>
+            </div>
+            <div class="card-dates">{{ deal.vaziOd }} – {{ deal.vaziDo }}</div>
+          </div>
+          <div class="card-actions">
+            <button class="btn-link" (click)="openEditForm(deal)">Edit</button>
+            <button class="btn-link"
+              [class.btn-link-warn]="deal.active && deal.status !== 'EXPIRED' && deal.status !== 'EXHAUSTED'"
+              (click)="toggleActive(deal)"
+              [disabled]="deal.status === 'EXPIRED' || deal.status === 'EXHAUSTED'">
+              {{ deal.active ? 'Pause' : 'Resume' }}
+            </button>
+            <button class="btn-danger-sm"
+              (click)="delete(deal)"
+              [disabled]="deal.usedCount > 0"
+              [title]="deal.usedCount > 0 ? 'Cannot delete — deal has been used' : 'Delete'">
+              Delete
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

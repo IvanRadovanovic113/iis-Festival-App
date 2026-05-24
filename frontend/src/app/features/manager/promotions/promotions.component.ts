@@ -6,11 +6,12 @@ import { AuthService } from '../../../core/services/auth.service';
 import { PromoCodeService } from '../../../core/services/promo-code.service';
 import { PromoCode, PromoCodeRequest } from '../../../core/models/promo-code.model';
 import { User } from '../../../core/models/user.model';
+import { BundleDealsComponent } from './bundle-deals/bundle-deals.component';
 
 @Component({
   selector: 'app-promotions',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, BundleDealsComponent],
   templateUrl: './promotions.component.html',
   styleUrls: ['./promotions.component.css']
 })
