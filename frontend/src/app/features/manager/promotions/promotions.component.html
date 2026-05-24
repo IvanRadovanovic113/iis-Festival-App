@@ -1,0 +1,130 @@
+<div class="page">
+  <div class="page-header">
+    <h2>Promotions &amp; Discounts</h2>
+    <button class="btn-primary" (click)="openAddForm()" [disabled]="showForm">
+      + New Promo Code
+    </button>
+  </div>
+
+  @if (errorMessage) {
+    <div class="error-banner">{{ errorMessage }}</div>
+  }
+
+  <!-- Inline form -->
+  @if (showForm) {
+    <div class="card form-card" [formGroup]="form">
+      <h3 class="card-title">{{ editingId !== null ? 'Edit Promo Code' : 'New Promo Code' }}</h3>
+      <div class="form-grid">
+
+        <div class="field">
+          <label>Code *</label>
+          <input type="text" formControlName="code" placeholder="e.g. SUMMER2026"
+                 style="text-transform:uppercase" />
+          @if (code.invalid && code.touched) {
+            <span class="field-error">Min. 2 chars, letters/numbers/dash only.</span>
+          }
+        </div>
+
+        <div class="field">
+          <label>Discount % *</label>
+          <input type="number" formControlName="discountPercent" placeholder="e.g. 15" min="1" max="100" />
+          @if (discountPercent.invalid && discountPercent.touched) {
+            <span class="field-error">Must be between 1 and 100.</span>
+          }
+        </div>
+
+        <div class="field">
+          <label>Valid From *</label>
+          <input type="date" formControlName="validFrom" />
+          @if (validFrom.invalid && validFrom.touched) {
+            <span class="field-error">Required.</span>
+          }
+        </div>
+
+        <div class="field">
+          <label>Valid To *</label>
+          <input type="date" formControlName="validTo" />
+          @if (validTo.invalid && validTo.touched) {
+            <span class="field-error">Required.</span>
+          }
+        </div>
+
+        <div class="field field-uses">
+          <label>Max Uses</label>
+          <div class="uses-row">
+            <input type="number" formControlName="maxUses" placeholder="e.g. 500" min="1" />
+            <label class="checkbox-item" [class.checked]="unlimited">
+              <input type="checkbox" [checked]="unlimited" (change)="toggleUnlimited()" />
+              <span>Unlimited</span>
+            </label>
+          </div>
+          @if (maxUses.invalid && maxUses.touched) {
+            <span class="field-error">Must be at least 1.</span>
+          }
+        </div>
+
+      </div>
+      <div class="form-actions">
+        <button class="btn-save" (click)="submit()" [disabled]="submitting">
+          {{ submitting ? 'Saving...' : 'Save' }}
+        </button>
+        <button class="btn-cancel" (click)="cancelForm()">Cancel</button>
+      </div>
+    </div>
+  }
+
+  <!-- Table -->
+  @if (promoCodes.length === 0 && !showForm) {
+    <div class="empty-state">
+      <p>No promo codes yet. Create the first one.</p>
+    </div>
+  }
+
+  @if (promoCodes.length > 0) {
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Discount</th>
+          <th>Valid</th>
+          <th>Uses</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of promoCodes; track p.promoCodeId) {
+          <tr [class.editing-row]="editingId === p.promoCodeId">
+            <td><span class="code-label">{{ p.code }}</span></td>
+            <td>{{ p.discountPercent }}%</td>
+            <td class="date-range">{{ formatDateRange(p) }}</td>
+            <td>{{ formatUses(p) }}</td>
+            <td>
+              <span class="badge"
+                [class.badge-active]="p.status === 'ACTIVE'"
+                [class.badge-inactive]="p.status === 'INACTIVE'"
+                [class.badge-expired]="p.status === 'EXPIRED'"
+                [class.badge-exhausted]="p.status === 'EXHAUSTED'">
+                {{ p.status | titlecase }}
+              </span>
+            </td>
+            <td class="actions">
+              <button class="btn-link" (click)="openEditForm(p)">Edit</button>
+              <button class="btn-link"
+                [class.btn-link-warn]="p.active"
+                (click)="toggleActive(p)">
+                {{ p.active ? 'Disable' : 'Enable' }}
+              </button>
+              <button class="btn-danger-sm"
+                (click)="delete(p)"
+                [disabled]="p.usedCount > 0"
+                [title]="p.usedCount > 0 ? 'Cannot delete — code has been used' : 'Delete'">
+                Delete
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

@@ -48,8 +48,14 @@ public class SegmentService {
     }
 
     public List<SegmentResponse> getFestivalSegments(Long festivalId, User user) {
-        Festival festival = requireSalesDirectorFestival(user);
-        validateFestivalAccess(festival, festivalId);
+        // Both SALES_DIRECTOR and SALES_MANAGER can read segments
+        // (SALES_MANAGER needs them for ticket type segment assignment)
+        UserFestivalAssignment assignment = assignmentRepository.findByUser_Id(user.getId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "No festival assignment found"));
+        if (assignment.getRole() != Role.SALES_DIRECTOR && assignment.getRole() != Role.SALES_MANAGER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
+        }
+        validateFestivalAccess(assignment.getFestival(), festivalId);
         return segmentRepository.findByFestival_FestivalId(festivalId)
             .stream().map(SegmentResponse::from).toList();
     }

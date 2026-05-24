@@ -31,8 +31,13 @@ export class LoginComponent {
     this.error = '';
     this.authService.login(this.form.value as LoginRequest).subscribe({
       next: (response) => {
+        const festivalRole = response.user.assignment?.festivalRole;
         if (response.user.role === 'ADMIN') {
           this.router.navigate(['/dashboard']);
+        } else if (festivalRole === 'SALES_MANAGER') {
+          this.router.navigate(['/manager']);
+        } else if (festivalRole === 'SALES_DIRECTOR') {
+          this.router.navigate(['/sales']);
         } else {
           this.router.navigate(['/pending']);
         }
