@@ -3,8 +3,8 @@ package com.festivalapp.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "ad_types")
@@ -34,6 +34,7 @@ public class AdType {
         joinColumns = @JoinColumn(name = "ad_type_id"),
         inverseJoinColumns = @JoinColumn(name = "phase_id")
     )
+    @OrderColumn(name = "sequence_index")
     @Builder.Default
-    private Set<AdPhase> phases = new LinkedHashSet<>();
+    private List<AdPhase> phases = new ArrayList<>();
 }

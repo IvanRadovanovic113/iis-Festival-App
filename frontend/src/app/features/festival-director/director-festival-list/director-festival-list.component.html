@@ -8,6 +8,7 @@
       @if (currentUser) {
         <span class="user-chip">{{ currentUser.username }}</span>
       }
+      <a class="stats-link" routerLink="/director/statistics">Statistics</a>
       <button type="button" (click)="logout()">Sign out</button>
     </div>
   </header>

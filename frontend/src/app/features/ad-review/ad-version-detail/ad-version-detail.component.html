@@ -1,0 +1,64 @@
+<div class="page-shell">
+  <aside class="sidebar">
+    <div class="avatar">JV</div>
+    <div class="nav-card active">Festivals</div>
+    <div class="nav-card">Notifications</div>
+    <div class="nav-card">Statistics</div>
+    <button class="logout-btn" type="button" (click)="logout()">Log out</button>
+  </aside>
+
+  <main class="page-content">
+    <header class="page-header">
+      <a [routerLink]="backLink" class="back-link">← Back to add view</a>
+    </header>
+
+    @if (errorMessage) {
+      <div class="error-banner">{{ errorMessage }}</div>
+    }
+
+    @if (version) {
+      <section class="summary-layout">
+        <div class="summary-card primary">
+          <h1>{{ version.name }}</h1>
+          <div class="meta-row">{{ version.typeName }}</div>
+          <div class="meta-row">{{ version.status }}</div>
+        </div>
+
+        <div class="summary-card">
+          <div class="block">
+            <span class="label">Festival</span>
+            <strong>{{ version.festivalName }}</strong>
+          </div>
+          <div class="block">
+            <span class="label">Campaign</span>
+            <strong>{{ version.campaignName }}</strong>
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <div class="block">
+            <span class="label">Version</span>
+            <strong>Version {{ version.versionNumber }}</strong>
+          </div>
+          <div class="block">
+            <span class="label">Description</span>
+            <p>{{ version.description }}</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="preview-card">
+        <div class="content-preview" [class.text-preview]="version.contentType === 'Text'">
+          @if (version.contentType === 'Text') {
+            <p>{{ version.contentValue || 'No text content was saved for this version.' }}</p>
+          } @else {
+            <div>
+              <strong>{{ version.contentType }} snapshot</strong>
+              <p>{{ version.contentValue || 'No uploaded content was saved for this version.' }}</p>
+            </div>
+          }
+        </div>
+      </section>
+    }
+  </main>
+</div>

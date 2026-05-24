@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CampaignService } from '../../../core/services/campaign.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { Campaign } from '../../../core/models/campaign.model';
+import { CampaignWorkspace } from '../../../core/models/campaign.model';
 
 @Component({
   selector: 'app-campaign-details',
@@ -17,13 +17,13 @@ export class CampaignDetailsComponent implements OnInit {
   private readonly campaignService = inject(CampaignService);
   private readonly authService = inject(AuthService);
 
-  campaign: Campaign | null = null;
+  workspace: CampaignWorkspace | null = null;
   errorMessage = '';
 
   ngOnInit(): void {
     const festivalId = Number(this.route.snapshot.paramMap.get('festivalId'));
-    this.campaignService.getDirectorCampaign(festivalId).subscribe({
-      next: campaign => this.campaign = campaign,
+    this.campaignService.getDirectorCampaignWorkspace(festivalId).subscribe({
+      next: workspace => this.workspace = workspace,
       error: () => this.errorMessage = 'Error loading campaign.'
     });
   }

@@ -27,4 +27,8 @@ public class AdPhase {
 
     @Column(nullable = false)
     private boolean emailNotification;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role assignedRole;
 }

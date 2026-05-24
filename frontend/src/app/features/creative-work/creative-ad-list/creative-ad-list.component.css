@@ -1,0 +1,208 @@
+.page-shell {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f7f8f3 0%, #eef1e6 100%);
+  color: #1e281f;
+}
+
+.topbar,
+.page-content {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.topbar {
+  padding-top: 2rem;
+  padding-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.eyebrow,
+.hero-kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  color: #6a7866;
+}
+
+h1,
+h2 {
+  margin: 0;
+}
+
+.subtitle,
+.hero-copy {
+  margin: 0.5rem 0 0;
+  color: #556454;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-chip,
+button,
+.btn-secondary,
+.action-link {
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.user-chip {
+  padding: 0.65rem 1rem;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+button,
+.btn-secondary,
+.action-link {
+  padding: 0.8rem 1.2rem;
+  text-decoration: none;
+}
+
+button {
+  border: 0;
+  background: #1f5c3c;
+  color: white;
+  cursor: pointer;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: #1e281f;
+  border: 1px solid #cad1c2;
+}
+
+.page-content {
+  padding-top: 0.5rem;
+  padding-bottom: 2rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.hero-card,
+.table-card,
+.error-banner {
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(31, 42, 31, 0.08);
+  box-shadow: 0 20px 50px rgba(31, 42, 31, 0.08);
+}
+
+.hero-card {
+  padding: 1.4rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.hero-metrics {
+  display: flex;
+  gap: 1rem;
+}
+
+.metric {
+  min-width: 132px;
+  padding: 1rem;
+  border-radius: 20px;
+  background: #f4f6ef;
+  text-align: center;
+}
+
+.metric-value {
+  display: block;
+  font-size: 1.9rem;
+  font-weight: 700;
+}
+
+.metric-label {
+  color: #556454;
+}
+
+.error-banner {
+  padding: 0.9rem 1rem;
+  color: #b42318;
+}
+
+.table-card {
+  padding: 1.2rem;
+}
+
+.table-toolbar {
+  display: grid;
+  grid-template-columns: 1.4fr repeat(2, minmax(0, 1fr)) auto;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+input,
+select {
+  width: 100%;
+  border: 1px solid #d6ddcf;
+  border-radius: 18px;
+  background: #fbfcf8;
+  padding: 0.9rem 1rem;
+  font: inherit;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 1rem 0.85rem;
+  border-bottom: 1px solid #e2e6dd;
+  text-align: left;
+}
+
+th {
+  color: #556454;
+  font-size: 0.92rem;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1f5c3c;
+  margin-right: 0.55rem;
+}
+
+.action-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #1f5c3c;
+  color: white;
+}
+
+.empty-state {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: #556454;
+}
+
+@media (max-width: 900px) {
+  .topbar,
+  .hero-card {
+    flex-direction: column;
+  }
+
+  .table-toolbar {
+    grid-template-columns: 1fr;
+  }
+}

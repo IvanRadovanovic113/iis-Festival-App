@@ -4,7 +4,7 @@
     <nav class="nav-stack">
       <a class="nav-item active">Festivals</a>
       <a class="nav-item">Notifications</a>
-      <a class="nav-item">Statistics</a>
+      <a class="nav-item" routerLink="/manager/statistics">Statistics</a>
     </nav>
     <button class="logout-btn" type="button" (click)="logout()">Log out</button>
   </aside>
@@ -100,8 +100,8 @@
                     <td>Version {{ ad.versionNumber }}</td>
                     <td><span class="status-dot"></span>{{ ad.status }}</td>
                     <td class="actions">
-                      <button type="button" class="action-icon" title="Preview">👁</button>
-                      <button type="button" class="action-icon disabled" title="Action coming later">✓</button>
+                      <a class="action-icon" title="Preview" [routerLink]="['/manager/festivals', workspace.campaign.festivalId, 'campaign', 'ads', ad.adId]">👁</a>
+                      <a class="action-icon" title="Edit ad" [routerLink]="['/manager/festivals', workspace.campaign.festivalId, 'campaign', 'ads', ad.adId, 'edit']">✎</a>
                       <button type="button" class="action-icon disabled" title="Action coming later">⊖</button>
                     </td>
                   </tr>

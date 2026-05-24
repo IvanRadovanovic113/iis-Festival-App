@@ -43,7 +43,22 @@
                 </button>
               }
             </div>
-            <a class="secondary-btn" [routerLink]="['/manager/campaigns', route.snapshot.paramMap.get('campaignId'), 'ad-phases', 'new']">New phase</a>
+            @if (selectedPhases.length > 0) {
+              <div class="selected-phases">
+                @for (phase of selectedPhases; track phase.phaseId; let i = $index) {
+                  <div class="selected-phase-card">
+                    <div>
+                      <strong>{{ i + 1 }}. {{ phase.name }}</strong>
+                      <p>{{ phase.assignedRole }}</p>
+                    </div>
+                    <div class="selected-phase-actions">
+                      <button type="button" class="order-btn remove" (click)="togglePhase(phase.phaseId)">✕</button>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+            <button type="button" class="secondary-btn" (click)="openNewPhase()">New phase</button>
           </div>
 
           <label class="field">

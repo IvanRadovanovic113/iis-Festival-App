@@ -29,6 +29,15 @@ public class FestivalManagerController {
         return ResponseEntity.ok(festivalManagerService.getCampaignWorkspace(festivalId, user));
     }
 
+    @GetMapping("/festivals/{festivalId}/ads/{adId}")
+    public ResponseEntity<AdResponse> getAd(
+        @PathVariable Long festivalId,
+        @PathVariable Long adId,
+        @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(festivalManagerService.getAd(festivalId, adId, user));
+    }
+
     @GetMapping("/ad-types")
     public ResponseEntity<List<AdTypeResponse>> getAdTypes(@AuthenticationPrincipal User user) {
         return ResponseEntity.ok(festivalManagerService.getAdTypes(user));
@@ -46,6 +55,16 @@ public class FestivalManagerController {
         @AuthenticationPrincipal User user
     ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(festivalManagerService.createAd(campaignId, request, user));
+    }
+
+    @PutMapping("/festivals/{festivalId}/ads/{adId}")
+    public ResponseEntity<AdResponse> updateAd(
+        @PathVariable Long festivalId,
+        @PathVariable Long adId,
+        @Valid @RequestBody ManagerAdUpdateRequest request,
+        @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(festivalManagerService.updateAd(festivalId, adId, request, user));
     }
 
     @PostMapping("/ad-types")

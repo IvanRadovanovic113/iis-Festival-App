@@ -54,10 +54,14 @@ export interface Ad {
   description: string;
   typeName: string;
   adTypeId: number;
+  contentType: string;
   lastChangeDate: string;
   versionNumber: number;
   status: string;
-  contentFileName: string;
+  currentPhaseId: number;
+  contentValue: string;
+  festivalName: string;
+  campaignName: string;
 }
 
 export interface CampaignWorkspace {
@@ -66,12 +70,72 @@ export interface CampaignWorkspace {
   ads: Ad[];
 }
 
+export interface AdVersionSummary {
+  versionNumber: number;
+  changedAt: string;
+  current: boolean;
+}
+
+export interface AdReview {
+  ad: Ad;
+  flow: AdPhase[];
+  versions: AdVersionSummary[];
+}
+
+export interface AdVersionDetail {
+  adId: number;
+  name: string;
+  description: string;
+  typeName: string;
+  contentType: string;
+  contentValue: string;
+  festivalName: string;
+  campaignName: string;
+  status: string;
+  versionNumber: number;
+  changedAt: string;
+  current: boolean;
+}
+
+export interface StatisticsCampaignOption {
+  campaignId: number;
+  campaignName: string;
+  festivalName: string;
+}
+
+export interface StatisticsAdTypeOption {
+  adTypeId: number;
+  name: string;
+}
+
+export interface StatisticsPhaseCount {
+  phaseId: number;
+  name: string;
+  orderIndex: number;
+  count: number;
+}
+
+export interface StatisticsTypeCount {
+  adTypeId: number;
+  name: string;
+  count: number;
+}
+
+export interface StatisticsResponse {
+  campaigns: StatisticsCampaignOption[];
+  adTypes: StatisticsAdTypeOption[];
+  totalAds: number;
+  phaseCounts: StatisticsPhaseCount[];
+  typeCounts: StatisticsTypeCount[];
+}
+
 export interface AdPhase {
   phaseId: number;
   name: string;
   description: string;
   orderIndex: number;
   emailNotification: boolean;
+  assignedRole: string;
 }
 
 export interface AdType {
@@ -86,7 +150,17 @@ export interface AdRequest {
   name: string;
   description: string;
   adTypeId: number;
-  contentFileName: string;
+}
+
+export interface CreativeAdUpdateRequest {
+  name: string;
+  description: string;
+  contentValue: string;
+}
+
+export interface ManagerAdUpdateRequest {
+  name: string;
+  description: string;
 }
 
 export interface AdTypeRequest {
@@ -101,5 +175,6 @@ export interface AdPhaseRequest {
   description: string;
   orderIndex: number;
   emailNotification: boolean;
-  adTypeId: number;
+  adTypeId: number | null;
+  assignedRole: string;
 }

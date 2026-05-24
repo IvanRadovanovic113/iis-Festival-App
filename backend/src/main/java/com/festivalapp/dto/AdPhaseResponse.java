@@ -1,6 +1,7 @@
 package com.festivalapp.dto;
 
 import com.festivalapp.model.AdPhase;
+import com.festivalapp.model.Role;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,6 +14,7 @@ public class AdPhaseResponse {
     private String description;
     private Integer orderIndex;
     private boolean emailNotification;
+    private Role assignedRole;
 
     public static AdPhaseResponse from(AdPhase phase) {
         AdPhaseResponse response = new AdPhaseResponse();
@@ -21,6 +23,7 @@ public class AdPhaseResponse {
         response.description = phase.getDescription();
         response.orderIndex = phase.getOrderIndex();
         response.emailNotification = phase.isEmailNotification();
+        response.assignedRole = phase.getAssignedRole();
         return response;
     }
 }

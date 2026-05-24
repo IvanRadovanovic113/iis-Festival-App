@@ -2,6 +2,7 @@ package com.festivalapp.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import com.festivalapp.model.Role;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -21,6 +22,8 @@ public class AdPhaseRequest {
     @NotNull
     private Boolean emailNotification;
 
-    @NotNull
     private Long adTypeId;
+
+    @NotNull
+    private Role assignedRole;
 }

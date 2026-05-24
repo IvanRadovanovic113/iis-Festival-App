@@ -28,17 +28,30 @@
 
             <label class="field">
               <span>Add type *</span>
-              <select formControlName="adTypeId">
-                <option [ngValue]="null" disabled>Select add type</option>
-                @for (adType of adTypes; track adType.adTypeId) {
-                  <option [ngValue]="adType.adTypeId">{{ adType.name }}</option>
-                }
-              </select>
+              @if (draftTypeName) {
+                <div class="draft-type-box">{{ draftTypeName }}</div>
+              } @else {
+                <select formControlName="adTypeId">
+                  <option [ngValue]="null" disabled>Select add type</option>
+                  @for (adType of adTypes; track adType.adTypeId) {
+                    <option [ngValue]="adType.adTypeId">{{ adType.name }}</option>
+                  }
+                </select>
+              }
             </label>
 
             <label class="field field-full">
               <span>Phase description *</span>
               <textarea rows="5" formControlName="description"></textarea>
+            </label>
+
+            <label class="field">
+              <span>Assigned role *</span>
+              <select formControlName="assignedRole">
+                @for (role of assignableRoles; track role.value) {
+                  <option [value]="role.value">{{ role.label }}</option>
+                }
+              </select>
             </label>
 
             <label class="field">
@@ -64,13 +77,18 @@
 
       <section class="flow-card">
         <h2>Flow</h2>
-        @if (selectedAdType) {
-          @for (phase of selectedAdType.phases; track phase.phaseId) {
+        @if (phaseFlowItems.length > 0) {
+          @for (phase of phaseFlowItems; track i; let i = $index) {
             <div class="flow-item">
-              <div class="flow-index">{{ phase.orderIndex }}</div>
+              <div class="flow-index">{{ i + 1 }}</div>
               <div>
-                <strong>{{ phase.name }}</strong>
+                <strong>{{ phase.name }} @if (phase.isDraft) { <span class="draft-badge">New</span> }</strong>
                 <p>{{ phase.description }}</p>
+                <small>{{ phase.assignedRole }}</small>
+              </div>
+              <div class="flow-actions">
+                <button type="button" class="flow-action-btn" (click)="moveFlowItem(i, -1)">↑</button>
+                <button type="button" class="flow-action-btn" (click)="moveFlowItem(i, 1)">↓</button>
               </div>
             </div>
           }

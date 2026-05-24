@@ -127,20 +127,29 @@ select {
   color: #1f1b17;
 }
 
-.upload-box {
+.content-placeholder {
   min-height: 180px;
-  border: 1px dashed #cfc5b8;
   border-radius: 22px;
   background: #f7f5ef;
-  display: grid;
-  place-items: center;
-  text-align: center;
-  cursor: pointer;
+  border: 1px solid #ddd7cb;
   padding: 1rem;
 }
 
-.upload-box small {
+.content-placeholder {
+  display: grid;
+  place-items: center;
+  text-align: center;
   color: #746c60;
+}
+
+.content-placeholder strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #1f1b17;
+}
+
+.content-placeholder p {
+  margin: 0;
 }
 
 .actions {

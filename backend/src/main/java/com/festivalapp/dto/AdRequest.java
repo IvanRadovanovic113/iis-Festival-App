@@ -17,7 +17,4 @@ public class AdRequest {
 
     @NotNull
     private Long adTypeId;
-
-    @NotBlank
-    private String contentFileName;
 }

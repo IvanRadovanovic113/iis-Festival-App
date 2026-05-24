@@ -3,6 +3,7 @@ package com.festivalapp.controller;
 import com.festivalapp.dto.CampaignRequest;
 import com.festivalapp.dto.CampaignManagerOptionResponse;
 import com.festivalapp.dto.CampaignResponse;
+import com.festivalapp.dto.CampaignWorkspaceResponse;
 import com.festivalapp.dto.FestivalCampaignOverviewResponse;
 import com.festivalapp.model.User;
 import com.festivalapp.service.CampaignService;
@@ -30,6 +31,11 @@ public class CampaignController {
     @GetMapping("/festivals/{festivalId}/campaign")
     public ResponseEntity<CampaignResponse> getCampaign(@PathVariable Long festivalId, @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(campaignService.getCampaignByFestival(festivalId, user));
+    }
+
+    @GetMapping("/festivals/{festivalId}/campaign/workspace")
+    public ResponseEntity<CampaignWorkspaceResponse> getCampaignWorkspace(@PathVariable Long festivalId, @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(campaignService.getCampaignWorkspace(festivalId, user));
     }
 
     @GetMapping("/festivals/{festivalId}/managers")

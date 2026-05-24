@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
@@ -19,6 +18,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class FestivalManagerService {
+    private static final List<Role> PHASE_ASSIGNABLE_ROLES = List.of(Role.PRODUCT_DESIGNER, Role.TECHNICAL_SUPPORT);
 
     private final FestivalRepository festivalRepository;
     private final CampaignRepository campaignRepository;
@@ -26,6 +26,7 @@ public class FestivalManagerService {
     private final AdRepository adRepository;
     private final AdTypeRepository adTypeRepository;
     private final AdPhaseRepository adPhaseRepository;
+    private final AdVersionSnapshotService adVersionSnapshotService;
 
     private void requireFestivalManager(User user) {
         UserFestivalAssignment assignment = assignmentRepository.findByUser_Id(user.getId())
@@ -67,6 +68,16 @@ public class FestivalManagerService {
             .toList();
     }
 
+    public AdResponse getAd(Long festivalId, Long adId, User user) {
+        requireFestivalManager(user);
+        Ad ad = adRepository.findById(adId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ad not found"));
+        if (!ad.getCampaign().getFestival().getFestivalId().equals(festivalId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Ad does not belong to your festival");
+        }
+        return AdResponse.from(ad);
+    }
+
     @Transactional
     public AdResponse createAd(Long campaignId, AdRequest request, User user) {
         requireFestivalManager(user);
@@ -77,7 +88,7 @@ public class FestivalManagerService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ad type not found"));
 
         AdPhase initialPhase = adType.getPhases().stream()
-            .min(Comparator.comparing(AdPhase::getOrderIndex))
+            .findFirst()
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selected ad type has no phases"));
 
         Ad ad = Ad.builder()
@@ -86,12 +97,39 @@ public class FestivalManagerService {
             .currentPhase(initialPhase)
             .name(request.getName().trim())
             .description(request.getDescription().trim())
-            .contentFileName(request.getContentFileName().trim())
+            .contentFileName("")
             .lastChangeDate(LocalDate.now())
             .versionNumber(1)
             .build();
 
-        return AdResponse.from(adRepository.save(ad));
+        Ad savedAd = adRepository.save(ad);
+        adVersionSnapshotService.captureSnapshot(savedAd);
+        return AdResponse.from(savedAd);
+    }
+
+    @Transactional
+    public AdResponse updateAd(Long festivalId, Long adId, ManagerAdUpdateRequest request, User user) {
+        requireFestivalManager(user);
+        Ad ad = adRepository.findById(adId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ad not found"));
+        if (!ad.getCampaign().getFestival().getFestivalId().equals(festivalId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Ad does not belong to your festival");
+        }
+
+        String nextName = request.getName().trim();
+        String nextDescription = request.getDescription().trim();
+        boolean changed = !ad.getName().equals(nextName) || !ad.getDescription().equals(nextDescription);
+        if (!changed) {
+            return AdResponse.from(ad);
+        }
+
+        ad.setName(nextName);
+        ad.setDescription(nextDescription);
+        ad.setLastChangeDate(LocalDate.now());
+        ad.setVersionNumber(ad.getVersionNumber() + 1);
+        Ad savedAd = adRepository.save(ad);
+        adVersionSnapshotService.captureSnapshot(savedAd);
+        return AdResponse.from(savedAd);
     }
 
     @Transactional
@@ -101,18 +139,20 @@ public class FestivalManagerService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Ad type with this name already exists");
         }
 
-        List<AdPhase> phases = adPhaseRepository.findAllById(request.getPhaseIds());
-        if (phases.size() != request.getPhaseIds().size()) {
+        var phasesById = adPhaseRepository.findAllById(request.getPhaseIds()).stream()
+            .collect(Collectors.toMap(AdPhase::getPhaseId, Function.identity()));
+        if (phasesById.size() != request.getPhaseIds().size()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "One or more phases were not found");
         }
+        List<AdPhase> orderedPhases = request.getPhaseIds().stream()
+            .map(phasesById::get)
+            .toList();
 
         AdType adType = AdType.builder()
             .name(request.getName().trim())
             .description(request.getDescription().trim())
             .contentType(request.getContentType().trim())
-            .phases(phases.stream()
-                .sorted(Comparator.comparing(AdPhase::getOrderIndex))
-                .collect(Collectors.toCollection(java.util.LinkedHashSet::new)))
+            .phases(orderedPhases)
             .build();
 
         return AdTypeResponse.from(adTypeRepository.save(adType));
@@ -124,18 +164,28 @@ public class FestivalManagerService {
         if (adPhaseRepository.existsByNameIgnoreCase(request.getName().trim())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Ad phase with this name already exists");
         }
-        AdType adType = adTypeRepository.findById(request.getAdTypeId())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ad type not found"));
+        if (!PHASE_ASSIGNABLE_ROLES.contains(request.getAssignedRole())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Assigned role is not allowed for ad phases");
+        }
 
         AdPhase phase = AdPhase.builder()
             .name(request.getName().trim())
             .description(request.getDescription().trim())
             .orderIndex(request.getOrderIndex())
             .emailNotification(Boolean.TRUE.equals(request.getEmailNotification()))
+            .assignedRole(request.getAssignedRole())
             .build();
         AdPhase savedPhase = adPhaseRepository.save(phase);
-        adType.getPhases().add(savedPhase);
-        adTypeRepository.save(adType);
+        if (request.getAdTypeId() != null) {
+            AdType adType = adTypeRepository.findById(request.getAdTypeId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ad type not found"));
+            int insertIndex = Math.max(0, Math.min(request.getOrderIndex() - 1, adType.getPhases().size()));
+            adType.getPhases().add(insertIndex, savedPhase);
+            for (int i = 0; i < adType.getPhases().size(); i++) {
+                adType.getPhases().get(i).setOrderIndex(i + 1);
+            }
+            adTypeRepository.save(adType);
+        }
         return AdPhaseResponse.from(savedPhase);
     }
 

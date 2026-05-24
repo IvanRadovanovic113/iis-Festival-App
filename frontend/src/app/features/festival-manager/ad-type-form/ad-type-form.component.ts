@@ -33,6 +33,7 @@ export class AdTypeFormComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.restoreDraftFromQuery();
     this.campaignService.getAdPhases().subscribe({
       next: phases => {
         this.phases = phases;
@@ -45,18 +46,55 @@ export class AdTypeFormComponent implements OnInit {
     });
   }
 
+  private restoreDraftFromQuery(): void {
+    const params = this.route.snapshot.queryParamMap;
+    const phaseIdsParam = params.get('selectedPhaseIds');
+    const selectedPhaseIds = phaseIdsParam
+      ? phaseIdsParam.split(',').map(value => Number(value)).filter(value => !Number.isNaN(value))
+      : [];
+
+    this.form.patchValue({
+      name: params.get('draftTypeName') ?? '',
+      description: params.get('draftTypeDescription') ?? '',
+      contentType: params.get('draftTypeContentType') ?? '',
+      phaseIds: selectedPhaseIds
+    });
+  }
+
   get selectedPhaseIds(): number[] {
     return this.form.value.phaseIds ?? [];
   }
 
+  get selectedPhases(): AdPhase[] {
+    return this.selectedPhaseIds
+      .map(phaseId => this.phases.find(phase => phase.phaseId === phaseId))
+      .filter((phase): phase is AdPhase => !!phase);
+  }
+
   togglePhase(phaseId: number, forceSelected?: boolean): void {
-    const current = new Set(this.selectedPhaseIds);
-    if (forceSelected === true || !current.has(phaseId)) {
-      current.add(phaseId);
+    const current = [...this.selectedPhaseIds];
+    const index = current.indexOf(phaseId);
+    if (forceSelected === true) {
+      if (index === -1) current.push(phaseId);
+    } else if (index === -1) {
+      current.push(phaseId);
     } else {
-      current.delete(phaseId);
+      current.splice(index, 1);
     }
-    this.form.patchValue({ phaseIds: Array.from(current) });
+    this.form.patchValue({ phaseIds: current });
+  }
+
+  openNewPhase(): void {
+    const campaignId = Number(this.route.snapshot.paramMap.get('campaignId'));
+    this.router.navigate(['/manager/campaigns', campaignId, 'ad-phases', 'new'], {
+      queryParams: {
+        draftTypeName: this.form.value.name ?? '',
+        draftTypeDescription: this.form.value.description ?? '',
+        draftTypeContentType: this.form.value.contentType ?? '',
+        selectedPhaseIds: this.selectedPhaseIds.join(','),
+        draftOrderIndex: this.selectedPhaseIds.length + 1
+      }
+    });
   }
 
   save(): void {

@@ -128,19 +128,49 @@ public class DataInitializer implements ApplicationRunner {
         assignmentRepository.save(managerAssignment);
         log.info("Festival manager user ready: festival.manager / manager123");
 
-        AdPhase draft = ensurePhase("DRAFT", "Added basic info", 1, false);
-        AdPhase approvedTechnical = ensurePhase("APPROVED TECHNICAL", "Technical review completed", 2, true);
-        AdPhase visuallyPrepared = ensurePhase("VISUALLY PREPARED", "Creative assets visually prepared", 3, false);
-        AdPhase approved = ensurePhase("APPROVED", "Final approval completed", 4, true);
-        AdPhase rejected = ensurePhase("REJECTED", "Rejected after review", 5, true);
-        AdPhase published = ensurePhase("PUBLISHED", "Published to the selected channel", 6, false);
+        User productDesigner = userRepository.findByUsername("product.designer")
+            .orElseGet(() -> userRepository.save(User.builder()
+                .username("product.designer")
+                .email("product.designer@festivalapp.com")
+                .password(passwordEncoder.encode("designer123"))
+                .role(null)
+                .build()));
+
+        UserFestivalAssignment productDesignerAssignment = assignmentRepository.findByUser_Id(productDesigner.getId())
+            .orElse(UserFestivalAssignment.builder().user(productDesigner).build());
+        productDesignerAssignment.setFestival(demoFestival);
+        productDesignerAssignment.setRole(Role.PRODUCT_DESIGNER);
+        assignmentRepository.save(productDesignerAssignment);
+        log.info("Product designer user ready: product.designer / designer123");
+
+        User technicalSupport = userRepository.findByUsername("technical.support")
+            .orElseGet(() -> userRepository.save(User.builder()
+                .username("technical.support")
+                .email("technical.support@festivalapp.com")
+                .password(passwordEncoder.encode("support123"))
+                .role(null)
+                .build()));
+
+        UserFestivalAssignment technicalSupportAssignment = assignmentRepository.findByUser_Id(technicalSupport.getId())
+            .orElse(UserFestivalAssignment.builder().user(technicalSupport).build());
+        technicalSupportAssignment.setFestival(demoFestival);
+        technicalSupportAssignment.setRole(Role.TECHNICAL_SUPPORT);
+        assignmentRepository.save(technicalSupportAssignment);
+        log.info("Technical support user ready: technical.support / support123");
+
+        AdPhase draft = ensurePhase("DRAFT", "Added basic info", 1, false, Role.PRODUCT_DESIGNER);
+        AdPhase approvedTechnical = ensurePhase("APPROVED TECHNICAL", "Technical review completed", 2, true, Role.TECHNICAL_SUPPORT);
+        AdPhase visuallyPrepared = ensurePhase("VISUALLY PREPARED", "Creative assets visually prepared", 3, false, Role.PRODUCT_DESIGNER);
+        AdPhase approved = ensurePhase("APPROVED", "Final approval completed", 4, true, Role.TECHNICAL_SUPPORT);
+        AdPhase rejected = ensurePhase("REJECTED", "Rejected after review", 5, true, Role.TECHNICAL_SUPPORT);
+        AdPhase published = ensurePhase("PUBLISHED", "Published to the selected channel", 6, false, Role.PRODUCT_DESIGNER);
 
         ensureAdType("Animated", "Animated campaign assets for digital channels", "Video", draft, approvedTechnical, visuallyPrepared, approved, rejected, published);
         ensureAdType("Text", "Text-based copy for campaign communication", "Text", draft, approvedTechnical, approved, rejected, published);
         ensureAdType("Audio", "Audio spots and supporting sound assets", "Audio", draft, approvedTechnical, approved, rejected, published);
     }
 
-    private AdPhase ensurePhase(String name, String description, int orderIndex, boolean emailNotification) {
+    private AdPhase ensurePhase(String name, String description, int orderIndex, boolean emailNotification, Role assignedRole) {
         return adPhaseRepository.findAll().stream()
             .filter(phase -> phase.getName().equalsIgnoreCase(name))
             .findFirst()
@@ -149,6 +179,7 @@ public class DataInitializer implements ApplicationRunner {
                 .description(description)
                 .orderIndex(orderIndex)
                 .emailNotification(emailNotification)
+                .assignedRole(assignedRole)
                 .build()));
     }
 
@@ -162,8 +193,7 @@ public class DataInitializer implements ApplicationRunner {
             .name(name)
             .description(description)
             .contentType(contentType)
-            .phases(java.util.Arrays.stream(phases)
-                .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new)))
+            .phases(java.util.Arrays.stream(phases).toList())
             .build());
     }
 }

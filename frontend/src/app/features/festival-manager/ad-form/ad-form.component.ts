@@ -4,7 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CampaignService } from '../../../core/services/campaign.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { AdType, CampaignWorkspace } from '../../../core/models/campaign.model';
+import { Ad, AdType, CampaignWorkspace } from '../../../core/models/campaign.model';
 
 @Component({
   selector: 'app-ad-form',
@@ -22,34 +22,46 @@ export class AdFormComponent implements OnInit {
 
   workspace: CampaignWorkspace | null = null;
   adTypes: AdType[] = [];
+  ad: Ad | null = null;
   errorMessage = '';
   saving = false;
-  selectedFileName = '';
 
   form = this.fb.group({
     name: ['', Validators.required],
     description: ['', Validators.required],
-    adTypeId: [null as number | null, Validators.required],
-    contentFileName: ['', Validators.required]
+    adTypeId: [null as number | null, Validators.required]
   });
+
+  get isEditMode(): boolean {
+    return this.route.snapshot.routeConfig?.path === 'manager/festivals/:festivalId/campaign/ads/:adId/edit';
+  }
 
   ngOnInit(): void {
     const campaignId = Number(this.route.snapshot.paramMap.get('campaignId'));
     const festivalId = Number(this.route.snapshot.queryParamMap.get('festivalId'));
-    if (festivalId) {
+    const editFestivalId = Number(this.route.snapshot.paramMap.get('festivalId'));
+
+    if (this.isEditMode && editFestivalId) {
+      this.loadWorkspace(editFestivalId);
+      this.loadAd(editFestivalId);
+    } else if (festivalId) {
       this.loadWorkspace(festivalId);
     }
     this.campaignService.getAdTypes().subscribe({
       next: adTypes => {
         this.adTypes = adTypes;
-        const selectedAdTypeId = this.route.snapshot.queryParamMap.get('adTypeId');
-        if (selectedAdTypeId) {
-          this.form.patchValue({ adTypeId: Number(selectedAdTypeId) });
+        if (this.ad) {
+          this.form.patchValue({ adTypeId: this.ad.adTypeId });
+        } else {
+          const selectedAdTypeId = this.route.snapshot.queryParamMap.get('adTypeId');
+          if (selectedAdTypeId) {
+            this.form.patchValue({ adTypeId: Number(selectedAdTypeId) });
+          }
         }
       },
       error: () => this.errorMessage = 'Error loading ad types.'
     });
-    if (!festivalId && campaignId) {
+    if (!this.isEditMode && !festivalId && campaignId) {
       this.resolveWorkspaceFromFestivalList(campaignId);
     }
   }
@@ -58,6 +70,21 @@ export class AdFormComponent implements OnInit {
     this.campaignService.getManagerCampaignWorkspace(festivalId).subscribe({
       next: workspace => this.workspace = workspace,
       error: () => this.errorMessage = 'Error loading campaign.'
+    });
+  }
+
+  private loadAd(festivalId: number): void {
+    const adId = Number(this.route.snapshot.paramMap.get('adId'));
+    this.campaignService.getManagerAd(festivalId, adId).subscribe({
+      next: ad => {
+        this.ad = ad;
+        this.form.patchValue({
+          name: ad.name,
+          description: ad.description,
+          adTypeId: ad.adTypeId
+        });
+      },
+      error: () => this.errorMessage = 'Error loading ad.'
     });
   }
 
@@ -72,11 +99,13 @@ export class AdFormComponent implements OnInit {
     });
   }
 
-  onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    this.selectedFileName = file?.name ?? '';
-    this.form.patchValue({ contentFileName: this.selectedFileName });
+  get selectedAdType(): AdType | undefined {
+    const selectedId = this.form.value.adTypeId ?? this.ad?.adTypeId;
+    return this.adTypes.find(adType => adType.adTypeId === selectedId);
+  }
+
+  onAdTypeChanged(): void {
+    this.errorMessage = '';
   }
 
   save(): void {
@@ -86,11 +115,24 @@ export class AdFormComponent implements OnInit {
     }
     this.saving = true;
     this.errorMessage = '';
+    if (this.isEditMode && this.ad) {
+      this.campaignService.updateManagerAd(this.workspace.campaign.festivalId, this.ad.adId, {
+        name: this.form.value.name ?? '',
+        description: this.form.value.description ?? ''
+      }).subscribe({
+        next: () => this.router.navigate(['/manager/festivals', this.workspace!.campaign.festivalId, 'campaign']),
+        error: err => {
+          this.errorMessage = err?.error?.message ?? 'Error updating ad.';
+          this.saving = false;
+        }
+      });
+      return;
+    }
+
     this.campaignService.createAd(this.workspace.campaign.campaignId, this.form.getRawValue() as {
       name: string;
       description: string;
       adTypeId: number;
-      contentFileName: string;
     }).subscribe({
       next: () => this.router.navigate(['/manager/festivals', this.workspace!.campaign.festivalId, 'campaign']),
       error: err => {

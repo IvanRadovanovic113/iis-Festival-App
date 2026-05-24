@@ -3,12 +3,17 @@ package com.festivalapp.service;
 import com.festivalapp.dto.CampaignRequest;
 import com.festivalapp.dto.CampaignManagerOptionResponse;
 import com.festivalapp.dto.CampaignResponse;
+import com.festivalapp.dto.CampaignStatsResponse;
+import com.festivalapp.dto.CampaignWorkspaceResponse;
 import com.festivalapp.dto.FestivalCampaignOverviewResponse;
+import com.festivalapp.dto.AdResponse;
 import com.festivalapp.model.Campaign;
+import com.festivalapp.model.Ad;
 import com.festivalapp.model.Festival;
 import com.festivalapp.model.Role;
 import com.festivalapp.model.User;
 import com.festivalapp.model.UserFestivalAssignment;
+import com.festivalapp.repository.AdRepository;
 import com.festivalapp.repository.CampaignRepository;
 import com.festivalapp.repository.FestivalRepository;
 import com.festivalapp.repository.UserRepository;
@@ -19,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -31,6 +37,7 @@ public class CampaignService {
     private final FestivalRepository festivalRepository;
     private final UserRepository userRepository;
     private final UserFestivalAssignmentRepository assignmentRepository;
+    private final AdRepository adRepository;
 
     private void requireFestivalDirector(User user) {
         UserFestivalAssignment assignment = assignmentRepository.findByUser_Id(user.getId())
@@ -55,6 +62,14 @@ public class CampaignService {
         Campaign campaign = campaignRepository.findByFestival_FestivalId(festivalId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Campaign not found"));
         return CampaignResponse.from(campaign);
+    }
+
+    public CampaignWorkspaceResponse getCampaignWorkspace(Long festivalId, User user) {
+        requireFestivalDirector(user);
+        Campaign campaign = campaignRepository.findByFestival_FestivalId(festivalId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Campaign not found"));
+        List<Ad> ads = adRepository.findAllByCampaign_CampaignIdOrderByLastChangeDateDescAdIdDesc(campaign.getCampaignId());
+        return new CampaignWorkspaceResponse(CampaignResponse.from(campaign), buildStats(ads), ads.stream().map(AdResponse::from).toList());
     }
 
     public List<CampaignManagerOptionResponse> getFestivalManagers(Long festivalId, User user) {
@@ -107,5 +122,27 @@ public class CampaignService {
             .build();
 
         return CampaignResponse.from(campaignRepository.save(campaign));
+    }
+
+    private CampaignStatsResponse buildStats(List<Ad> ads) {
+        long draft = countByNormalizedPhaseName(ads, "DRAFT");
+        long approvedTechnical = countByNormalizedPhaseName(ads, "APPROVED_TECHNICAL");
+        long approved = countByNormalizedPhaseName(ads, "APPROVED");
+        long rejected = ads.stream()
+            .filter(ad -> normalizePhaseName(ad.getCurrentPhase().getName()).contains("REJECTED"))
+            .count();
+        long total = ads.size();
+        long todo = total - approved - rejected;
+        return new CampaignStatsResponse(total, todo, draft, approvedTechnical, approved, rejected);
+    }
+
+    private long countByNormalizedPhaseName(List<Ad> ads, String expected) {
+        return ads.stream()
+            .filter(ad -> normalizePhaseName(ad.getCurrentPhase().getName()).equals(expected))
+            .count();
+    }
+
+    private String normalizePhaseName(String name) {
+        return name.trim().toUpperCase(Locale.ROOT).replace(' ', '_');
     }
 }

@@ -4,7 +4,10 @@
       <a routerLink="/director/festivals" class="back-link">← Back to festivals</a>
       <h1>Campaign overview</h1>
     </div>
-    <button type="button" (click)="logout()">Sign out</button>
+    <div class="topbar-actions">
+      <a class="stats-link" routerLink="/director/statistics">Statistics</a>
+      <button type="button" (click)="logout()">Sign out</button>
+    </div>
   </header>
 
   <main class="page-content">
@@ -12,46 +15,75 @@
       <div class="error-banner">{{ errorMessage }}</div>
     }
 
-    @if (campaign) {
+    @if (workspace) {
       <section class="campaign-card">
         <div class="campaign-header">
           <div>
-            <span class="eyebrow">{{ campaign.festivalName }}</span>
-            <h2>{{ campaign.name }}</h2>
+            <span class="eyebrow">{{ workspace.campaign.festivalName }}</span>
+            <h2>{{ workspace.campaign.name }}</h2>
           </div>
-          <span class="manager-chip">{{ campaign.managerName }}</span>
+          <span class="manager-chip">{{ workspace.campaign.managerName }}</span>
         </div>
 
         <div class="campaign-grid">
           <div class="info-block">
             <span class="label">Location</span>
-            <strong>{{ campaign.festivalLocation }}</strong>
+            <strong>{{ workspace.campaign.festivalLocation }}</strong>
           </div>
           <div class="info-block">
             <span class="label">Festival status</span>
-            <strong>{{ campaign.festivalStatus }}</strong>
+            <strong>{{ workspace.campaign.festivalStatus }}</strong>
           </div>
           <div class="info-block">
             <span class="label">Start date</span>
-            <strong>{{ campaign.startDate | date:'dd.MM.yyyy' }}</strong>
+            <strong>{{ workspace.campaign.startDate | date:'dd.MM.yyyy' }}</strong>
           </div>
           <div class="info-block">
             <span class="label">End date</span>
-            <strong>{{ campaign.endDate | date:'dd.MM.yyyy' }}</strong>
+            <strong>{{ workspace.campaign.endDate | date:'dd.MM.yyyy' }}</strong>
           </div>
           <div class="info-block info-block-wide">
             <span class="label">Description</span>
-            <p>{{ campaign.description }}</p>
+            <p>{{ workspace.campaign.description }}</p>
           </div>
         </div>
       </section>
 
       <section class="placeholder-card">
-        <span class="eyebrow">Next step</span>
-        <h3>Ads will live inside this campaign</h3>
-        <p>
-          Campaign creation is ready. We can add the ad list, ad creation flow and campaign assets in the next step.
-        </p>
+        <span class="eyebrow">Ads</span>
+        <h3>Campaign ad overview</h3>
+        @if (workspace.ads.length === 0) {
+          <p>No ads have been created for this campaign yet.</p>
+        } @else {
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Last change</th>
+                  <th>Version</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (ad of workspace.ads; track ad.adId) {
+                  <tr>
+                    <td>{{ ad.name }}</td>
+                    <td>{{ ad.typeName }}</td>
+                    <td>{{ ad.lastChangeDate | date:'dd.MM.yyyy' }}</td>
+                    <td>Version {{ ad.versionNumber }}</td>
+                    <td>{{ ad.status }}</td>
+                    <td>
+                      <a class="view-link" [routerLink]="['/director/festivals', workspace.campaign.festivalId, 'campaign', 'ads', ad.adId]">👁</a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
       </section>
     }
   </main>

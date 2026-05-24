@@ -4,7 +4,6 @@ import com.festivalapp.model.AdType;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Comparator;
 import java.util.List;
 
 @Getter
@@ -24,7 +23,6 @@ public class AdTypeResponse {
         response.description = adType.getDescription();
         response.contentType = adType.getContentType();
         response.phases = adType.getPhases().stream()
-            .sorted(Comparator.comparing(phase -> phase.getOrderIndex()))
             .map(AdPhaseResponse::from)
             .toList();
         return response;

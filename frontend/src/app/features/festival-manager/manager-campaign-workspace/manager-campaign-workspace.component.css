@@ -216,10 +216,15 @@ td {
 }
 
 .action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 0;
   background: transparent;
   font-size: 1.35rem;
   cursor: pointer;
+  color: inherit;
+  text-decoration: none;
 }
 
 .action-icon.disabled {
