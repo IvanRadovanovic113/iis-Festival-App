@@ -1,0 +1,180 @@
+@if (view === 'checkout') {
+  <div class="checkout-page">
+    <div class="checkout-header">
+      <a routerLink="/shop/tickets" class="back-link">← Back to tickets</a>
+      <h2>Checkout</h2>
+    </div>
+
+    @if (previewLoading) {
+      <div class="loading-overlay">
+        <div class="spinner"></div>
+        <span>Loading preview…</span>
+      </div>
+    }
+
+    @if (previewError && !previewLoading) {
+      <div class="error-banner">{{ previewError }}</div>
+    }
+
+    @if (preview && !previewLoading) {
+      <div class="checkout-body">
+
+        <!-- Left column -->
+        <div class="checkout-left">
+
+          <!-- Ticket info -->
+          <div class="card">
+            <div class="card-title">Ticket</div>
+            <div class="ticket-info-row">
+              <span class="ticket-name">{{ preview.ticketTypeName }}</span>
+              <span class="ticket-unit-price">{{ preview.pricePerTicket | currency:'EUR':'symbol':'1.2-2' }} / ticket</span>
+            </div>
+          </div>
+
+          <!-- Quantity -->
+          <div class="card">
+            <div class="card-title">Quantity</div>
+            <div class="qty-control">
+              <button class="qty-btn" (click)="decreaseQty()" [disabled]="quantity <= 1 || previewLoading">−</button>
+              <span class="qty-value">{{ quantity }}</span>
+              <button class="qty-btn" (click)="increaseQty()" [disabled]="previewLoading">+</button>
+            </div>
+            @if (preview.freeTickets > 0) {
+              <div class="free-notice">
+                🎁 +{{ preview.freeTickets }} free ticket{{ preview.freeTickets > 1 ? 's' : '' }} included!
+                @if (preview.bundleDealDescription) {
+                  <span class="bundle-desc">({{ preview.bundleDealDescription }})</span>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Promo code -->
+          <div class="card">
+            <div class="card-title">Promo Code</div>
+            @if (!appliedPromo) {
+              <div class="promo-row">
+                <input
+                  class="promo-input"
+                  type="text"
+                  placeholder="Enter promo code"
+                  [(ngModel)]="promoInput"
+                  (keyup.enter)="applyPromo()"
+                  [disabled]="applyingPromo"
+                />
+                <button class="btn-apply" (click)="applyPromo()" [disabled]="applyingPromo || !promoInput.trim()">
+                  @if (applyingPromo) { Applying… } @else { Apply }
+                </button>
+              </div>
+              @if (promoError) {
+                <div class="promo-error">{{ promoError }}</div>
+              }
+            } @else {
+              <div class="promo-applied-row">
+                <span class="promo-badge">{{ appliedPromo }}</span>
+                <span class="promo-discount">−{{ preview.promoDiscountPercent }}%</span>
+                <button class="btn-remove-promo" (click)="removePromo()">✕ Remove</button>
+              </div>
+            }
+          </div>
+
+        </div>
+
+        <!-- Right column — Order summary -->
+        <div class="checkout-right">
+          <div class="summary-card">
+            <div class="summary-title">Order Summary</div>
+
+            <div class="summary-rows">
+              <div class="summary-row">
+                <span>{{ quantity }} × {{ preview.ticketTypeName }}</span>
+                <span>{{ preview.baseTotal | currency:'EUR':'symbol':'1.2-2' }}</span>
+              </div>
+
+              @if (preview.promoDiscountPercent > 0) {
+                <div class="summary-row discount">
+                  <span>Promo ({{ appliedPromo }}) −{{ preview.promoDiscountPercent }}%</span>
+                  <span>−{{ (preview.baseTotal * preview.promoDiscountPercent / 100) | currency:'EUR':'symbol':'1.2-2' }}</span>
+                </div>
+              }
+
+              @if (preview.tierDiscountPercent > 0) {
+                <div class="summary-row discount">
+                  <span>{{ tierLabel(preview.tierName) }} tier −{{ preview.tierDiscountPercent }}%</span>
+                  <span>−{{ (preview.baseTotal * preview.tierDiscountPercent / 100) | currency:'EUR':'symbol':'1.2-2' }}</span>
+                </div>
+              }
+
+              @if (preview.freeTickets > 0) {
+                <div class="summary-row bundle">
+                  <span>🎁 {{ preview.freeTickets }} free ticket{{ preview.freeTickets > 1 ? 's' : '' }}</span>
+                  <span>{{ preview.bundleDealDescription }}</span>
+                </div>
+              }
+
+              <div class="summary-divider"></div>
+
+              <div class="summary-row total-tickets">
+                <span>Total tickets</span>
+                <span>{{ preview.totalTickets }}</span>
+              </div>
+
+              <div class="summary-row total">
+                <span>Total</span>
+                <span>{{ preview.finalPrice | currency:'EUR':'symbol':'1.2-2' }}</span>
+              </div>
+            </div>
+
+            @if (purchaseError) {
+              <div class="error-banner">{{ purchaseError }}</div>
+            }
+
+            <button
+              class="btn-confirm"
+              (click)="confirm()"
+              [disabled]="purchasing || previewLoading">
+              @if (purchasing) { Processing… } @else { Confirm Purchase }
+            </button>
+          </div>
+        </div>
+
+      </div>
+    }
+  </div>
+}
+
+@if (view === 'success') {
+  <div class="success-page">
+    <div class="success-hero">
+      <div class="success-icon">🎉</div>
+      <h2>Purchase Successful!</h2>
+      <p class="success-sub">
+        You bought <strong>{{ result?.totalTickets }}</strong> ticket{{ result?.totalTickets !== 1 ? 's' : '' }}
+        for <strong>{{ result?.ticketTypeName }}</strong>
+      </p>
+      <p class="success-price">Total paid: <strong>{{ result?.finalPrice | currency:'EUR':'symbol':'1.2-2' }}</strong></p>
+    </div>
+
+    <div class="tickets-section">
+      <h3>Your Tickets</h3>
+      <div class="tickets-list">
+        @for (karta of result?.karte ?? []; track karta.kartaId; let i = $index) {
+          <div class="ticket-item">
+            <div class="ticket-number">#{{ i + 1 }}</div>
+            <div class="ticket-qr">
+              <span class="qr-label">QR Code</span>
+              <code class="qr-code">{{ karta.qrKod }}</code>
+            </div>
+            <div class="ticket-status" [class]="'status-' + karta.status.toLowerCase()">
+              {{ karta.status }}
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="success-actions">
+      <a routerLink="/shop/tickets" class="btn-back-shop">← Back to Shop</a>
+    </div>
+  </div>
+}

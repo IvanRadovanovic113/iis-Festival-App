@@ -9,6 +9,7 @@
       </div>
     } @else {
       <form [formGroup]="form" (ngSubmit)="onSubmit()">
+
         <div class="form-group">
           <label for="username">Username</label>
           <input id="username" type="text" formControlName="username" placeholder="Enter your username" />
@@ -32,6 +33,25 @@
             <span class="field-error">Min. 6 characters.</span>
           }
         </div>
+
+        <!-- Customer checkbox -->
+        <div class="form-group customer-toggle">
+          <label class="checkbox-label">
+            <input type="checkbox" formControlName="customer" (change)="onCustomerToggle()" />
+            <span>I'm registering as a ticket buyer</span>
+          </label>
+        </div>
+
+        <!-- Full name — only shown for customers -->
+        @if (isCustomer) {
+          <div class="form-group">
+            <label for="fullName">Full Name</label>
+            <input id="fullName" type="text" formControlName="fullName" placeholder="Enter your full name" />
+            @if (fullName.invalid && fullName.touched) {
+              <span class="field-error">Full name is required.</span>
+            }
+          </div>
+        }
 
         @if (error) {
           <div class="error-msg">{{ error }}</div>

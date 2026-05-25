@@ -1,0 +1,94 @@
+<div class="page">
+  <header class="header">
+    <div class="header-content">
+      <h1>Festival App</h1>
+      <div class="user-info">
+        <a routerLink="/dashboard" class="nav-link">← Dashboard</a>
+        <button (click)="logout()">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="content-card">
+      <div class="card-header">
+        <h2>Tier Configuration</h2>
+        <p class="card-desc">
+          Set the minimum number of purchased tickets to reach each tier and the discount percentage it grants.
+          Saving applies immediately to all existing buyers.
+        </p>
+      </div>
+
+      @if (loading) {
+        <p class="empty-state">Loading…</p>
+      }
+
+      @if (loadError) {
+        <div class="error-banner">{{ loadError }}</div>
+      }
+
+      @if (!loading && rows.length > 0) {
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Tier</th>
+                <th>Min. tickets to reach</th>
+                <th>Discount</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of rows; track row.tier) {
+                <tr>
+                  <td>
+                    <span class="tier-badge tier-{{ row.tier | lowercase }}">
+                      {{ tierLabel(row.tier) }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="input-wrap">
+                      <input
+                        class="field-input"
+                        type="number"
+                        min="1"
+                        [(ngModel)]="row.minTickets"
+                      />
+                      <span class="input-unit">tickets</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="input-wrap">
+                      <input
+                        class="field-input"
+                        type="number"
+                        min="0"
+                        max="100"
+                        [(ngModel)]="row.discountPercent"
+                      />
+                      <span class="input-unit">%</span>
+                    </div>
+                  </td>
+                  <td class="actions-cell">
+                    @if (row.error) {
+                      <span class="row-error">{{ row.error }}</span>
+                    }
+                    @if (row.saved) {
+                      <span class="row-saved">✓ Saved</span>
+                    }
+                    <button
+                      class="btn-save"
+                      (click)="save(row)"
+                      [disabled]="row.saving">
+                      {{ row.saving ? 'Saving…' : 'Save' }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </main>
+</div>

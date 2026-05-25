@@ -1,6 +1,6 @@
 package com.festivalapp.prodaja.repository;
 
-import com.festivalapp.model.Segment;
+import com.festivalapp.prodaja.model.Segment;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

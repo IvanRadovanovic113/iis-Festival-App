@@ -34,10 +34,10 @@ export class LoginComponent {
         const festivalRole = response.user.assignment?.festivalRole;
         if (response.user.role === 'ADMIN') {
           this.router.navigate(['/dashboard']);
-        } else if (festivalRole === 'SALES_MANAGER') {
-          this.router.navigate(['/manager']);
-        } else if (festivalRole === 'SALES_DIRECTOR') {
-          this.router.navigate(['/sales']);
+        } else if (response.user.role === 'BUYER') {
+          this.router.navigate(['/shop']);
+        } else if (festivalRole === 'SALES_DIRECTOR' || festivalRole === 'SALES_MANAGER') {
+          this.router.navigate(['/manager/ticket-types']);
         } else {
           this.router.navigate(['/pending']);
         }

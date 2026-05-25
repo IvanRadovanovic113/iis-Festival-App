@@ -1,0 +1,63 @@
+.shell { min-height: 100vh; display: flex; flex-direction: column; background: #f5f5f5; }
+
+.top-bar {
+  background: #1a237e;
+  color: white;
+  padding: 0 1.5rem;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  flex-shrink: 0;
+}
+
+.top-left { display: flex; align-items: center; gap: 2rem; }
+
+.brand { font-size: 1.4rem; font-weight: 600; }
+
+.top-nav { display: flex; gap: 0.25rem; }
+
+.nav-link {
+  color: rgba(255,255,255,0.75);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.nav-link:hover { background: rgba(255,255,255,0.12); color: white; }
+.nav-link.active-link { background: rgba(255,255,255,0.18); color: white; }
+
+.user-info { display: flex; align-items: center; gap: 0.75rem; }
+
+.username { font-size: 0.9rem; opacity: 0.9; }
+
+.tier-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tier-bronze { background: #cd7f32; color: white; }
+.tier-silver { background: #c0c0c0; color: #333; }
+.tier-gold { background: #ffd700; color: #333; }
+
+button {
+  padding: 0.4rem 1rem;
+  background: rgba(255,255,255,0.15);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+button:hover { background: rgba(255,255,255,0.25); }
+
+.content { flex: 1; padding: 2rem; max-width: 1100px; width: 100%; margin: 0 auto; }

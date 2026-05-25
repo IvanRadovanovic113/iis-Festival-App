@@ -48,13 +48,20 @@ export const routes: Routes = [
     data: { adminOnly: true }
   },
   {
-    path: 'sales',
+    path: 'admin/tier-config',
     loadComponent: () =>
-      import('./features/prodaja/prodaja-layout/prodaja-layout.component').then(m => m.ProdajaLayoutComponent),
+      import('./features/admin/tier-config/tier-config.component').then(m => m.TierConfigComponent),
     canActivate: [authGuard],
-    data: { festivalRoles: ['SALES_DIRECTOR'] },
+    data: { adminOnly: true }
+  },
+  {
+    path: 'manager',
+    loadComponent: () =>
+      import('./features/manager/manager-layout/manager-layout.component').then(m => m.ManagerLayoutComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['SALES_DIRECTOR', 'SALES_MANAGER'] },
     children: [
-      { path: '', redirectTo: 'stages', pathMatch: 'full' },
+      { path: '', redirectTo: 'ticket-types', pathMatch: 'full' },
       {
         path: 'stages',
         loadComponent: () =>
@@ -88,42 +95,32 @@ export const routes: Routes = [
       {
         path: 'promotions',
         loadComponent: () =>
-          import('./features/manager/promotions/promotions.component').then(m => m.PromotionsComponent)
+          import('./features/prodaja/promotions/promotions.component').then(m => m.PromotionsComponent)
       }
     ]
   },
   {
-    path: 'manager',
+    path: 'shop',
     loadComponent: () =>
-      import('./features/manager/manager-layout/manager-layout.component').then(m => m.ManagerLayoutComponent),
+      import('./features/shop/shop-layout/shop-layout.component').then(m => m.ShopLayoutComponent),
     canActivate: [authGuard],
-    data: { festivalRoles: ['SALES_MANAGER'] },
+    data: { roles: ['BUYER'] },
     children: [
-      { path: '', redirectTo: 'ticket-types', pathMatch: 'full' },
+      { path: '', redirectTo: 'tickets', pathMatch: 'full' },
       {
-        path: 'ticket-types',
+        path: 'tickets',
         loadComponent: () =>
-          import('./features/manager/ticket-types/ticket-type-list/ticket-type-list.component').then(m => m.TicketTypeListComponent)
+          import('./features/shop/shop-tickets/shop-tickets.component').then(m => m.ShopTicketsComponent)
       },
       {
-        path: 'ticket-types/new',
+        path: 'checkout/:ticketTypeId',
         loadComponent: () =>
-          import('./features/manager/ticket-types/ticket-type-form/ticket-type-form.component').then(m => m.TicketTypeFormComponent)
+          import('./features/shop/checkout/checkout.component').then(m => m.CheckoutComponent)
       },
       {
-        path: 'ticket-types/:id/edit',
+        path: 'my-tickets',
         loadComponent: () =>
-          import('./features/manager/ticket-types/ticket-type-form/ticket-type-form.component').then(m => m.TicketTypeFormComponent)
-      },
-      {
-        path: 'ticket-types/:id/periods',
-        loadComponent: () =>
-          import('./features/manager/ticket-types/pricing-periods/pricing-periods.component').then(m => m.PricingPeriodsComponent)
-      },
-      {
-        path: 'promotions',
-        loadComponent: () =>
-          import('./features/manager/promotions/promotions.component').then(m => m.PromotionsComponent)
+          import('./features/shop/my-tickets/my-tickets.component').then(m => m.MyTicketsComponent)
       }
     ]
   },
