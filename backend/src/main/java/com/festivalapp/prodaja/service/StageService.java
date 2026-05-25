@@ -6,8 +6,8 @@ import com.festivalapp.model.User;
 import com.festivalapp.model.UserFestivalAssignment;
 import com.festivalapp.prodaja.dto.StageRequest;
 import com.festivalapp.prodaja.dto.StageResponse;
-import com.festivalapp.prodaja.model.Stage;
-import com.festivalapp.prodaja.repository.StageRepository;
+import com.festivalapp.model.Stage;
+import com.festivalapp.repository.StageRepository;
 import com.festivalapp.repository.UserFestivalAssignmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,6 +23,15 @@ public class StageService {
     private final StageRepository stageRepository;
     private final UserFestivalAssignmentRepository assignmentRepository;
 
+    private Festival requireAssignedFestival(User user) {
+        UserFestivalAssignment assignment = assignmentRepository.findByUser_Id(user.getId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "No festival assignment found"));
+        if (assignment.getRole() != Role.SALES_DIRECTOR && assignment.getRole() != Role.EVENT_ORGANIZER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not have access to stages");
+        }
+        return assignment.getFestival();
+    }
+
     private Festival requireSalesDirectorFestival(User user) {
         UserFestivalAssignment assignment = assignmentRepository.findByUser_Id(user.getId())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "No festival assignment found"));
@@ -33,7 +42,7 @@ public class StageService {
     }
 
     public List<StageResponse> getAll(User user) {
-        Festival festival = requireSalesDirectorFestival(user);
+        Festival festival = requireAssignedFestival(user);
         return stageRepository.findByFestival_FestivalId(festival.getFestivalId())
             .stream().map(StageResponse::from).toList();
     }

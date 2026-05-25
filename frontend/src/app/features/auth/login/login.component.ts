@@ -38,6 +38,14 @@ export class LoginComponent {
           this.router.navigate(['/shop']);
         } else if (festivalRole === 'SALES_DIRECTOR' || festivalRole === 'SALES_MANAGER') {
           this.router.navigate(['/manager/ticket-types']);
+        } else if (festivalRole === 'FESTIVAL_DIRECTOR') {
+          this.router.navigate(['/director/festivals']);
+        } else if (festivalRole === 'FESTIVAL_MANAGER') {
+          this.router.navigate(['/manager/festivals']);
+        } else if (festivalRole === 'PRODUCT_DESIGNER' || festivalRole === 'TECHNICAL_SUPPORT') {
+          this.router.navigate(['/creative/ads']);
+        } else if (festivalRole === 'EVENT_ORGANIZER') {
+          this.router.navigate(['/event-organization']);
         } else {
           this.router.navigate(['/pending']);
         }

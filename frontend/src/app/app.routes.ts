@@ -124,5 +124,131 @@ export const routes: Routes = [
       }
     ]
   },
+  {
+    path: 'event-organization',
+    loadComponent: () =>
+      import('./features/event-organization/event-organization.component').then(m => m.EventOrganizationComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['EVENT_ORGANIZER'] }
+  },
+  {
+    path: 'director/festivals',
+    loadComponent: () =>
+      import('./features/festival-director/director-festival-list/director-festival-list.component').then(m => m.DirectorFestivalListComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['FESTIVAL_DIRECTOR'] }
+  },
+  {
+    path: 'director/festivals/:festivalId/campaign/new',
+    loadComponent: () =>
+      import('./features/festival-director/campaign-form/campaign-form.component').then(m => m.CampaignFormComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['FESTIVAL_DIRECTOR'] }
+  },
+  {
+    path: 'director/festivals/:festivalId/campaign',
+    loadComponent: () =>
+      import('./features/festival-director/campaign-details/campaign-details.component').then(m => m.CampaignDetailsComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['FESTIVAL_DIRECTOR'] }
+  },
+  {
+    path: 'director/festivals/:festivalId/campaign/ads/:adId',
+    loadComponent: () =>
+      import('./features/ad-review/ad-review-overview/ad-review-overview.component').then(m => m.AdReviewOverviewComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['FESTIVAL_DIRECTOR'], audience: 'director' }
+  },
+  {
+    path: 'director/festivals/:festivalId/campaign/ads/:adId/versions/:versionNumber',
+    loadComponent: () =>
+      import('./features/ad-review/ad-version-detail/ad-version-detail.component').then(m => m.AdVersionDetailComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['FESTIVAL_DIRECTOR'], audience: 'director' }
+  },
+  {
+    path: 'director/statistics',
+    loadComponent: () =>
+      import('./features/statistics/statistics-dashboard/statistics-dashboard.component').then(m => m.StatisticsDashboardComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['FESTIVAL_DIRECTOR'], audience: 'director' }
+  },
+  {
+    path: 'manager/festivals',
+    loadComponent: () =>
+      import('./features/festival-manager/manager-festival-list/manager-festival-list.component').then(m => m.ManagerFestivalListComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['FESTIVAL_MANAGER'] }
+  },
+  {
+    path: 'manager/festivals/:festivalId/campaign',
+    loadComponent: () =>
+      import('./features/festival-manager/manager-campaign-workspace/manager-campaign-workspace.component').then(m => m.ManagerCampaignWorkspaceComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['FESTIVAL_MANAGER'] }
+  },
+  {
+    path: 'manager/festivals/:festivalId/campaign/ads/:adId',
+    loadComponent: () =>
+      import('./features/ad-review/ad-review-overview/ad-review-overview.component').then(m => m.AdReviewOverviewComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['FESTIVAL_MANAGER'], audience: 'manager' }
+  },
+  {
+    path: 'manager/festivals/:festivalId/campaign/ads/:adId/edit',
+    loadComponent: () =>
+      import('./features/festival-manager/ad-form/ad-form.component').then(m => m.AdFormComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['FESTIVAL_MANAGER'] }
+  },
+  {
+    path: 'manager/festivals/:festivalId/campaign/ads/:adId/versions/:versionNumber',
+    loadComponent: () =>
+      import('./features/ad-review/ad-version-detail/ad-version-detail.component').then(m => m.AdVersionDetailComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['FESTIVAL_MANAGER'], audience: 'manager' }
+  },
+  {
+    path: 'manager/statistics',
+    loadComponent: () =>
+      import('./features/statistics/statistics-dashboard/statistics-dashboard.component').then(m => m.StatisticsDashboardComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['FESTIVAL_MANAGER'], audience: 'manager' }
+  },
+  {
+    path: 'manager/campaigns/:campaignId/ads/new',
+    loadComponent: () =>
+      import('./features/festival-manager/ad-form/ad-form.component').then(m => m.AdFormComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['FESTIVAL_MANAGER'] }
+  },
+  {
+    path: 'manager/campaigns/:campaignId/ad-types/new',
+    loadComponent: () =>
+      import('./features/festival-manager/ad-type-form/ad-type-form.component').then(m => m.AdTypeFormComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['FESTIVAL_MANAGER'] }
+  },
+  {
+    path: 'manager/campaigns/:campaignId/ad-phases/new',
+    loadComponent: () =>
+      import('./features/festival-manager/ad-phase-form/ad-phase-form.component').then(m => m.AdPhaseFormComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['FESTIVAL_MANAGER'] }
+  },
+  {
+    path: 'creative/ads',
+    loadComponent: () =>
+      import('./features/creative-work/creative-ad-list/creative-ad-list.component').then(m => m.CreativeAdListComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['PRODUCT_DESIGNER', 'TECHNICAL_SUPPORT'] }
+  },
+  {
+    path: 'creative/ads/:adId',
+    loadComponent: () =>
+      import('./features/creative-work/creative-ad-editor/creative-ad-editor.component').then(m => m.CreativeAdEditorComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['PRODUCT_DESIGNER', 'TECHNICAL_SUPPORT'] }
+  },
   { path: '**', redirectTo: '/dashboard' }
 ];

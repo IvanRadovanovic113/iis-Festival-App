@@ -1,0 +1,101 @@
+<div class="form-page">
+  <aside class="sidebar">
+    <div class="avatar">JV</div>
+    <div class="nav-card active">Festivals</div>
+    <div class="nav-card">Notifications</div>
+    <div class="nav-card">Statistics</div>
+    <button class="logout-btn" type="button" (click)="logout()">Log out</button>
+  </aside>
+
+  <main class="content">
+    <header class="header">
+      <a [routerLink]="['/manager/campaigns', route.snapshot.paramMap.get('campaignId'), 'ad-types', 'new']" class="back-link">← Back to the add type creation</a>
+      <h1>Create phase</h1>
+    </header>
+
+    @if (errorMessage) {
+      <div class="error-banner">{{ errorMessage }}</div>
+    }
+
+    <div class="phase-layout">
+      <section class="card">
+        <form [formGroup]="form" (ngSubmit)="save()">
+          <div class="grid">
+            <label class="field">
+              <span>Phase name *</span>
+              <input type="text" formControlName="name" />
+            </label>
+
+            <label class="field">
+              <span>Add type *</span>
+              @if (draftTypeName) {
+                <div class="draft-type-box">{{ draftTypeName }}</div>
+              } @else {
+                <select formControlName="adTypeId">
+                  <option [ngValue]="null" disabled>Select add type</option>
+                  @for (adType of adTypes; track adType.adTypeId) {
+                    <option [ngValue]="adType.adTypeId">{{ adType.name }}</option>
+                  }
+                </select>
+              }
+            </label>
+
+            <label class="field field-full">
+              <span>Phase description *</span>
+              <textarea rows="5" formControlName="description"></textarea>
+            </label>
+
+            <label class="field">
+              <span>Assigned role *</span>
+              <select formControlName="assignedRole">
+                @for (role of assignableRoles; track role.value) {
+                  <option [value]="role.value">{{ role.label }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Order *</span>
+              <input type="number" min="1" formControlName="orderIndex" />
+            </label>
+
+            <div class="field">
+              <span>Email notification *</span>
+              <div class="radio-row">
+                <label><input type="radio" [value]="true" formControlName="emailNotification" /> Yes</label>
+                <label><input type="radio" [value]="false" formControlName="emailNotification" /> No</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="actions">
+            <a class="cancel-btn" [routerLink]="['/manager/campaigns', route.snapshot.paramMap.get('campaignId'), 'ad-types', 'new']">Cancel</a>
+            <button class="create-btn" type="submit" [disabled]="saving">{{ saving ? 'Creating...' : 'Create' }}</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="flow-card">
+        <h2>Flow</h2>
+        @if (phaseFlowItems.length > 0) {
+          @for (phase of phaseFlowItems; track i; let i = $index) {
+            <div class="flow-item">
+              <div class="flow-index">{{ i + 1 }}</div>
+              <div>
+                <strong>{{ phase.name }} @if (phase.isDraft) { <span class="draft-badge">New</span> }</strong>
+                <p>{{ phase.description }}</p>
+                <small>{{ phase.assignedRole }}</small>
+              </div>
+              <div class="flow-actions">
+                <button type="button" class="flow-action-btn" (click)="moveFlowItem(i, -1)">↑</button>
+                <button type="button" class="flow-action-btn" (click)="moveFlowItem(i, 1)">↓</button>
+              </div>
+            </div>
+          }
+        } @else {
+          <p>Select an add type to preview its current phase flow.</p>
+        }
+      </section>
+    </div>
+  </main>
+</div>

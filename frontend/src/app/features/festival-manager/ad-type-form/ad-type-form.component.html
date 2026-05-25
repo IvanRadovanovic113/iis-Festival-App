@@ -1,0 +1,82 @@
+<div class="form-page">
+  <aside class="sidebar">
+    <div class="avatar">JV</div>
+    <div class="nav-card active">Festivals</div>
+    <div class="nav-card">Notifications</div>
+    <div class="nav-card">Statistics</div>
+    <button class="logout-btn" type="button" (click)="logout()">Log out</button>
+  </aside>
+
+  <main class="content">
+    <header class="header">
+      <a [routerLink]="['/manager/campaigns', route.snapshot.paramMap.get('campaignId'), 'ads', 'new']" class="back-link">← Back to the add creation</a>
+      <h1>Create add type</h1>
+    </header>
+
+    @if (errorMessage) {
+      <div class="error-banner">{{ errorMessage }}</div>
+    }
+
+    <section class="card">
+      <form [formGroup]="form" (ngSubmit)="save()">
+        <div class="grid">
+          <label class="field">
+            <span>Add type name *</span>
+            <input type="text" formControlName="name" />
+          </label>
+
+          <label class="field field-tall">
+            <span>Add type description *</span>
+            <textarea rows="6" formControlName="description"></textarea>
+          </label>
+
+          <div class="field">
+            <span>Phases *</span>
+            <div class="phase-picker">
+              @for (phase of phases; track phase.phaseId) {
+                <button
+                  type="button"
+                  class="phase-chip"
+                  [class.selected]="selectedPhaseIds.includes(phase.phaseId)"
+                  (click)="togglePhase(phase.phaseId)">
+                  {{ phase.name }}
+                </button>
+              }
+            </div>
+            @if (selectedPhases.length > 0) {
+              <div class="selected-phases">
+                @for (phase of selectedPhases; track phase.phaseId; let i = $index) {
+                  <div class="selected-phase-card">
+                    <div>
+                      <strong>{{ i + 1 }}. {{ phase.name }}</strong>
+                      <p>{{ phase.assignedRole }}</p>
+                    </div>
+                    <div class="selected-phase-actions">
+                      <button type="button" class="order-btn remove" (click)="togglePhase(phase.phaseId)">✕</button>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+            <button type="button" class="secondary-btn" (click)="openNewPhase()">New phase</button>
+          </div>
+
+          <label class="field">
+            <span>Content type *</span>
+            <select formControlName="contentType">
+              <option value="" disabled>Select content type</option>
+              @for (contentType of contentTypes; track contentType) {
+                <option [value]="contentType">{{ contentType }}</option>
+              }
+            </select>
+          </label>
+        </div>
+
+        <div class="actions">
+          <a class="cancel-btn" [routerLink]="['/manager/campaigns', route.snapshot.paramMap.get('campaignId'), 'ads', 'new']">Cancel</a>
+          <button class="create-btn" type="submit" [disabled]="saving">{{ saving ? 'Creating...' : 'Create' }}</button>
+        </div>
+      </form>
+    </section>
+  </main>
+</div>

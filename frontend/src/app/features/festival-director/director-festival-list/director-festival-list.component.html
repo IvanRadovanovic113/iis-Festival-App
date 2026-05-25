@@ -1,0 +1,99 @@
+<div class="page-shell">
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">Festival director</div>
+      <h1>Campaigns by festival</h1>
+    </div>
+    <div class="topbar-actions">
+      @if (currentUser) {
+        <span class="user-chip">{{ currentUser.username }}</span>
+      }
+      <a class="stats-link" routerLink="/director/statistics">Statistics</a>
+      <button type="button" (click)="logout()">Sign out</button>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <section class="hero-card">
+      <div>
+        <p class="hero-kicker">Overview</p>
+        <h2>Browse every music festival in the system</h2>
+        <p class="hero-copy">
+          Open an existing campaign when a festival already has one, or create a new campaign when it does not.
+        </p>
+      </div>
+      <div class="hero-metrics">
+        <div class="metric">
+          <span class="metric-value">{{ festivals.length }}</span>
+          <span class="metric-label">Festivals</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">{{ campaignCount }}</span>
+          <span class="metric-label">With campaign</span>
+        </div>
+      </div>
+    </section>
+
+    @if (errorMessage) {
+      <div class="error-banner">{{ errorMessage }}</div>
+    }
+
+    <section class="table-card">
+      <div class="table-header">
+        <div>
+          <p class="table-kicker">Festival registry</p>
+          <h3>All available festivals</h3>
+        </div>
+      </div>
+
+      @if (festivals.length === 0) {
+        <div class="empty-state">No festivals available yet.</div>
+      } @else {
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Festival</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Campaign</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (festival of festivals; track festival.festivalId) {
+                <tr>
+                  <td class="festival-name-cell">
+                    <strong>{{ festival.name }}</strong>
+                  </td>
+                  <td>{{ festival.location }}</td>
+                  <td>
+                    <span class="status-badge">{{ getStatusLabel(festival.status) }}</span>
+                  </td>
+                  <td>{{ festival.startDate | date:'dd.MM.yyyy' }}</td>
+                  <td>{{ festival.endDate | date:'dd.MM.yyyy' }}</td>
+                  <td>
+                    @if (festival.hasCampaign) {
+                      <span class="campaign-chip active">{{ festival.campaignName }}</span>
+                    } @else {
+                      <span class="campaign-chip empty">No campaign</span>
+                    }
+                  </td>
+                  <td>
+                    @if (festival.hasCampaign) {
+                      <a class="action-link view" [routerLink]="['/director/festivals', festival.festivalId, 'campaign']">View campaign</a>
+                    } @else {
+                      <a class="action-link create" [routerLink]="['/director/festivals', festival.festivalId, 'campaign', 'new']">Create campaign</a>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </main>
+</div>

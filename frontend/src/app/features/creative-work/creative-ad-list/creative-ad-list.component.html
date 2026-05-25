@@ -1,0 +1,95 @@
+<div class="page-shell">
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">{{ roleLabel }}</div>
+      <h1>Assigned ads</h1>
+      <p class="subtitle">Open every ad currently waiting for your phase and finish the content work there.</p>
+    </div>
+    <div class="topbar-actions">
+      @if (currentUser) {
+        <span class="user-chip">{{ currentUser.username }}</span>
+      }
+      <button type="button" (click)="logout()">Sign out</button>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <section class="hero-card">
+      <div>
+        <p class="hero-kicker">Work queue</p>
+        <h2>Ads assigned to your current phase</h2>
+        <p class="hero-copy">
+          You can update the ad name, description, and content from the detail view. The ad type stays locked.
+        </p>
+      </div>
+      <div class="hero-metrics">
+        <div class="metric">
+          <span class="metric-value">{{ ads.length }}</span>
+          <span class="metric-label">Assigned ads</span>
+        </div>
+      </div>
+    </section>
+
+    @if (errorMessage) {
+      <div class="error-banner">{{ errorMessage }}</div>
+    }
+
+    <section class="table-card">
+      <div class="table-toolbar">
+        <input [(ngModel)]="search" (ngModelChange)="applyFilters()" placeholder="Search by ad or campaign name" />
+        <select [(ngModel)]="selectedType" (ngModelChange)="applyFilters()">
+          <option value="">All types</option>
+          @for (type of typeOptions; track type) {
+            <option [value]="type">{{ type }}</option>
+          }
+        </select>
+        <select [(ngModel)]="selectedFestival" (ngModelChange)="applyFilters()">
+          <option value="">All festivals</option>
+          @for (festival of festivalOptions; track festival) {
+            <option [value]="festival">{{ festival }}</option>
+          }
+        </select>
+        <button class="btn-secondary" type="button" (click)="resetFilters()">Reset</button>
+      </div>
+
+      @if (filteredAds.length === 0) {
+        <div class="empty-state">No ads are currently assigned to your role.</div>
+      } @else {
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Ad</th>
+                <th>Festival</th>
+                <th>Campaign</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Version</th>
+                <th>Last change</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (ad of filteredAds; track ad.adId) {
+                <tr>
+                  <td>
+                    <strong>{{ ad.name }}</strong>
+                  </td>
+                  <td>{{ ad.festivalName }}</td>
+                  <td>{{ ad.campaignName }}</td>
+                  <td>{{ ad.typeName }}</td>
+                  <td><span class="status-dot"></span>{{ ad.status }}</td>
+                  <td>Version {{ ad.versionNumber }}</td>
+                  <td>{{ ad.lastChangeDate | date:'dd.MM.yyyy' }}</td>
+                  <td>
+                    <a class="action-link" [routerLink]="['/creative/ads', ad.adId]">Open</a>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </main>
+</div>

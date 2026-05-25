@@ -1,6 +1,6 @@
 package com.festivalapp.prodaja.dto;
 
-import com.festivalapp.prodaja.model.Stage;
+import com.festivalapp.model.Stage;
 import lombok.Getter;
 import lombok.Setter;
 
