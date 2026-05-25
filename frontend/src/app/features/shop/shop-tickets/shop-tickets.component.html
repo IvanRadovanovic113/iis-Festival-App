@@ -1,0 +1,73 @@
+<div class="page">
+  <div class="page-header">
+    <h2>Available Tickets</h2>
+  </div>
+
+  @if (loading) {
+    <div class="loading">Loading tickets…</div>
+  }
+
+  @if (errorMessage) {
+    <div class="error-banner">{{ errorMessage }}</div>
+  }
+
+  @if (!loading && groups.length === 0 && !errorMessage) {
+    <div class="empty-state">
+      <p>No tickets available at the moment.</p>
+    </div>
+  }
+
+  @for (group of groups; track group.festivalId) {
+    <section class="festival-section">
+      <div class="festival-header">
+        <h3 class="festival-name">{{ group.festivalName }}</h3>
+        <span class="festival-count">{{ group.tickets.length }} type{{ group.tickets.length !== 1 ? 's' : '' }}</span>
+      </div>
+
+      <div class="tickets-grid">
+        @for (ticket of group.tickets; track ticket.ticketTypeId) {
+          <div class="ticket-card" [class.no-price]="ticket.currentPrice === null">
+            <div class="card-top">
+              <div class="ticket-name">{{ ticket.name }}</div>
+              <div class="ticket-price">
+                @if (ticket.currentPrice !== null) {
+                  <span class="price-value">{{ ticket.currentPrice | currency:'EUR':'symbol':'1.2-2' }}</span>
+                } @else {
+                  <span class="no-price-label">No active pricing</span>
+                }
+              </div>
+            </div>
+
+            <div class="availability-row">
+              <div class="avail-bar-wrap">
+                <div class="avail-bar" [style.width.%]="availabilityPct(ticket)"></div>
+              </div>
+              <span class="avail-text">{{ ticket.available }} of {{ ticket.totalQuantity }} left</span>
+            </div>
+
+            @if (ticket.activeBundles.length > 0) {
+              <div class="bundles-row">
+                @for (b of ticket.activeBundles; track $index) {
+                  <span class="bundle-tag">{{ bundleLabel(b) }}</span>
+                }
+              </div>
+            }
+
+            <div class="card-footer">
+              @if (ticket.currentPrice !== null && ticket.available > 0) {
+                <a class="btn-buy"
+                   [routerLink]="['/shop/checkout', ticket.ticketTypeId]">
+                  Buy Ticket
+                </a>
+              } @else {
+                <button class="btn-buy" disabled>
+                  {{ ticket.available === 0 ? 'Sold Out' : 'No Pricing' }}
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+  }
+</div>

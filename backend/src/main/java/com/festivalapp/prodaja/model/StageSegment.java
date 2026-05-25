@@ -1,6 +1,6 @@
 package com.festivalapp.prodaja.model;
 
-import com.festivalapp.model.Segment;
+import com.festivalapp.prodaja.model.Segment;
 import com.festivalapp.model.Stage;
 import jakarta.persistence.*;
 import lombok.*;

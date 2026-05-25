@@ -2,14 +2,14 @@ package com.festivalapp.prodaja.service;
 
 import com.festivalapp.model.Festival;
 import com.festivalapp.model.Role;
-import com.festivalapp.model.Segment;
-import com.festivalapp.model.Stage;
 import com.festivalapp.model.User;
 import com.festivalapp.model.UserFestivalAssignment;
 import com.festivalapp.prodaja.dto.StageSegmentRequest;
 import com.festivalapp.prodaja.dto.StageSegmentResponse;
 import com.festivalapp.prodaja.dto.SegmentRequest;
 import com.festivalapp.prodaja.dto.SegmentResponse;
+import com.festivalapp.prodaja.model.Segment;
+import com.festivalapp.model.Stage;
 import com.festivalapp.prodaja.model.StageSegment;
 import com.festivalapp.prodaja.repository.StageSegmentRepository;
 import com.festivalapp.prodaja.repository.SegmentRepository;
@@ -48,8 +48,14 @@ public class SegmentService {
     }
 
     public List<SegmentResponse> getFestivalSegments(Long festivalId, User user) {
-        Festival festival = requireSalesDirectorFestival(user);
-        validateFestivalAccess(festival, festivalId);
+        // Both SALES_DIRECTOR and SALES_MANAGER can read segments
+        // (SALES_MANAGER needs them for ticket type segment assignment)
+        UserFestivalAssignment assignment = assignmentRepository.findByUser_Id(user.getId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "No festival assignment found"));
+        if (assignment.getRole() != Role.SALES_DIRECTOR && assignment.getRole() != Role.SALES_MANAGER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
+        }
+        validateFestivalAccess(assignment.getFestival(), festivalId);
         return segmentRepository.findByFestival_FestivalId(festivalId)
             .stream().map(SegmentResponse::from).toList();
     }

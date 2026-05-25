@@ -1,0 +1,140 @@
+<div class="page">
+  <div class="page-header">
+    <a [routerLink]="['../..']" class="back-link">← Back to Ticket Types</a>
+    <div class="header-main">
+      <h2>Pricing Periods</h2>
+      @if (ticketType) {
+        <span class="tt-name">{{ ticketType.name }}</span>
+      }
+    </div>
+    <button class="btn-primary" (click)="openAddForm()" [disabled]="showForm">
+      + Add Period
+    </button>
+  </div>
+
+  @if (errorMessage) {
+    <div class="error-banner">{{ errorMessage }}</div>
+  }
+
+  <!-- Global dynamic pricing toggle -->
+  @if (ticketType) {
+    <div class="card toggle-card">
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <span class="toggle-label">Global Dynamic Pricing</span>
+          <span class="toggle-desc">
+            When enabled, individual periods can activate dynamic pricing.
+          </span>
+        </div>
+        <button
+          class="toggle-btn"
+          [class.toggle-on]="ticketType.dynamicPricingActive"
+          [disabled]="togglingPricing"
+          (click)="toggleGlobalDynamicPricing()">
+          {{ ticketType.dynamicPricingActive ? 'ON' : 'OFF' }}
+        </button>
+      </div>
+      @if (hasDynamicPeriodWarning) {
+        <div class="warn-banner">
+          Dynamic pricing is globally enabled but no period has it active.
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Inline add/edit form -->
+  @if (showForm) {
+    <div class="card form-card" [formGroup]="form">
+      <h3 class="card-title">{{ editingId !== null ? 'Edit Period' : 'New Period' }}</h3>
+      <div class="form-grid">
+        <div class="field">
+          <label>Start Date *</label>
+          <input type="date" formControlName="startDate" />
+          @if (startDate.invalid && startDate.touched) {
+            <span class="field-error">Required.</span>
+          }
+        </div>
+        <div class="field">
+          <label>End Date *</label>
+          <input type="date" formControlName="endDate" />
+          @if (endDate.invalid && endDate.touched) {
+            <span class="field-error">Required.</span>
+          }
+        </div>
+        <div class="field">
+          <label>Base Price (€) *</label>
+          <input type="number" formControlName="basePrice" placeholder="e.g. 50.00" min="0.01" step="0.01" />
+          @if (basePrice.invalid && basePrice.touched) {
+            <span class="field-error">Must be > 0.</span>
+          }
+        </div>
+        <div class="field">
+          <label>Min Price (€) *</label>
+          <input type="number" formControlName="minPrice" placeholder="e.g. 30.00" min="0.01" step="0.01" />
+          @if (minPrice.invalid && minPrice.touched) {
+            <span class="field-error">Must be > 0.</span>
+          }
+        </div>
+        <div class="field field-checkbox">
+          <label class="checkbox-item" [class.checked]="form.value.dynamicPricingActive">
+            <input type="checkbox" formControlName="dynamicPricingActive"
+                   [disabled]="!ticketType?.dynamicPricingActive" />
+            <span>Dynamic Pricing Active for this period</span>
+          </label>
+          @if (!ticketType?.dynamicPricingActive) {
+            <span class="field-hint">Enable global dynamic pricing first.</span>
+          }
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-save" (click)="submit()" [disabled]="submitting">
+          {{ submitting ? 'Saving...' : 'Save' }}
+        </button>
+        <button class="btn-cancel" (click)="cancelForm()">Cancel</button>
+      </div>
+    </div>
+  }
+
+  <!-- Periods table -->
+  @if (periods.length === 0 && !showForm) {
+    <div class="empty-state">
+      <p>No pricing periods yet. Add the first one.</p>
+    </div>
+  }
+
+  @if (periods.length > 0) {
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th>Base Price</th>
+          <th>Min Price</th>
+          <th>Dynamic</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of periods; track p.pricingPeriodId) {
+          <tr [class.editing-row]="editingId === p.pricingPeriodId">
+            <td>{{ p.startDate }}</td>
+            <td>{{ p.endDate }}</td>
+            <td>€{{ p.basePrice | number:'1.2-2' }}</td>
+            <td>€{{ p.minPrice | number:'1.2-2' }}</td>
+            <td>
+              <span class="badge"
+                    [class.badge-active]="p.dynamicPricingActive"
+                    [class.badge-inactive]="!p.dynamicPricingActive">
+                {{ p.dynamicPricingActive ? 'Active' : 'Off' }}
+              </span>
+            </td>
+            <td class="actions">
+              <button class="btn-link" (click)="openEditForm(p)">Edit</button>
+              <button class="btn-danger-sm" (click)="deletePeriod(p)">Delete</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

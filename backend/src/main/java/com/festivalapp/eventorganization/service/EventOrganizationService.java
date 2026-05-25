@@ -6,6 +6,7 @@ import com.festivalapp.eventorganization.model.StageResource;
 import com.festivalapp.eventorganization.repository.EventResourceRepository;
 import com.festivalapp.eventorganization.repository.StageResourceRepository;
 import com.festivalapp.model.*;
+import com.festivalapp.model.Stage;
 import com.festivalapp.repository.StageRepository;
 import com.festivalapp.repository.UserFestivalAssignmentRepository;
 import lombok.RequiredArgsConstructor;

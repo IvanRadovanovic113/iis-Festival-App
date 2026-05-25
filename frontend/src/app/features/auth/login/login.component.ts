@@ -31,18 +31,20 @@ export class LoginComponent {
     this.error = '';
     this.authService.login(this.form.value as LoginRequest).subscribe({
       next: (response) => {
+        const festivalRole = response.user.assignment?.festivalRole;
         if (response.user.role === 'ADMIN') {
           this.router.navigate(['/dashboard']);
-        } else if (response.user.assignment?.festivalRole === 'FESTIVAL_DIRECTOR') {
+        } else if (response.user.role === 'BUYER') {
+          this.router.navigate(['/shop']);
+        } else if (festivalRole === 'SALES_DIRECTOR' || festivalRole === 'SALES_MANAGER') {
+          this.router.navigate(['/manager/ticket-types']);
+        } else if (festivalRole === 'FESTIVAL_DIRECTOR') {
           this.router.navigate(['/director/festivals']);
-        } else if (response.user.assignment?.festivalRole === 'FESTIVAL_MANAGER') {
+        } else if (festivalRole === 'FESTIVAL_MANAGER') {
           this.router.navigate(['/manager/festivals']);
-        } else if (
-          response.user.assignment?.festivalRole === 'PRODUCT_DESIGNER' ||
-          response.user.assignment?.festivalRole === 'TECHNICAL_SUPPORT'
-        ) {
+        } else if (festivalRole === 'PRODUCT_DESIGNER' || festivalRole === 'TECHNICAL_SUPPORT') {
           this.router.navigate(['/creative/ads']);
-        } else if (response.user.assignment?.festivalRole === 'EVENT_ORGANIZER' || response.user.role === 'EVENT_ORGANIZER') {
+        } else if (festivalRole === 'EVENT_ORGANIZER') {
           this.router.navigate(['/event-organization']);
         } else {
           this.router.navigate(['/pending']);

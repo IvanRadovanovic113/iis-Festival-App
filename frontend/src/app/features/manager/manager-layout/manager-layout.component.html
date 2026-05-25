@@ -1,0 +1,47 @@
+<div class="shell">
+  <header class="top-bar">
+    <span class="brand">Festival App</span>
+    <div class="user-actions">
+      @if (currentUser) {
+        <span class="username">{{ currentUser.username }}</span>
+      }
+      <button (click)="logout()">Sign out</button>
+    </div>
+  </header>
+
+  <div class="body">
+    <nav class="sidebar">
+      @if (currentUser?.assignment) {
+        <div class="festival-name">{{ currentUser!.assignment!.festivalName }}</div>
+      }
+      <ul class="nav-list">
+        @if (currentUser?.assignment?.festivalRole === 'SALES_DIRECTOR') {
+          <li>
+            <a routerLink="stages" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">🎪</span> Stages
+            </a>
+          </li>
+          <li>
+            <a routerLink="segments" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">🗂</span> Segments
+            </a>
+          </li>
+        }
+        <li>
+          <a routerLink="ticket-types" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">🎫</span> Ticket Types
+          </a>
+        </li>
+        <li>
+          <a routerLink="promotions" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">🏷️</span> Promotions
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <main class="content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

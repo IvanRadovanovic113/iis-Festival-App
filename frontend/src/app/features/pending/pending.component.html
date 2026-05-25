@@ -27,8 +27,9 @@
             <span class="detail-value">{{ currentUser!.assignment!.festivalRole }}</span>
           </div>
         </div>
-        @if (currentUser?.assignment?.festivalRole === 'SALES_DIRECTOR') {
-          <a routerLink="/sales" class="btn-work">Manage stages</a>
+        @if (currentUser?.assignment?.festivalRole === 'SALES_DIRECTOR' ||
+             currentUser?.assignment?.festivalRole === 'SALES_MANAGER') {
+          <a routerLink="/manager/ticket-types" class="btn-work">Go to workspace</a>
         }
         @if (currentUser?.assignment?.festivalRole === 'FESTIVAL_DIRECTOR') {
           <a routerLink="/director/festivals" class="btn-work">Manage campaigns</a>

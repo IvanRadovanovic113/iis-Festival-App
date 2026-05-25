@@ -45,6 +45,17 @@ services:
     networks:
       - festival-network
 
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: festival-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    networks:
+      - festival-network
+
 networks:
   festival-network:
     driver: bridge

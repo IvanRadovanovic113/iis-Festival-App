@@ -1,0 +1,75 @@
+<div class="page">
+  <div class="page-header">
+    <h2>Ticket Types</h2>
+    <a routerLink="new" class="btn-primary">+ New Ticket Type</a>
+  </div>
+
+  @if (errorMessage) {
+    <div class="error-banner">{{ errorMessage }}</div>
+  }
+
+  @if (ticketTypes.length === 0) {
+    <div class="empty-state">
+      <p>No ticket types yet. Create the first one.</p>
+    </div>
+  } @else {
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Segments</th>
+          <th>Sold / Total</th>
+          <th>Dynamic Pricing</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (tt of ticketTypes; track tt.ticketTypeId) {
+          <tr>
+            <td class="name-cell">{{ tt.name }}</td>
+            <td>
+              @if (tt.segments.length === 0) {
+                <span class="muted">—</span>
+              } @else {
+                <div class="tag-list">
+                  @for (s of tt.segments; track s.segmentId) {
+                    <span class="tag">{{ s.name }}</span>
+                  }
+                </div>
+              }
+            </td>
+            <td>
+              <div class="sold-info">
+                <span [class.warn]="soldPercent(tt) >= 80">
+                  {{ tt.soldCount }} / {{ tt.totalQuantity }}
+                </span>
+                <div class="progress-bar">
+                  <div class="progress-fill"
+                       [style.width.%]="soldPercent(tt)"
+                       [class.warn]="soldPercent(tt) >= 80">
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="badge" [class.badge-active]="tt.dynamicPricingActive"
+                                  [class.badge-inactive]="!tt.dynamicPricingActive">
+                {{ tt.dynamicPricingActive ? 'Active' : 'Inactive' }}
+              </span>
+            </td>
+            <td class="actions">
+              <a [routerLink]="[tt.ticketTypeId, 'periods']" class="btn-link">Periods</a>
+              <a [routerLink]="[tt.ticketTypeId, 'edit']" class="btn-link">Edit</a>
+              <button class="btn-danger-sm"
+                      (click)="delete(tt)"
+                      [disabled]="tt.soldCount > 0"
+                      [title]="tt.soldCount > 0 ? 'Cannot delete — tickets sold' : 'Delete'">
+                Delete
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

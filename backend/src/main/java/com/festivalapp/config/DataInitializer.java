@@ -3,11 +3,14 @@ package com.festivalapp.config;
 import com.festivalapp.model.Festival;
 import com.festivalapp.model.FestivalStatus;
 import com.festivalapp.model.Role;
-import com.festivalapp.model.Stage;
 import com.festivalapp.model.User;
 import com.festivalapp.model.UserFestivalAssignment;
+import com.festivalapp.model.Stage;
 import com.festivalapp.model.AdPhase;
 import com.festivalapp.model.AdType;
+import com.festivalapp.prodaja.model.KupacTier;
+import com.festivalapp.prodaja.model.TierConfig;
+import com.festivalapp.prodaja.repository.TierConfigRepository;
 import com.festivalapp.repository.FestivalRepository;
 import com.festivalapp.repository.StageRepository;
 import com.festivalapp.repository.AdPhaseRepository;
@@ -18,10 +21,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -35,9 +40,22 @@ public class DataInitializer implements ApplicationRunner {
     private final AdTypeRepository adTypeRepository;
     private final UserFestivalAssignmentRepository assignmentRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbcTemplate;
+    private final TierConfigRepository tierConfigRepository;
 
     @Override
     public void run(ApplicationArguments args) {
+        migrateKupciTierConstraint();
+        migrateAssignmentRoleConstraint();
+        migrateUsersRoleConstraint();
+        createAdminUser();
+        seedTierConfig();
+        createTriggers();
+    }
+
+    // ─── Admin korisnik ──────────────────────────────────────────────────────
+
+    private void createAdminUser() {
         if (!userRepository.existsByUsername("admin")) {
             User admin = User.builder()
                 .username("admin")
@@ -195,5 +213,128 @@ public class DataInitializer implements ApplicationRunner {
             .contentType(contentType)
             .phases(java.util.Arrays.stream(phases).toList())
             .build());
+    }
+
+    // ─── DB migracije ────────────────────────────────────────────────────────
+
+    /**
+     * Stari CHECK constraint dozvoljava samo BRONZE/SILVER/GOLD.
+     * Zamenjujemo ga novim koji uključuje i STANDARD.
+     */
+    private void migrateKupciTierConstraint() {
+        jdbcTemplate.execute(
+            "ALTER TABLE kupci DROP CONSTRAINT IF EXISTS kupci_tier_check");
+        jdbcTemplate.execute(
+            "ALTER TABLE kupci ADD CONSTRAINT kupci_tier_check " +
+            "CHECK (tier IN ('STANDARD','BRONZE','SILVER','GOLD'))");
+        log.info("kupci_tier_check constraint updated to include STANDARD");
+    }
+
+    /**
+     * Stari CHECK constraint na users.role možda ne uključuje BUYER koji je dodat
+     * u našoj grani. Zamenjujemo ga novim koji pokriva cijeli Role enum.
+     */
+    private void migrateUsersRoleConstraint() {
+        jdbcTemplate.execute(
+            "ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check");
+        jdbcTemplate.execute(
+            "ALTER TABLE users ADD CONSTRAINT users_role_check " +
+            "CHECK (role IS NULL OR role IN ('ADMIN','FESTIVAL_DIRECTOR','FESTIVAL_MANAGER','PRODUCT_DESIGNER'," +
+            "'TECHNICAL_SUPPORT','SALES_DIRECTOR','SALES_MANAGER','EVENT_ORGANIZER'," +
+            "'MARKETING_MANAGER','BUYER'))");
+        log.info("users_role_check constraint updated with all roles");
+    }
+
+    /**
+     * Stari CHECK constraint na user_festival_assignments.role možda ne uključuje
+     * sve uloge koje su dodate nakon merge-a (EVENT_ORGANIZER, SALES_DIRECTOR, itd.).
+     * Zamenjujemo ga novim koji pokriva cijeli Role enum.
+     */
+    private void migrateAssignmentRoleConstraint() {
+        jdbcTemplate.execute(
+            "ALTER TABLE user_festival_assignments DROP CONSTRAINT IF EXISTS user_festival_assignments_role_check");
+        jdbcTemplate.execute(
+            "ALTER TABLE user_festival_assignments ADD CONSTRAINT user_festival_assignments_role_check " +
+            "CHECK (role IN ('ADMIN','FESTIVAL_DIRECTOR','FESTIVAL_MANAGER','PRODUCT_DESIGNER'," +
+            "'TECHNICAL_SUPPORT','SALES_DIRECTOR','SALES_MANAGER','EVENT_ORGANIZER'," +
+            "'MARKETING_MANAGER','BUYER'))");
+        log.info("user_festival_assignments_role_check constraint updated with all roles");
+    }
+
+    // ─── Tier konfiguracija ──────────────────────────────────────────────────
+
+    private void seedTierConfig() {
+        if (tierConfigRepository.count() == 0) {
+            tierConfigRepository.saveAll(List.of(
+                TierConfig.builder().tier(KupacTier.BRONZE).minTickets(5).discountPercent(5).build(),
+                TierConfig.builder().tier(KupacTier.SILVER).minTickets(20).discountPercent(10).build(),
+                TierConfig.builder().tier(KupacTier.GOLD).minTickets(50).discountPercent(15).build()
+            ));
+            log.info("Tier config seeded: BRONZE(5 karata/5%), SILVER(20/10%), GOLD(50/15%)");
+        }
+    }
+
+    // ─── DB Trigeri ──────────────────────────────────────────────────────────
+
+    private void createTriggers() {
+        createSoldCountTrigger();
+        createUkupnoKupovinesTrigger();
+        log.info("DB triggers created/updated");
+    }
+
+    /**
+     * Nakon INSERT na karte → inkrement ticket_types.sold_count za 1.
+     * Radi JOIN kupovine → ticket_types.
+     */
+    private void createSoldCountTrigger() {
+        jdbcTemplate.execute("""
+            CREATE OR REPLACE FUNCTION fn_update_sold_count()
+            RETURNS TRIGGER AS $$
+            BEGIN
+                UPDATE ticket_types tt
+                SET sold_count = sold_count + 1
+                FROM kupovine k
+                WHERE k.kupovina_id = NEW.kupovina_id
+                  AND k.ticket_type_id = tt.ticket_type_id;
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql;
+            """);
+
+        jdbcTemplate.execute("DROP TRIGGER IF EXISTS trg_sold_count ON karte;");
+        jdbcTemplate.execute("""
+            CREATE TRIGGER trg_sold_count
+            AFTER INSERT ON karte
+            FOR EACH ROW
+            EXECUTE FUNCTION fn_update_sold_count();
+            """);
+    }
+
+    /**
+     * Nakon INSERT na karte → inkrement kupci.ukupno_kupovina za 1.
+     * Radi JOIN kupovine → kupci.
+     */
+    private void createUkupnoKupovinesTrigger() {
+        jdbcTemplate.execute("""
+            CREATE OR REPLACE FUNCTION fn_update_ukupno_kupovina()
+            RETURNS TRIGGER AS $$
+            BEGIN
+                UPDATE kupci kc
+                SET ukupno_kupovina = ukupno_kupovina + 1
+                FROM kupovine k
+                WHERE k.kupovina_id = NEW.kupovina_id
+                  AND k.kupac_id = kc.kupac_id;
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql;
+            """);
+
+        jdbcTemplate.execute("DROP TRIGGER IF EXISTS trg_ukupno_kupovina ON karte;");
+        jdbcTemplate.execute("""
+            CREATE TRIGGER trg_ukupno_kupovina
+            AFTER INSERT ON karte
+            FOR EACH ROW
+            EXECUTE FUNCTION fn_update_ukupno_kupovina();
+            """);
     }
 }

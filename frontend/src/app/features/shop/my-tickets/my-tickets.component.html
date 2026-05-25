@@ -1,0 +1,69 @@
+<div class="page">
+  <div class="page-header">
+    <h2>My Tickets</h2>
+  </div>
+
+  @if (loading) {
+    <div class="loading">Loading your purchases…</div>
+  }
+
+  @if (errorMessage) {
+    <div class="error-banner">{{ errorMessage }}</div>
+  }
+
+  @if (!loading && purchases.length === 0 && !errorMessage) {
+    <div class="empty-state">
+      <div class="empty-icon">🎫</div>
+      <p>You haven't bought any tickets yet.</p>
+      <a routerLink="/shop/tickets" class="btn-shop">Browse Tickets</a>
+    </div>
+  }
+
+  @if (!loading && purchases.length > 0) {
+    <div class="purchases-list">
+      @for (p of purchases; track p.kupovinaId) {
+        <div class="purchase-card">
+
+          <!-- Card header — always visible -->
+          <div class="card-header" (click)="toggle(p.kupovinaId)">
+            <div class="card-header-left">
+              <div class="festival-name">{{ p.festivalName }}</div>
+              <div class="ticket-type-name">{{ p.ticketTypeName }}</div>
+            </div>
+
+            <div class="card-header-center">
+              <span class="ticket-count">{{ p.totalTickets }} ticket{{ p.totalTickets !== 1 ? 's' : '' }}</span>
+              <span class="purchase-date">{{ p.datum | date:'dd MMM yyyy, HH:mm' }}</span>
+            </div>
+
+            <div class="card-header-right">
+              <span class="price">{{ p.finalPrice | currency:'EUR':'symbol':'1.2-2' }}</span>
+              <span class="toggle-icon">{{ isExpanded(p.kupovinaId) ? '▲' : '▼' }}</span>
+            </div>
+          </div>
+
+          <!-- Expandable ticket list -->
+          @if (isExpanded(p.kupovinaId)) {
+            <div class="card-body">
+              <div class="karte-grid">
+                @for (karta of p.karte; track karta.kartaId; let i = $index) {
+                  <div class="karta-item">
+                    <div class="karta-header">
+                      <span class="karta-num">#{{ i + 1 }}</span>
+                      <span class="karta-status" [class]="statusClass(karta.status)">
+                        {{ karta.status }}
+                      </span>
+                    </div>
+                    <div class="qr-label">QR Code</div>
+                    <code class="qr-code">{{ karta.qrKod }}</code>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+        </div>
+      }
+    </div>
+  }
+</div>

@@ -1,0 +1,58 @@
+<div class="page">
+  <div class="page-header">
+    <a [routerLink]="['../..']" class="back-link">← Back</a>
+    <h2>{{ isEdit ? 'Edit Ticket Type' : 'New Ticket Type' }}</h2>
+    <button class="btn-save" (click)="submit()" [disabled]="submitting">
+      {{ submitting ? 'Saving...' : 'Save' }}
+    </button>
+  </div>
+
+  @if (errorMessage) {
+    <div class="error-banner">{{ errorMessage }}</div>
+  }
+
+  <div class="form-body" [formGroup]="form">
+
+    <!-- Basic info -->
+    <div class="card">
+      <h3 class="card-title">Basic Information</h3>
+      <div class="form-row">
+        <div class="field">
+          <label>Name *</label>
+          <input type="text" formControlName="name" placeholder="e.g. General Admission" />
+          @if (name.invalid && name.touched) {
+            <span class="field-error">Min. 2 characters required.</span>
+          }
+        </div>
+        <div class="field">
+          <label>Total Quantity *</label>
+          <input type="number" formControlName="totalQuantity" placeholder="e.g. 5000" min="1" />
+          @if (totalQuantity.invalid && totalQuantity.touched) {
+            <span class="field-error">Must be at least 1.</span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Segment access -->
+    <div class="card">
+      <h3 class="card-title">Stage Segment Access</h3>
+      @if (segments.length === 0) {
+        <p class="muted">No segments defined for this festival yet.</p>
+      } @else {
+        <div class="checkbox-grid">
+          @for (s of segments; track s.segmentId) {
+            <label class="checkbox-item" [class.checked]="isSelected(s.segmentId)">
+              <input
+                type="checkbox"
+                [checked]="isSelected(s.segmentId)"
+                (change)="toggleSegment(s.segmentId)" />
+              <span>{{ s.name }}</span>
+            </label>
+          }
+        </div>
+      }
+    </div>
+
+  </div>
+</div>
