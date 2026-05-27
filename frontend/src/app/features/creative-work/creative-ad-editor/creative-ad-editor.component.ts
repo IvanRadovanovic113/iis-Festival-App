@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { CampaignService } from '../../../core/services/campaign.service';
 import { Ad } from '../../../core/models/campaign.model';
@@ -15,8 +15,7 @@ import { Ad } from '../../../core/models/campaign.model';
 })
 export class CreativeAdEditorComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
+  readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
   private readonly campaignService = inject(CampaignService);
 
@@ -27,8 +26,6 @@ export class CreativeAdEditorComponent implements OnInit {
   readonly currentUser = this.authService.getCurrentUser();
 
   form = this.fb.group({
-    name: ['', Validators.required],
-    description: ['', Validators.required],
     contentValue: ['', Validators.required]
   });
 
@@ -95,15 +92,14 @@ export class CreativeAdEditorComponent implements OnInit {
   }
 
   load(): void {
+    const campaignId = Number(this.route.snapshot.paramMap.get('campaignId'));
     const adId = Number(this.route.snapshot.paramMap.get('adId'));
     this.errorMessage = '';
-    this.campaignService.getCreativeAd(adId).subscribe({
+    this.campaignService.getCreativeAd(campaignId, adId).subscribe({
       next: ad => {
         this.ad = ad;
         this.selectedFileName = ad.contentValue ?? '';
         this.form.patchValue({
-          name: ad.name,
-          description: ad.description,
           contentValue: ad.contentValue ?? ''
         });
       },
@@ -147,17 +143,13 @@ export class CreativeAdEditorComponent implements OnInit {
 
     this.saving = true;
     this.errorMessage = '';
-    this.campaignService.updateCreativeAd(this.ad.adId, this.form.getRawValue() as {
-      name: string;
-      description: string;
+    this.campaignService.updateCreativeAd(Number(this.route.snapshot.paramMap.get('campaignId')), this.ad.adId, this.form.getRawValue() as {
       contentValue: string;
     }).subscribe({
       next: updatedAd => {
         this.ad = updatedAd;
         this.selectedFileName = this.ad.contentValue ?? '';
         this.form.patchValue({
-          name: this.ad.name,
-          description: this.ad.description,
           contentValue: this.ad.contentValue ?? ''
         });
         this.saving = false;

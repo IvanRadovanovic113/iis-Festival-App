@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { CampaignService } from '../../../core/services/campaign.service';
-import { Ad } from '../../../core/models/campaign.model';
+import { CreativeCampaign } from '../../../core/models/campaign.model';
 
 @Component({
   selector: 'app-creative-ad-list',
@@ -17,10 +17,9 @@ export class CreativeAdListComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly campaignService = inject(CampaignService);
 
-  ads: Ad[] = [];
-  filteredAds: Ad[] = [];
+  campaigns: CreativeCampaign[] = [];
+  filteredCampaigns: CreativeCampaign[] = [];
   search = '';
-  selectedType = '';
   selectedFestival = '';
   errorMessage = '';
   readonly currentUser = this.authService.getCurrentUser();
@@ -34,40 +33,38 @@ export class CreativeAdListComponent implements OnInit {
     return role === 'PRODUCT_DESIGNER' ? 'Product designer' : 'Technical support';
   }
 
-  get typeOptions(): string[] {
-    return Array.from(new Set(this.ads.map(ad => ad.typeName)));
+  get festivalOptions(): string[] {
+    return Array.from(new Set(this.campaigns.map(campaign => campaign.festivalName)));
   }
 
-  get festivalOptions(): string[] {
-    return Array.from(new Set(this.ads.map(ad => ad.festivalName)));
+  get totalEligibleAds(): number {
+    return this.campaigns.reduce((sum, campaign) => sum + campaign.eligibleAds, 0);
   }
 
   load(): void {
     this.errorMessage = '';
-    this.campaignService.getCreativeAds().subscribe({
-      next: ads => {
-        this.ads = ads;
+    this.campaignService.getCreativeCampaigns().subscribe({
+      next: campaigns => {
+        this.campaigns = campaigns;
         this.applyFilters();
       },
-      error: () => this.errorMessage = 'Error loading assigned ads.'
+      error: () => this.errorMessage = 'Error loading campaigns.'
     });
   }
 
   applyFilters(): void {
     const term = this.search.trim().toLowerCase();
-    this.filteredAds = this.ads.filter(ad => {
+    this.filteredCampaigns = this.campaigns.filter(campaign => {
       const matchesSearch = !term
-        || ad.name.toLowerCase().includes(term)
-        || ad.campaignName.toLowerCase().includes(term);
-      const matchesType = !this.selectedType || ad.typeName === this.selectedType;
-      const matchesFestival = !this.selectedFestival || ad.festivalName === this.selectedFestival;
-      return matchesSearch && matchesType && matchesFestival;
+        || campaign.campaignName.toLowerCase().includes(term)
+        || campaign.festivalName.toLowerCase().includes(term);
+      const matchesFestival = !this.selectedFestival || campaign.festivalName === this.selectedFestival;
+      return matchesSearch && matchesFestival;
     });
   }
 
   resetFilters(): void {
     this.search = '';
-    this.selectedType = '';
     this.selectedFestival = '';
     this.applyFilters();
   }

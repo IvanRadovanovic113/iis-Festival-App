@@ -1,19 +1,27 @@
 <div class="page-shell">
-  <header class="topbar">
-    <div>
-      <a routerLink="/creative/ads" class="back-link">← Back to assigned ads</a>
-      <div class="eyebrow">{{ roleLabel }}</div>
-      <h1>Edit ad content</h1>
-    </div>
-    <div class="topbar-actions">
-      @if (currentUser) {
-        <span class="user-chip">{{ currentUser.username }}</span>
-      }
-      <button type="button" (click)="logout()">Sign out</button>
-    </div>
-  </header>
+  <aside class="sidebar">
+    <div class="avatar">{{ currentUser?.username || 'User' }}</div>
+    <nav class="nav-stack">
+      <a class="nav-item active" routerLink="/creative/campaigns">Campaigns</a>
+      <a class="nav-item">Notifications</a>
+    </nav>
+    <button type="button" class="logout-btn" (click)="logout()">Log out</button>
+  </aside>
 
   <main class="page-content">
+    <header class="topbar">
+      <div>
+        <a [routerLink]="['/creative/campaigns', route.snapshot.paramMap.get('campaignId')]" class="back-link">← Back to campaign ads</a>
+        <div class="eyebrow">{{ roleLabel }}</div>
+        <h1>Edit ad content</h1>
+      </div>
+      <div class="topbar-actions">
+        @if (currentUser) {
+          <span class="user-chip">{{ currentUser.username }}</span>
+        }
+      </div>
+    </header>
+
     @if (errorMessage) {
       <div class="error-banner">{{ errorMessage }}</div>
     }
@@ -42,8 +50,8 @@
         <form [formGroup]="form" (ngSubmit)="save()">
           <div class="grid">
             <label class="field">
-              <span>Ad name *</span>
-              <input type="text" formControlName="name" />
+              <span>Ad name</span>
+              <input type="text" [value]="ad.name" readonly />
             </label>
 
             <label class="field">
@@ -52,8 +60,8 @@
             </label>
 
             <label class="field field-full">
-              <span>Ad description *</span>
-              <textarea rows="5" formControlName="description"></textarea>
+              <span>Ad description</span>
+              <textarea rows="5" [value]="ad.description" readonly></textarea>
             </label>
 
             <div class="field field-full">
@@ -79,11 +87,11 @@
           </div>
 
           <div class="hint-box">
-            The ad type is locked at this stage. You can only update the ad name, description, and content.
+            Only the content field can be updated in this workflow. Name, description, and ad type are locked.
           </div>
 
           <div class="actions">
-            <a class="btn-secondary" routerLink="/creative/ads">Cancel</a>
+            <a class="btn-secondary" [routerLink]="['/creative/campaigns', route.snapshot.paramMap.get('campaignId')]">Cancel</a>
             <button class="btn-primary" type="submit" [disabled]="saving">
               {{ saving ? 'Saving...' : 'Save changes' }}
             </button>

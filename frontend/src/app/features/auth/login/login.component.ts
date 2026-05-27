@@ -43,7 +43,7 @@ export class LoginComponent {
         } else if (festivalRole === 'FESTIVAL_MANAGER') {
           this.router.navigate(['/manager/festivals']);
         } else if (festivalRole === 'PRODUCT_DESIGNER' || festivalRole === 'TECHNICAL_SUPPORT') {
-          this.router.navigate(['/creative/ads']);
+          this.router.navigate(['/creative/campaigns']);
         } else if (festivalRole === 'EVENT_ORGANIZER') {
           this.router.navigate(['/event-organization']);
         } else if (festivalRole === 'NEGOTIATION_MANAGER') {

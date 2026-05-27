@@ -1,24 +1,69 @@
 .page-shell {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f7f8f3 0%, #eef1e6 100%);
-  color: #1e281f;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  background:
+    radial-gradient(circle at top right, rgba(196, 168, 94, 0.12), transparent 18%),
+    linear-gradient(180deg, #f8f6ef 0%, #eeece2 100%);
+  color: #1f1b17;
 }
 
-.topbar,
-.page-content {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
-}
-
-.topbar {
-  padding-top: 2rem;
-  padding-bottom: 1rem;
+.sidebar {
+  margin: 1.5rem;
+  padding: 1.5rem 1rem;
+  border-radius: 28px;
+  background: rgba(216, 214, 206, 0.9);
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: white;
+  display: grid;
+  place-items: center;
+  padding: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+  word-break: break-word;
+}
+
+.nav-stack {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.nav-item,
+.logout-btn {
+  display: block;
+  padding: 1rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.52);
+  font-weight: 700;
+  text-decoration: none;
+  color: inherit;
+}
+
+.nav-item.active,
+.logout-btn {
+  background: white;
+}
+
+.logout-btn {
+  margin-top: auto;
+  border: 0;
+  cursor: pointer;
+}
+
+.page-content {
+  padding: 1.5rem 1.5rem 2rem 0;
+  display: grid;
   gap: 1rem;
-  align-items: center;
 }
 
 .eyebrow,
@@ -40,50 +85,36 @@ h2 {
   color: #556454;
 }
 
-.topbar-actions {
+.page-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
-.user-chip,
-button,
+.header-chip,
 .btn-secondary,
 .action-link {
-  border-radius: 999px;
   font-weight: 600;
 }
 
-.user-chip {
-  padding: 0.65rem 1rem;
-  background: rgba(255, 255, 255, 0.85);
+.header-chip {
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  background: #f3efe4;
 }
 
-button,
 .btn-secondary,
 .action-link {
   padding: 0.8rem 1.2rem;
   text-decoration: none;
 }
 
-button {
-  border: 0;
-  background: #1f5c3c;
-  color: white;
-  cursor: pointer;
-}
-
 .btn-secondary {
   background: transparent;
-  color: #1e281f;
-  border: 1px solid #cad1c2;
-}
-
-.page-content {
-  padding-top: 0.5rem;
-  padding-bottom: 2rem;
-  display: grid;
-  gap: 1rem;
+  color: #1f1b17;
+  border: 1px solid #d4ccbe;
+  border-radius: 18px;
 }
 
 .hero-card,
@@ -112,7 +143,7 @@ button {
   min-width: 132px;
   padding: 1rem;
   border-radius: 20px;
-  background: #f4f6ef;
+  background: #f5f1e6;
   text-align: center;
 }
 
@@ -137,7 +168,7 @@ button {
 
 .table-toolbar {
   display: grid;
-  grid-template-columns: 1.4fr repeat(2, minmax(0, 1fr)) auto;
+  grid-template-columns: 1.6fr minmax(0, 1fr) auto;
   gap: 0.75rem;
   margin-bottom: 1rem;
 }
@@ -197,7 +228,19 @@ th {
 }
 
 @media (max-width: 900px) {
-  .topbar,
+  .page-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    margin: 1rem;
+  }
+
+  .page-content {
+    padding: 0 1rem 1.5rem;
+  }
+
+  .page-header,
   .hero-card {
     flex-direction: column;
   }

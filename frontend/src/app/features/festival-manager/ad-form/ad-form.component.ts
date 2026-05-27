@@ -25,6 +25,7 @@ export class AdFormComponent implements OnInit {
   ad: Ad | null = null;
   errorMessage = '';
   saving = false;
+  readonly currentUser = this.authService.getCurrentUser();
 
   form = this.fb.group({
     name: ['', Validators.required],

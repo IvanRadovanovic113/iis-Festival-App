@@ -14,6 +14,7 @@ import {
   CampaignManagerOption,
   CampaignRequest,
   CampaignWorkspace,
+  CreativeCampaign,
   CreativeAdUpdateRequest,
   FestivalCampaignOverview,
   ManagerAdUpdateRequest,
@@ -83,16 +84,20 @@ export class CampaignService {
     return this.http.post(`${this.MANAGER_API}/ad-phases`, request);
   }
 
-  getCreativeAds() {
-    return this.http.get<Ad[]>(`${this.CREATIVE_API}/ads`);
+  getCreativeCampaigns() {
+    return this.http.get<CreativeCampaign[]>(`${this.CREATIVE_API}/campaigns`);
   }
 
-  getCreativeAd(adId: number) {
-    return this.http.get<Ad>(`${this.CREATIVE_API}/ads/${adId}`);
+  getCreativeCampaignAds(campaignId: number) {
+    return this.http.get<Ad[]>(`${this.CREATIVE_API}/campaigns/${campaignId}/ads`);
   }
 
-  updateCreativeAd(adId: number, request: CreativeAdUpdateRequest) {
-    return this.http.put<Ad>(`${this.CREATIVE_API}/ads/${adId}`, request);
+  getCreativeAd(campaignId: number, adId: number) {
+    return this.http.get<Ad>(`${this.CREATIVE_API}/campaigns/${campaignId}/ads/${adId}`);
+  }
+
+  updateCreativeAd(campaignId: number, adId: number, request: CreativeAdUpdateRequest) {
+    return this.http.put<Ad>(`${this.CREATIVE_API}/campaigns/${campaignId}/ads/${adId}`, request);
   }
 
   getAdReview(festivalId: number, adId: number) {

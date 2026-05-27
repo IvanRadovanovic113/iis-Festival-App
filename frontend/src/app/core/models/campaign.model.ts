@@ -61,6 +61,7 @@ export interface Ad {
   currentPhaseId: number;
   contentValue: string;
   festivalName: string;
+  festivalLocation: string;
   campaignName: string;
 }
 
@@ -68,6 +69,17 @@ export interface CampaignWorkspace {
   campaign: Campaign;
   stats: CampaignStats;
   ads: Ad[];
+}
+
+export interface CreativeCampaign {
+  campaignId: number;
+  campaignName: string;
+  festivalName: string;
+  festivalLocation: string;
+  festivalStatus: string;
+  startDate: string;
+  endDate: string;
+  eligibleAds: number;
 }
 
 export interface AdVersionSummary {
@@ -153,8 +165,6 @@ export interface AdRequest {
 }
 
 export interface CreativeAdUpdateRequest {
-  name: string;
-  description: string;
   contentValue: string;
 }
 

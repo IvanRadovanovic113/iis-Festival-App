@@ -1,0 +1,93 @@
+<div class="page-shell">
+  <aside class="sidebar">
+    <div class="avatar">{{ currentUser?.username || 'User' }}</div>
+    <nav class="nav-stack">
+      <a class="nav-item active" routerLink="/creative/campaigns">Campaigns</a>
+      <a class="nav-item">Notifications</a>
+    </nav>
+    <button type="button" class="logout-btn" (click)="logout()">Log out</button>
+  </aside>
+
+  <main class="page-content">
+    <header class="page-header">
+      <div>
+        <a routerLink="/creative/campaigns" class="back-link">← Back to campaigns</a>
+        <p class="eyebrow">{{ roleLabel }}</p>
+        <h1>{{ campaignName }}</h1>
+        <p class="subtitle">{{ subtitle }}</p>
+      </div>
+      <div class="header-chip">{{ currentUser?.username }}</div>
+    </header>
+
+    @if (errorMessage) {
+      <div class="error-banner">{{ errorMessage }}</div>
+    }
+
+    <section class="hero-card">
+      <div>
+        <p class="hero-kicker">Content queue</p>
+        <h2>Ads waiting for your content</h2>
+        <p class="hero-copy">You can change only the content field. Name, description and ad type stay locked.</p>
+      </div>
+      <div class="metrics">
+        <div class="metric-box">
+          <strong>{{ ads.length }}</strong>
+          <span>Eligible ads</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="table-card">
+      <div class="table-toolbar">
+        <input [(ngModel)]="search" (ngModelChange)="applyFilters()" placeholder="Search by ad name" />
+        <select [(ngModel)]="selectedType" (ngModelChange)="applyFilters()">
+          <option value="">All types</option>
+          @for (type of typeOptions; track type) {
+            <option [value]="type">{{ type }}</option>
+          }
+        </select>
+        <select [(ngModel)]="selectedStatus" (ngModelChange)="applyFilters()">
+          <option value="">All status</option>
+          @for (status of statusOptions; track status) {
+            <option [value]="status">{{ status }}</option>
+          }
+        </select>
+        <button class="ghost-btn" type="button" (click)="resetFilters()">Reset</button>
+      </div>
+
+      @if (filteredAds.length === 0) {
+        <div class="empty-state">No ads in this campaign currently require your content type.</div>
+      } @else {
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Last change</th>
+                <th>Version</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (ad of filteredAds; track ad.adId) {
+                <tr>
+                  <td>{{ ad.name }}</td>
+                  <td>{{ ad.typeName }}</td>
+                  <td>{{ ad.lastChangeDate | date:'dd.MM.yyyy' }}</td>
+                  <td>Version {{ ad.versionNumber }}</td>
+                  <td>{{ ad.status }}</td>
+                  <td class="actions">
+                    <a class="action-link secondary" [routerLink]="['/creative/campaigns', campaignId, 'ads', ad.adId]">Open</a>
+                    <a class="action-link" [routerLink]="['/creative/campaigns', campaignId, 'ads', ad.adId]">Edit content</a>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </main>
+</div>

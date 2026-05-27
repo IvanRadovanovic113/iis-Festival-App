@@ -38,7 +38,7 @@
           <a routerLink="/manager/festivals" class="btn-work">Open campaigns</a>
         }
         @if (currentUser?.assignment?.festivalRole === 'PRODUCT_DESIGNER' || currentUser?.assignment?.festivalRole === 'TECHNICAL_SUPPORT') {
-          <a routerLink="/creative/ads" class="btn-work">Open assigned ads</a>
+          <a routerLink="/creative/campaigns" class="btn-work">Open campaigns</a>
         }
         <button class="btn-refresh" (click)="refresh()" [disabled]="refreshing">
           {{ refreshing ? 'Refreshing...' : 'Refresh' }}

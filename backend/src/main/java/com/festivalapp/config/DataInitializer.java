@@ -8,6 +8,8 @@ import com.festivalapp.model.UserFestivalAssignment;
 import com.festivalapp.model.Stage;
 import com.festivalapp.model.AdPhase;
 import com.festivalapp.model.AdType;
+import com.festivalapp.model.Ad;
+import com.festivalapp.model.Campaign;
 import com.festivalapp.model.eventorganization.EventReservationRequest;
 import com.festivalapp.model.eventorganization.EventReservationStatus;
 import com.festivalapp.model.eventorganization.EventResource;
@@ -25,6 +27,9 @@ import com.festivalapp.repository.AdPhaseRepository;
 import com.festivalapp.repository.AdTypeRepository;
 import com.festivalapp.repository.UserFestivalAssignmentRepository;
 import com.festivalapp.repository.UserRepository;
+import com.festivalapp.repository.CampaignRepository;
+import com.festivalapp.repository.AdRepository;
+import com.festivalapp.service.AdVersionSnapshotService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -51,6 +56,9 @@ public class DataInitializer implements ApplicationRunner {
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbcTemplate;
     private final TierConfigRepository tierConfigRepository;
+    private final CampaignRepository campaignRepository;
+    private final AdRepository adRepository;
+    private final AdVersionSnapshotService adVersionSnapshotService;
     private final EventReservationRequestRepository reservationRequestRepository;
     private final EventResourceRepository eventResourceRepository;
     private final RequestResourceRepository requestResourceRepository;
@@ -197,8 +205,36 @@ public class DataInitializer implements ApplicationRunner {
         AdPhase published = ensurePhase("PUBLISHED", "Published to the selected channel", 6, false, Role.PRODUCT_DESIGNER);
 
         ensureAdType("Animated", "Animated campaign assets for digital channels", "Video", draft, approvedTechnical, visuallyPrepared, approved, rejected, published);
+        ensureAdType("Image", "Image-based campaign visuals and posters", "Image", draft, visuallyPrepared, approved, rejected, published);
         ensureAdType("Text", "Text-based copy for campaign communication", "Text", draft, approvedTechnical, approved, rejected, published);
         ensureAdType("Audio", "Audio spots and supporting sound assets", "Audio", draft, approvedTechnical, approved, rejected, published);
+
+        Campaign demoCampaign = campaignRepository.findByFestival_FestivalId(demoFestival.getFestivalId())
+            .orElseGet(() -> campaignRepository.save(Campaign.builder()
+                .name("EXIT Campaign")
+                .description("Default seeded campaign for creative workflow testing.")
+                .startDate(demoFestival.getStartDate())
+                .endDate(demoFestival.getEndDate())
+                .festival(demoFestival)
+                .managerUser(festivalManager)
+                .build()));
+
+        AdType textType = adTypeRepository.findAllByOrderByNameAsc().stream()
+            .filter(type -> type.getName().equalsIgnoreCase("Text"))
+            .findFirst()
+            .orElseThrow();
+        AdType imageType = adTypeRepository.findAllByOrderByNameAsc().stream()
+            .filter(type -> type.getName().equalsIgnoreCase("Image"))
+            .findFirst()
+            .orElseThrow();
+        AdType audioType = adTypeRepository.findAllByOrderByNameAsc().stream()
+            .filter(type -> type.getName().equalsIgnoreCase("Audio"))
+            .findFirst()
+            .orElseThrow();
+
+        ensureAd(demoCampaign, textType, draft, "Text EXIT 2026", "Seeded text ad for product designer testing.", "Initial text content");
+        ensureAd(demoCampaign, imageType, visuallyPrepared, "Poster EXIT 2026", "Seeded image ad for product designer testing.", "poster-exit-2026.png");
+        ensureAd(demoCampaign, audioType, approvedTechnical, "Audio EXIT 2026", "Seeded audio ad for technical support testing.", "audio-exit-2026.mp3");
     }
 
     private void seedEventOrganizationRequests() {
@@ -374,6 +410,26 @@ public class DataInitializer implements ApplicationRunner {
             .contentType(contentType)
             .phases(java.util.Arrays.stream(phases).toList())
             .build());
+    }
+
+    private void ensureAd(Campaign campaign, AdType adType, AdPhase currentPhase, String name, String description, String contentValue) {
+        boolean exists = adRepository.findAll().stream()
+            .anyMatch(ad -> ad.getCampaign().getCampaignId().equals(campaign.getCampaignId()) && ad.getName().equalsIgnoreCase(name));
+        if (exists) {
+            return;
+        }
+
+        Ad ad = adRepository.save(Ad.builder()
+            .campaign(campaign)
+            .adType(adType)
+            .currentPhase(currentPhase)
+            .name(name)
+            .description(description)
+            .contentFileName(contentValue)
+            .lastChangeDate(LocalDate.now())
+            .versionNumber(1)
+            .build());
+        adVersionSnapshotService.captureSnapshot(ad);
     }
 
     // ─── DB migracije ────────────────────────────────────────────────────────

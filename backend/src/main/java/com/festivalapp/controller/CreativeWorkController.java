@@ -1,6 +1,7 @@
 package com.festivalapp.controller;
 
 import com.festivalapp.dto.AdResponse;
+import com.festivalapp.dto.CreativeCampaignResponse;
 import com.festivalapp.dto.CreativeAdUpdateRequest;
 import com.festivalapp.model.User;
 import com.festivalapp.service.CreativeWorkService;
@@ -19,22 +20,32 @@ public class CreativeWorkController {
 
     private final CreativeWorkService creativeWorkService;
 
-    @GetMapping("/ads")
-    public ResponseEntity<List<AdResponse>> getAssignedAds(@AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(creativeWorkService.getAssignedAds(user));
+    @GetMapping("/campaigns")
+    public ResponseEntity<List<CreativeCampaignResponse>> getCampaigns(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(creativeWorkService.getCampaigns(user));
     }
 
-    @GetMapping("/ads/{adId}")
-    public ResponseEntity<AdResponse> getAd(@PathVariable Long adId, @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(creativeWorkService.getAd(adId, user));
+    @GetMapping("/campaigns/{campaignId}/ads")
+    public ResponseEntity<List<AdResponse>> getCampaignAds(@PathVariable Long campaignId, @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(creativeWorkService.getCampaignAds(campaignId, user));
     }
 
-    @PutMapping("/ads/{adId}")
+    @GetMapping("/campaigns/{campaignId}/ads/{adId}")
+    public ResponseEntity<AdResponse> getAd(
+        @PathVariable Long campaignId,
+        @PathVariable Long adId,
+        @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(creativeWorkService.getAd(campaignId, adId, user));
+    }
+
+    @PutMapping("/campaigns/{campaignId}/ads/{adId}")
     public ResponseEntity<AdResponse> updateAd(
+        @PathVariable Long campaignId,
         @PathVariable Long adId,
         @Valid @RequestBody CreativeAdUpdateRequest request,
         @AuthenticationPrincipal User user
     ) {
-        return ResponseEntity.ok(creativeWorkService.updateAd(adId, request, user));
+        return ResponseEntity.ok(creativeWorkService.updateAd(campaignId, adId, request, user));
     }
 }
