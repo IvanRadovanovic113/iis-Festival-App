@@ -135,6 +135,36 @@
                 <button type="button" class="primary-button" (click)="approveSelectedRequest()">Approve</button>
               </div>
             </form>
+
+            <section class="request-resources">
+              <h3>Requested resources</h3>
+              <form [formGroup]="requestResourceForm" (ngSubmit)="addResourceToSelectedRequest()" class="request-resource-form">
+                <select formControlName="resourceId">
+                  @for (resource of resources; track resource.id) {
+                    <option [ngValue]="resource.id">{{ resource.name }} · {{ resource.type }}</option>
+                  }
+                </select>
+                <input type="number" min="1" formControlName="quantity" />
+                <button type="submit" class="outline-button">Add</button>
+              </form>
+              <div class="request-resource-list">
+                @for (resource of selectedRequestResources; track resource.id) {
+                  <div class="request-resource-row">
+                    <div>
+                      <strong>{{ resource.resourceName }}</strong>
+                      <span>{{ resource.quantity }}/{{ resource.totalQuantity }} · {{ resource.resourceType }}</span>
+                    </div>
+                    <span class="resource-status" [class.confirmed]="resource.status === 'CONFIRMED'" [class.unavailable]="resource.status === 'UNAVAILABLE'">
+                      {{ requestResourceStatusLabel(resource.status) }}
+                    </span>
+                    <button type="button" class="outline-button" (click)="confirmRequestResource(resource)">Confirm</button>
+                    <button type="button" class="outline-button danger" (click)="removeRequestResource(resource)">Remove</button>
+                  </div>
+                } @empty {
+                  <p class="empty-table">No resources requested for this performance.</p>
+                }
+              </div>
+            </section>
           } @else {
             <section class="empty-card">
               <h2>No request selected</h2>

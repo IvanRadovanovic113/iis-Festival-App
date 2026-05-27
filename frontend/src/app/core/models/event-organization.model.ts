@@ -60,6 +60,24 @@ export interface EventReservationReviewRequest {
   reviewNote: string | null;
 }
 
+export type RequestResourceStatus = 'REQUESTED' | 'CONFIRMED' | 'UNAVAILABLE';
+
+export interface RequestResource {
+  id: number;
+  reservationRequestId: number;
+  resourceId: number;
+  resourceName: string;
+  resourceType: string;
+  quantity: number;
+  totalQuantity: number;
+  status: RequestResourceStatus;
+}
+
+export interface RequestResourceRequest {
+  resourceId: number;
+  quantity: number;
+}
+
 export interface TimetableSlot {
   date: string;
   startTime: string;

@@ -8,6 +8,8 @@ import {
   EventReservationStatus,
   EventResource,
   EventResourceRequest,
+  RequestResource,
+  RequestResourceRequest,
   StageResource,
   StageResourceRequest,
   TimetableSlot
@@ -33,6 +35,26 @@ export class EventOrganizationService {
 
   rejectReservationRequest(requestId: number, request: EventReservationReviewRequest): Observable<EventReservationRequest> {
     return this.http.put<EventReservationRequest>(`${this.API}/requests/${requestId}/reject`, request);
+  }
+
+  getRequestResources(requestId: number): Observable<RequestResource[]> {
+    return this.http.get<RequestResource[]>(`${this.API}/requests/${requestId}/resources`);
+  }
+
+  addResourceToRequest(requestId: number, request: RequestResourceRequest): Observable<RequestResource> {
+    return this.http.post<RequestResource>(`${this.API}/requests/${requestId}/resources`, request);
+  }
+
+  updateRequestResource(requestId: number, resourceId: number, request: RequestResourceRequest): Observable<RequestResource> {
+    return this.http.put<RequestResource>(`${this.API}/requests/${requestId}/resources/${resourceId}`, request);
+  }
+
+  confirmRequestResource(requestId: number, resourceId: number): Observable<RequestResource> {
+    return this.http.put<RequestResource>(`${this.API}/requests/${requestId}/resources/${resourceId}/confirm`, {});
+  }
+
+  removeResourceFromRequest(requestId: number, resourceId: number): Observable<void> {
+    return this.http.delete<void>(`${this.API}/requests/${requestId}/resources/${resourceId}`);
   }
 
   getResources(): Observable<EventResource[]> {

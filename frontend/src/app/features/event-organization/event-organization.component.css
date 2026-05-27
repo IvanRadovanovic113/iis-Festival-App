@@ -158,7 +158,6 @@ button {
   height: 55px;
 }
 
-.empty-requests,
 .placeholder-page,
 .empty-card {
   border: 1px solid #f4deea;
@@ -168,7 +167,6 @@ button {
   color: #766579;
 }
 
-.empty-requests h2,
 .placeholder-page h1,
 .empty-card h2 {
   margin: 0 0 8px;
@@ -348,6 +346,53 @@ button {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+.request-resources {
+  margin-top: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.request-resource-form,
+.request-resource-row {
+  display: grid;
+  grid-template-columns: 1fr 76px auto;
+  gap: 8px;
+}
+
+.request-resource-form select,
+.request-resource-form input {
+  height: 40px;
+  border: 1px solid #e3d6ea;
+  border-radius: 8px;
+  padding: 0 10px;
+  background: #fff;
+}
+
+.request-resource-row {
+  grid-template-columns: 1fr 104px auto auto;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid #f1e7f2;
+}
+
+.request-resource-row div span {
+  color: #8e808d;
+  font-size: 13px;
+}
+
+.resource-status {
+  color: #a56416;
+  font-weight: 700;
+}
+
+.resource-status.confirmed {
+  color: #197b51;
+}
+
+.resource-status.unavailable {
+  color: #b8243d;
 }
 
 .stage-tabs {

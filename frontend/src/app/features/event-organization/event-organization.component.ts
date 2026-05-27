@@ -10,6 +10,7 @@ import {
   EventReservationRequest,
   EventReservationStatus,
   EventResource,
+  RequestResource,
   StageResource,
   TimetableSlot
 } from '../../core/models/event-organization.model';
@@ -56,6 +57,7 @@ export class EventOrganizationComponent implements OnInit {
   stages: Stage[] = [];
   reservationRequests: EventReservationRequest[] = [];
   selectedReservationRequest: EventReservationRequest | null = null;
+  selectedRequestResources: RequestResource[] = [];
   resources: EventResource[] = [];
   stageResources: StageResource[] = [];
   allStageResources: StageResource[] = [];
@@ -82,6 +84,11 @@ export class EventOrganizationComponent implements OnInit {
 
   reviewForm = this.fb.group({
     reviewNote: ['']
+  });
+
+  requestResourceForm = this.fb.group({
+    resourceId: [null as number | null, Validators.required],
+    quantity: [1, [Validators.required, Validators.min(1)]]
   });
 
   resourceForm = this.fb.group({
@@ -182,9 +189,11 @@ export class EventOrganizationComponent implements OnInit {
         this.reservationRequests = requests;
         this.selectedReservationRequest = requests[0] ?? null;
         this.selectedStageId = stages[0]?.stageId ?? null;
+        this.requestResourceForm.patchValue({ resourceId: resources[0]?.id ?? null });
         this.requestForm.patchValue({ stageId: this.selectedStageId });
         this.resourceForm.patchValue({ stageId: this.selectedStageId });
         this.refreshStageData();
+        this.loadSelectedRequestResources();
       },
       error: () => this.errorMessage = 'Unable to load event organization data.'
     });
@@ -233,6 +242,8 @@ export class EventOrganizationComponent implements OnInit {
   selectReservationRequest(request: EventReservationRequest): void {
     this.selectedReservationRequest = request;
     this.reviewForm.reset({ reviewNote: request.reviewNote ?? '' });
+    this.requestResourceForm.reset({ resourceId: this.resources[0]?.id ?? null, quantity: 1 });
+    this.loadSelectedRequestResources();
     this.clearMessages();
   }
 
@@ -262,6 +273,7 @@ export class EventOrganizationComponent implements OnInit {
           notes: ''
         });
         this.reloadReservationRequests(request.id);
+        this.selectedRequestResources = [];
       },
       error: err => this.errorMessage = err.error?.message || 'Unable to create reservation request.'
     });
@@ -293,6 +305,54 @@ export class EventOrganizationComponent implements OnInit {
         this.reloadReservationRequests(request.id);
       },
       error: err => this.errorMessage = err.error?.message || 'Unable to reject reservation request.'
+    });
+  }
+
+  addResourceToSelectedRequest(): void {
+    if (!this.selectedReservationRequest) return;
+    if (this.requestResourceForm.invalid) {
+      this.requestResourceForm.markAllAsTouched();
+      return;
+    }
+
+    const value = this.requestResourceForm.getRawValue();
+    this.eventOrganizationService.addResourceToRequest(this.selectedReservationRequest.id, {
+      resourceId: Number(value.resourceId),
+      quantity: Number(value.quantity)
+    }).subscribe({
+      next: () => {
+        this.successMessage = 'Resource requested for performance.';
+        this.requestResourceForm.reset({ resourceId: this.resources[0]?.id ?? null, quantity: 1 });
+        this.loadSelectedRequestResources();
+      },
+      error: err => this.errorMessage = err.error?.message || 'Unable to add resource to request.'
+    });
+  }
+
+  confirmRequestResource(resource: RequestResource): void {
+    if (!this.selectedReservationRequest) return;
+
+    this.eventOrganizationService.confirmRequestResource(this.selectedReservationRequest.id, resource.resourceId).subscribe({
+      next: () => {
+        this.successMessage = 'Resource availability confirmed.';
+        this.loadSelectedRequestResources();
+      },
+      error: err => {
+        this.errorMessage = err.error?.message || 'Unable to confirm resource availability.';
+        this.loadSelectedRequestResources();
+      }
+    });
+  }
+
+  removeRequestResource(resource: RequestResource): void {
+    if (!this.selectedReservationRequest) return;
+
+    this.eventOrganizationService.removeResourceFromRequest(this.selectedReservationRequest.id, resource.resourceId).subscribe({
+      next: () => {
+        this.successMessage = 'Resource removed from request.';
+        this.loadSelectedRequestResources();
+      },
+      error: () => this.errorMessage = 'Unable to remove resource from request.'
     });
   }
 
@@ -451,6 +511,10 @@ export class EventOrganizationComponent implements OnInit {
     return status.charAt(0) + status.slice(1).toLowerCase();
   }
 
+  requestResourceStatusLabel(status: string): string {
+    return status.charAt(0) + status.slice(1).toLowerCase();
+  }
+
   logout(): void {
     this.authService.logout();
   }
@@ -472,8 +536,21 @@ export class EventOrganizationComponent implements OnInit {
         this.selectedReservationRequest = requests.find(request => request.id === selectedRequestId)
           ?? this.filteredReservationRequests[0]
           ?? null;
+        this.loadSelectedRequestResources();
       },
       error: () => this.errorMessage = 'Unable to reload reservation requests.'
+    });
+  }
+
+  private loadSelectedRequestResources(): void {
+    if (!this.selectedReservationRequest) {
+      this.selectedRequestResources = [];
+      return;
+    }
+
+    this.eventOrganizationService.getRequestResources(this.selectedReservationRequest.id).subscribe({
+      next: resources => this.selectedRequestResources = resources,
+      error: () => this.errorMessage = 'Unable to load request resources.'
     });
   }
 
