@@ -22,6 +22,10 @@ export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   const festivalHome = (fr: string | undefined): string => {
     if (fr === 'SALES_DIRECTOR' || fr === 'SALES_MANAGER') return '/manager';
     if (fr === 'NEGOTIATION_MANAGER') return '/negotiation-manager';
+    if (fr === 'EVENT_ORGANIZER') return '/event-organization';
+    if (fr === 'FESTIVAL_DIRECTOR') return '/director/festivals';
+    if (fr === 'FESTIVAL_MANAGER') return '/manager/festivals';
+    if (fr === 'PRODUCT_DESIGNER' || fr === 'TECHNICAL_SUPPORT') return '/creative/ads';
     return '/pending';
   };
 
