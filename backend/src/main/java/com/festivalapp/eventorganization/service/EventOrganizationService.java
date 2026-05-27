@@ -4,9 +4,12 @@ import com.festivalapp.eventorganization.dto.*;
 import com.festivalapp.eventorganization.model.EventResource;
 import com.festivalapp.eventorganization.model.EventReservationRequest;
 import com.festivalapp.eventorganization.model.EventReservationStatus;
+import com.festivalapp.eventorganization.model.RequestResource;
+import com.festivalapp.eventorganization.model.RequestResourceStatus;
 import com.festivalapp.eventorganization.model.StageResource;
 import com.festivalapp.eventorganization.repository.EventResourceRepository;
 import com.festivalapp.eventorganization.repository.EventReservationRequestRepository;
+import com.festivalapp.eventorganization.repository.RequestResourceRepository;
 import com.festivalapp.eventorganization.repository.StageResourceRepository;
 import com.festivalapp.model.*;
 import com.festivalapp.model.Stage;
@@ -32,6 +35,7 @@ public class EventOrganizationService {
 
     private final EventResourceRepository eventResourceRepository;
     private final EventReservationRequestRepository reservationRequestRepository;
+    private final RequestResourceRepository requestResourceRepository;
     private final StageResourceRepository stageResourceRepository;
     private final StageRepository stageRepository;
     private final UserFestivalAssignmentRepository assignmentRepository;
@@ -79,6 +83,12 @@ public class EventOrganizationService {
         if (!startTime.isBefore(endTime)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Start time must be before end time");
         }
+    }
+
+    private RequestResource requireRequestResource(Long requestId, Long resourceId, Festival festival) {
+        requireReservationRequest(requestId, festival);
+        return requestResourceRepository.findByReservationRequest_IdAndResource_Id(requestId, resourceId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request resource was not found"));
     }
 
     public List<EventResourceResponse> getResources(User user) {
@@ -156,6 +166,72 @@ public class EventOrganizationService {
         reservationRequest.setReviewNote(reviewRequest.getReviewNote());
         reservationRequest.setReviewedAt(LocalDateTime.now());
         return EventReservationResponse.from(reservationRequestRepository.save(reservationRequest));
+    }
+
+    public List<RequestResourceResponse> getRequestResources(Long requestId, User user) {
+        Festival festival = requireEventOrganizerFestival(user);
+        requireReservationRequest(requestId, festival);
+        return requestResourceRepository.findByReservationRequest_IdOrderByResource_NameAsc(requestId)
+            .stream().map(RequestResourceResponse::from).toList();
+    }
+
+    public RequestResourceResponse addResourceToRequest(Long requestId, RequestResourceRequest request, User user) {
+        Festival festival = requireEventOrganizerFestival(user);
+        EventReservationRequest reservationRequest = requireReservationRequest(requestId, festival);
+        EventResource resource = requireResource(request.getResourceId(), festival);
+        validateQuantity(request.getQuantity(), resource);
+        if (requestResourceRepository.existsByReservationRequest_IdAndResource_Id(requestId, request.getResourceId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This resource is already requested for the reservation");
+        }
+        RequestResource requestResource = RequestResource.builder()
+            .reservationRequest(reservationRequest)
+            .resource(resource)
+            .quantity(request.getQuantity())
+            .status(RequestResourceStatus.REQUESTED)
+            .build();
+        return RequestResourceResponse.from(requestResourceRepository.save(requestResource));
+    }
+
+    public RequestResourceResponse updateRequestResource(Long requestId, Long resourceId, RequestResourceRequest request, User user) {
+        Festival festival = requireEventOrganizerFestival(user);
+        RequestResource requestResource = requireRequestResource(requestId, resourceId, festival);
+        EventResource resource = requireResource(resourceId, festival);
+        validateQuantity(request.getQuantity(), resource);
+        requestResource.setQuantity(request.getQuantity());
+        requestResource.setStatus(RequestResourceStatus.REQUESTED);
+        return RequestResourceResponse.from(requestResourceRepository.save(requestResource));
+    }
+
+    public RequestResourceResponse confirmRequestResource(Long requestId, Long resourceId, User user) {
+        Festival festival = requireEventOrganizerFestival(user);
+        RequestResource requestResource = requireRequestResource(requestId, resourceId, festival);
+        EventReservationRequest reservationRequest = requestResource.getReservationRequest();
+        if (reservationRequest.getStatus() == EventReservationStatus.REJECTED || reservationRequest.getStatus() == EventReservationStatus.CANCELLED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Resources cannot be confirmed for rejected or cancelled requests");
+        }
+        Integer overlappingQuantity = requestResourceRepository.sumOverlappingQuantityByResource(
+            resourceId,
+            requestId,
+            reservationRequest.getPerformanceDate(),
+            reservationRequest.getStartTime(),
+            reservationRequest.getEndTime(),
+            RequestResourceStatus.CONFIRMED
+        );
+        int availableQuantity = requestResource.getResource().getTotalQuantity() - overlappingQuantity;
+        if (requestResource.getQuantity() > availableQuantity) {
+            requestResource.setStatus(RequestResourceStatus.UNAVAILABLE);
+            requestResourceRepository.save(requestResource);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Requested quantity is not available in this time slot");
+        }
+        requestResource.setStatus(RequestResourceStatus.CONFIRMED);
+        return RequestResourceResponse.from(requestResourceRepository.save(requestResource));
+    }
+
+    @Transactional
+    public void removeResourceFromRequest(Long requestId, Long resourceId, User user) {
+        Festival festival = requireEventOrganizerFestival(user);
+        requireRequestResource(requestId, resourceId, festival);
+        requestResourceRepository.deleteByReservationRequest_IdAndResource_Id(requestId, resourceId);
     }
 
     public EventResourceResponse createResource(EventResourceRequest request, User user) {

@@ -53,6 +53,48 @@ public class EventOrganizationController {
         return ResponseEntity.ok(eventOrganizationService.rejectReservationRequest(requestId, request, user));
     }
 
+    @GetMapping("/requests/{requestId}/resources")
+    public ResponseEntity<List<RequestResourceResponse>> getRequestResources(
+            @PathVariable Long requestId,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(eventOrganizationService.getRequestResources(requestId, user));
+    }
+
+    @PostMapping("/requests/{requestId}/resources")
+    public ResponseEntity<RequestResourceResponse> addResourceToRequest(
+            @PathVariable Long requestId,
+            @Valid @RequestBody RequestResourceRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(eventOrganizationService.addResourceToRequest(requestId, request, user));
+    }
+
+    @PutMapping("/requests/{requestId}/resources/{resourceId}")
+    public ResponseEntity<RequestResourceResponse> updateRequestResource(
+            @PathVariable Long requestId,
+            @PathVariable Long resourceId,
+            @Valid @RequestBody RequestResourceRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(eventOrganizationService.updateRequestResource(requestId, resourceId, request, user));
+    }
+
+    @PutMapping("/requests/{requestId}/resources/{resourceId}/confirm")
+    public ResponseEntity<RequestResourceResponse> confirmRequestResource(
+            @PathVariable Long requestId,
+            @PathVariable Long resourceId,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(eventOrganizationService.confirmRequestResource(requestId, resourceId, user));
+    }
+
+    @DeleteMapping("/requests/{requestId}/resources/{resourceId}")
+    public ResponseEntity<Void> removeResourceFromRequest(
+            @PathVariable Long requestId,
+            @PathVariable Long resourceId,
+            @AuthenticationPrincipal User user) {
+        eventOrganizationService.removeResourceFromRequest(requestId, resourceId, user);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/resources")
     public ResponseEntity<List<EventResourceResponse>> getResources(@AuthenticationPrincipal User user) {
         return ResponseEntity.ok(eventOrganizationService.getResources(user));
