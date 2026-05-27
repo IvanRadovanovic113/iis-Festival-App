@@ -6,12 +6,19 @@ import { AuthService } from '../../core/services/auth.service';
 import { BinaService } from '../../core/services/bina.service';
 import { EventOrganizationService } from '../../core/services/event-organization.service';
 import { Stage } from '../../core/models/bina.model';
-import { EventResource, StageResource } from '../../core/models/event-organization.model';
+import {
+  EventReservationRequest,
+  EventReservationStatus,
+  EventResource,
+  StageResource,
+  TimetableSlot
+} from '../../core/models/event-organization.model';
 import { User } from '../../core/models/user.model';
 
 type MainTab = 'requests' | 'timetable' | 'resources' | 'tasks' | 'analytics';
 type ResourceTab = 'manage' | 'inventory';
 type ResourceModalMode = 'add' | 'edit';
+type RequestFilter = 'All' | EventReservationStatus;
 
 interface InventoryRow {
   resource: EventResource;
@@ -41,16 +48,19 @@ export class EventOrganizationComponent implements OnInit {
 
   currentUser: User | null = null;
   activeTab: MainTab = 'requests';
-  activeRequestFilter = 'All';
+  activeRequestFilter: RequestFilter = 'All';
   activeResourceTab: ResourceTab = 'manage';
   errorMessage = '';
   successMessage = '';
 
   stages: Stage[] = [];
+  reservationRequests: EventReservationRequest[] = [];
+  selectedReservationRequest: EventReservationRequest | null = null;
   resources: EventResource[] = [];
   stageResources: StageResource[] = [];
   allStageResources: StageResource[] = [];
   selectedStageId: number | null = null;
+  timetableSlots: Record<string, Record<string, TimetableSlot>> = {};
 
   modalMode: ResourceModalMode | null = null;
   editingStageResource: StageResource | null = null;
@@ -60,6 +70,19 @@ export class EventOrganizationComponent implements OnInit {
   inventoryStageFilter = 'All';
   timetableWeekOffset = 0;
   timetableHours = ['14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
+
+  requestForm = this.fb.group({
+    performerName: ['', [Validators.required, Validators.minLength(2)]],
+    stageId: [null as number | null, Validators.required],
+    performanceDate: [this.formatApiDate(new Date()), Validators.required],
+    startTime: ['18:00', Validators.required],
+    endTime: ['19:00', Validators.required],
+    notes: ['']
+  });
+
+  reviewForm = this.fb.group({
+    reviewNote: ['']
+  });
 
   resourceForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
@@ -72,6 +95,13 @@ export class EventOrganizationComponent implements OnInit {
 
   get selectedStage(): Stage | null {
     return this.stages.find(stage => stage.stageId === this.selectedStageId) ?? null;
+  }
+
+  get filteredReservationRequests(): EventReservationRequest[] {
+    return this.reservationRequests.filter(request => {
+      if (this.activeRequestFilter === 'All') return true;
+      return request.status === this.activeRequestFilter;
+    });
   }
 
   get inventoryRows(): InventoryRow[] {
@@ -115,7 +145,7 @@ export class EventOrganizationComponent implements OnInit {
       date.setDate(start.getDate() + index);
 
       return {
-        key: date.toISOString(),
+        key: this.formatApiDate(date),
         dayName,
         dateLabel: this.formatShortDate(date)
       };
@@ -143,12 +173,16 @@ export class EventOrganizationComponent implements OnInit {
     this.clearMessages();
     forkJoin({
       stages: this.stageService.getAll(),
-      resources: this.eventOrganizationService.getResources()
+      resources: this.eventOrganizationService.getResources(),
+      requests: this.eventOrganizationService.getReservationRequests()
     }).subscribe({
-      next: ({ stages, resources }) => {
+      next: ({ stages, resources, requests }) => {
         this.stages = stages;
         this.resources = resources;
+        this.reservationRequests = requests;
+        this.selectedReservationRequest = requests[0] ?? null;
         this.selectedStageId = stages[0]?.stageId ?? null;
+        this.requestForm.patchValue({ stageId: this.selectedStageId });
         this.resourceForm.patchValue({ stageId: this.selectedStageId });
         this.refreshStageData();
       },
@@ -174,14 +208,92 @@ export class EventOrganizationComponent implements OnInit {
 
   selectStage(stageId: number): void {
     this.selectedStageId = stageId;
+    this.requestForm.patchValue({ stageId });
     this.resourceForm.patchValue({ stageId });
     this.stageResources = this.allStageResources.filter(item => item.stageId === stageId);
     this.clearMessages();
+    if (this.activeTab === 'timetable') {
+      this.loadTimetable();
+    }
   }
 
   setTab(tab: MainTab): void {
     this.activeTab = tab;
     this.clearMessages();
+    if (tab === 'timetable') {
+      this.loadTimetable();
+    }
+  }
+
+  setRequestFilter(filter: RequestFilter): void {
+    this.activeRequestFilter = filter;
+    this.selectedReservationRequest = this.filteredReservationRequests[0] ?? null;
+  }
+
+  selectReservationRequest(request: EventReservationRequest): void {
+    this.selectedReservationRequest = request;
+    this.reviewForm.reset({ reviewNote: request.reviewNote ?? '' });
+    this.clearMessages();
+  }
+
+  createReservationRequest(): void {
+    if (this.requestForm.invalid) {
+      this.requestForm.markAllAsTouched();
+      return;
+    }
+
+    const value = this.requestForm.getRawValue();
+    this.eventOrganizationService.createReservationRequest({
+      performerName: value.performerName!,
+      stageId: Number(value.stageId),
+      performanceDate: value.performanceDate!,
+      startTime: value.startTime!,
+      endTime: value.endTime!,
+      notes: value.notes || null
+    }).subscribe({
+      next: request => {
+        this.successMessage = 'Reservation request created.';
+        this.requestForm.reset({
+          performerName: '',
+          stageId: this.selectedStageId,
+          performanceDate: this.formatApiDate(new Date()),
+          startTime: '18:00',
+          endTime: '19:00',
+          notes: ''
+        });
+        this.reloadReservationRequests(request.id);
+      },
+      error: err => this.errorMessage = err.error?.message || 'Unable to create reservation request.'
+    });
+  }
+
+  approveSelectedRequest(): void {
+    if (!this.selectedReservationRequest) return;
+
+    const reviewNote = this.reviewForm.getRawValue().reviewNote || null;
+    this.eventOrganizationService.approveReservationRequest(this.selectedReservationRequest.id, { reviewNote }).subscribe({
+      next: request => {
+        this.successMessage = 'Reservation request approved.';
+        this.reloadReservationRequests(request.id);
+        if (this.activeTab === 'timetable') {
+          this.loadTimetable();
+        }
+      },
+      error: err => this.errorMessage = err.error?.message || 'Unable to approve reservation request.'
+    });
+  }
+
+  rejectSelectedRequest(): void {
+    if (!this.selectedReservationRequest) return;
+
+    const reviewNote = this.reviewForm.getRawValue().reviewNote || null;
+    this.eventOrganizationService.rejectReservationRequest(this.selectedReservationRequest.id, { reviewNote }).subscribe({
+      next: request => {
+        this.successMessage = 'Reservation request rejected.';
+        this.reloadReservationRequests(request.id);
+      },
+      error: err => this.errorMessage = err.error?.message || 'Unable to reject reservation request.'
+    });
   }
 
   setResourceTab(tab: ResourceTab): void {
@@ -323,10 +435,20 @@ export class EventOrganizationComponent implements OnInit {
 
   previousWeek(): void {
     this.timetableWeekOffset -= 1;
+    this.loadTimetable();
   }
 
   nextWeek(): void {
     this.timetableWeekOffset += 1;
+    this.loadTimetable();
+  }
+
+  getTimetableSlot(dayKey: string, hour: string): TimetableSlot | null {
+    return this.timetableSlots[dayKey]?.[hour] ?? null;
+  }
+
+  statusLabel(status: EventReservationStatus): string {
+    return status.charAt(0) + status.slice(1).toLowerCase();
   }
 
   logout(): void {
@@ -340,6 +462,37 @@ export class EventOrganizationComponent implements OnInit {
         this.refreshStageData();
       },
       error: () => this.errorMessage = 'Unable to reload resources.'
+    });
+  }
+
+  private reloadReservationRequests(selectedRequestId?: number): void {
+    this.eventOrganizationService.getReservationRequests().subscribe({
+      next: requests => {
+        this.reservationRequests = requests;
+        this.selectedReservationRequest = requests.find(request => request.id === selectedRequestId)
+          ?? this.filteredReservationRequests[0]
+          ?? null;
+      },
+      error: () => this.errorMessage = 'Unable to reload reservation requests.'
+    });
+  }
+
+  private loadTimetable(): void {
+    if (!this.selectedStageId) return;
+
+    const days = this.timetableDays;
+    forkJoin(days.map(day => this.eventOrganizationService.getTimetable(this.selectedStageId!, day.key))).subscribe({
+      next: slotGroups => {
+        this.timetableSlots = {};
+        slotGroups.forEach((slots, index) => {
+          const dayKey = days[index].key;
+          this.timetableSlots[dayKey] = {};
+          slots.forEach(slot => {
+            this.timetableSlots[dayKey][this.normalizeHour(slot.startTime)] = slot;
+          });
+        });
+      },
+      error: () => this.errorMessage = 'Unable to load timetable.'
     });
   }
 
@@ -365,5 +518,16 @@ export class EventOrganizationComponent implements OnInit {
 
   private formatLongDate(date: Date): string {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  private formatApiDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private normalizeHour(time: string): string {
+    return time.slice(0, 5);
   }
 }

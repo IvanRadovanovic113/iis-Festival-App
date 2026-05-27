@@ -10,7 +10,8 @@
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -157,47 +158,6 @@ button {
   height: 55px;
 }
 
-.search-box {
-  width: min(750px, 100%);
-  height: 54px;
-  margin: 8px 0 18px 15px;
-  padding: 0 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-radius: 10px;
-  background: #f0e8fb;
-  color: #aa9cab;
-}
-
-.search-box input {
-  flex: 1;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: #9d8e9f;
-  font-size: 20px;
-}
-
-.search-icon {
-  width: 15px;
-  height: 15px;
-  border: 2px solid #2b2030;
-  border-radius: 50%;
-  position: relative;
-}
-
-.search-icon::after {
-  content: "";
-  position: absolute;
-  width: 8px;
-  height: 2px;
-  right: -6px;
-  bottom: -4px;
-  background: #2b2030;
-  transform: rotate(45deg);
-}
-
 .empty-requests,
 .placeholder-page,
 .empty-card {
@@ -213,6 +173,181 @@ button {
 .empty-card h2 {
   margin: 0 0 8px;
   color: #2b2030;
+}
+
+.request-workspace {
+  display: grid;
+  grid-template-columns: 320px minmax(320px, 1fr) 360px;
+  gap: 18px;
+  align-items: start;
+}
+
+.request-form,
+.request-list,
+.request-detail {
+  border: 1px solid #eadfeb;
+  border-radius: 8px;
+  background: #fffafd;
+}
+
+.request-form {
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.request-form h2,
+.request-detail h2,
+.request-item h2 {
+  margin: 0;
+  color: #2b2030;
+}
+
+.request-form label,
+.review-form label {
+  display: grid;
+  gap: 7px;
+  color: #725a70;
+  font-weight: 600;
+}
+
+.request-form input,
+.request-form select,
+.request-form textarea,
+.review-form textarea {
+  width: 100%;
+  border: 1px solid #e3d6ea;
+  border-radius: 8px;
+  background: #fff;
+  color: #2b2030;
+}
+
+.request-form input,
+.request-form select {
+  height: 42px;
+  padding: 0 12px;
+}
+
+.request-form textarea,
+.review-form textarea {
+  min-height: 86px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.time-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.request-list {
+  max-height: 620px;
+  overflow: auto;
+  padding: 10px;
+}
+
+.request-item {
+  min-height: 96px;
+  padding: 14px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.request-item + .request-item {
+  margin-top: 8px;
+}
+
+.request-item:hover,
+.request-item.active {
+  border-color: #dfcfe8;
+  background: #f5edf9;
+}
+
+.request-item p,
+.request-detail p {
+  margin: 5px 0 0;
+  color: #8e808d;
+}
+
+.status-pill {
+  min-width: 92px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #f0e8fb;
+  color: #6d6170;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.status-pill.pending {
+  background: #fff7e5;
+  color: #a56416;
+}
+
+.status-pill.approved {
+  background: #e9faef;
+  color: #197b51;
+}
+
+.status-pill.rejected {
+  background: #ffe9ed;
+  color: #b8243d;
+}
+
+.request-detail {
+  padding: 18px;
+}
+
+.request-detail header {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.request-detail header .status-pill {
+  justify-self: start;
+}
+
+.request-detail dl {
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.request-detail dl div {
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f1e7f2;
+}
+
+.request-detail dt {
+  color: #8e808d;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.request-detail dd {
+  margin: 4px 0 0;
+  color: #2b2030;
+}
+
+.review-form {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.review-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 .stage-tabs {
@@ -570,6 +705,15 @@ button {
   background: #fffafd;
 }
 
+.occupied-slot,
+.timetable-row:nth-child(odd) .occupied-slot {
+  border-color: #8eb8fb;
+  background: #d8e5fb;
+  color: #34457d;
+  font-weight: 700;
+  text-align: center;
+}
+
 .legend {
   margin-top: 18px;
   display: flex;
@@ -809,7 +953,8 @@ button {
   }
 
   .resource-grid,
-  .metric-grid {
+  .metric-grid,
+  .request-workspace {
     grid-template-columns: 1fr;
   }
 

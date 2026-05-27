@@ -2,6 +2,10 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
+  EventReservationCreateRequest,
+  EventReservationRequest,
+  EventReservationReviewRequest,
+  EventReservationStatus,
   EventResource,
   EventResourceRequest,
   StageResource,
@@ -13,6 +17,23 @@ import {
 export class EventOrganizationService {
   private readonly http = inject(HttpClient);
   private readonly API = '/api/event-organization';
+
+  getReservationRequests(status?: EventReservationStatus): Observable<EventReservationRequest[]> {
+    const params = status ? new HttpParams().set('status', status) : undefined;
+    return this.http.get<EventReservationRequest[]>(`${this.API}/requests`, { params });
+  }
+
+  createReservationRequest(request: EventReservationCreateRequest): Observable<EventReservationRequest> {
+    return this.http.post<EventReservationRequest>(`${this.API}/requests`, request);
+  }
+
+  approveReservationRequest(requestId: number, request: EventReservationReviewRequest): Observable<EventReservationRequest> {
+    return this.http.put<EventReservationRequest>(`${this.API}/requests/${requestId}/approve`, request);
+  }
+
+  rejectReservationRequest(requestId: number, request: EventReservationReviewRequest): Observable<EventReservationRequest> {
+    return this.http.put<EventReservationRequest>(`${this.API}/requests/${requestId}/reject`, request);
+  }
 
   getResources(): Observable<EventResource[]> {
     return this.http.get<EventResource[]>(`${this.API}/resources`);
