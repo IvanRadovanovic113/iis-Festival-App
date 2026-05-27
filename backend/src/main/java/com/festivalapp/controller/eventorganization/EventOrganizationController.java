@@ -1,8 +1,8 @@
-package com.festivalapp.eventorganization.controller;
+package com.festivalapp.controller.eventorganization;
 
-import com.festivalapp.eventorganization.dto.*;
-import com.festivalapp.eventorganization.model.EventReservationStatus;
-import com.festivalapp.eventorganization.service.EventOrganizationService;
+import com.festivalapp.dto.eventorganization.*;
+import com.festivalapp.model.eventorganization.EventReservationStatus;
+import com.festivalapp.service.eventorganization.EventOrganizationService;
 import com.festivalapp.model.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

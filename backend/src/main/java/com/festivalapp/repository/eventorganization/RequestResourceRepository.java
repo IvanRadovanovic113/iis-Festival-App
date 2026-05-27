@@ -1,7 +1,7 @@
-package com.festivalapp.eventorganization.repository;
+package com.festivalapp.repository.eventorganization;
 
-import com.festivalapp.eventorganization.model.RequestResource;
-import com.festivalapp.eventorganization.model.RequestResourceStatus;
+import com.festivalapp.model.eventorganization.RequestResource;
+import com.festivalapp.model.eventorganization.RequestResourceStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -25,7 +25,7 @@ public interface RequestResourceRepository extends JpaRepository<RequestResource
         from RequestResource requestResource
         where requestResource.resource.id = :resourceId
           and requestResource.status = :status
-          and requestResource.reservationRequest.status = com.festivalapp.eventorganization.model.EventReservationStatus.APPROVED
+          and requestResource.reservationRequest.status = com.festivalapp.model.eventorganization.EventReservationStatus.APPROVED
           and requestResource.reservationRequest.id <> :excludedRequestId
           and requestResource.reservationRequest.performanceDate = :performanceDate
           and requestResource.reservationRequest.startTime < :endTime

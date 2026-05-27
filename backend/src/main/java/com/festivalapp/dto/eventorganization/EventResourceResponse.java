@@ -1,6 +1,6 @@
-package com.festivalapp.eventorganization.dto;
+package com.festivalapp.dto.eventorganization;
 
-import com.festivalapp.eventorganization.model.EventResource;
+import com.festivalapp.model.eventorganization.EventResource;
 
 public record EventResourceResponse(
     Long id,

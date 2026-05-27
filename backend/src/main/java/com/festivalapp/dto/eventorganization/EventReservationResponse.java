@@ -1,7 +1,7 @@
-package com.festivalapp.eventorganization.dto;
+package com.festivalapp.dto.eventorganization;
 
-import com.festivalapp.eventorganization.model.EventReservationRequest;
-import com.festivalapp.eventorganization.model.EventReservationStatus;
+import com.festivalapp.model.eventorganization.EventReservationRequest;
+import com.festivalapp.model.eventorganization.EventReservationStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

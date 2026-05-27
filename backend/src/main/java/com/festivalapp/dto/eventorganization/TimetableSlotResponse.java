@@ -1,4 +1,4 @@
-package com.festivalapp.eventorganization.dto;
+package com.festivalapp.dto.eventorganization;
 
 import java.time.LocalDate;
 import java.time.LocalTime;

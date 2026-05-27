@@ -1,4 +1,4 @@
-package com.festivalapp.eventorganization.model;
+package com.festivalapp.model.eventorganization;
 
 import com.festivalapp.model.Festival;
 import com.festivalapp.model.Stage;

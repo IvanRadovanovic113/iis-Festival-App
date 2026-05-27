@@ -1,4 +1,4 @@
-package com.festivalapp.eventorganization.model;
+package com.festivalapp.model.eventorganization;
 
 import jakarta.persistence.*;
 import lombok.*;

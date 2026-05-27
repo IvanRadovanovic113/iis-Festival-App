@@ -1,4 +1,4 @@
-package com.festivalapp.eventorganization.dto;
+package com.festivalapp.dto.eventorganization;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -1,7 +1,7 @@
-package com.festivalapp.eventorganization.dto;
+package com.festivalapp.dto.eventorganization;
 
-import com.festivalapp.eventorganization.model.RequestResource;
-import com.festivalapp.eventorganization.model.RequestResourceStatus;
+import com.festivalapp.model.eventorganization.RequestResource;
+import com.festivalapp.model.eventorganization.RequestResourceStatus;
 
 public record RequestResourceResponse(
     Long id,

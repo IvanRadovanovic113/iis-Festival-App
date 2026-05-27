@@ -1,7 +1,7 @@
-package com.festivalapp.eventorganization.repository;
+package com.festivalapp.repository.eventorganization;
 
-import com.festivalapp.eventorganization.model.EventReservationRequest;
-import com.festivalapp.eventorganization.model.EventReservationStatus;
+import com.festivalapp.model.eventorganization.EventReservationRequest;
+import com.festivalapp.model.eventorganization.EventReservationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -29,7 +29,7 @@ public interface EventReservationRequestRepository extends JpaRepository<EventRe
         from EventReservationRequest request
         where request.stage.stageId = :stageId
           and request.performanceDate = :performanceDate
-          and request.status = com.festivalapp.eventorganization.model.EventReservationStatus.APPROVED
+          and request.status = com.festivalapp.model.eventorganization.EventReservationStatus.APPROVED
           and request.id <> :excludedRequestId
           and request.startTime < :endTime
           and request.endTime > :startTime
