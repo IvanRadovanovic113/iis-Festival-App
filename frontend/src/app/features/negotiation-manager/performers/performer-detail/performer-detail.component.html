@@ -1,0 +1,84 @@
+<div class="page-header" *ngIf="performer">
+  <div class="header-title-zone">
+    <a routerLink="/negotiation-manager/performers" class="back-link">← Back to Performers</a>
+    <div class="title-with-badge">
+      <h1>{{ performer.stageName }}</h1>
+      <span class="status-badge" [ngClass]="performer.status.toLowerCase()">
+        {{ performer.status }}
+      </span>
+    </div>
+    <p class="subtitle">Database Reference ID: #{{ performer.performerId }}</p>
+  </div>
+  
+  <div class="header-actions">
+    <button (click)="toggleStatus()" class="btn-status-toggle" [ngClass]="performer.status === PerformerStatus.ACTIVE ? 'archive' : 'activate'">
+      {{ performer.status === PerformerStatus.ACTIVE ? '📁 Archive Performer' : '✅ Activate Performer' }}
+    </button>
+    <button [routerLink]="['edit']" class="btn-edit-profile">✏️ Edit Profile</button>
+  </div>
+</div>
+
+<div class="error-banner" *ngIf="errorMessage">
+  ⚠️ {{ errorMessage }}
+</div>
+
+<div class="no-data-card" *ngIf="!performer && !errorMessage">
+  <p>Loading performer profile information...</p>
+</div>
+
+<div class="profile-grid" *ngIf="performer">
+  
+  <div class="info-card core-metrics">
+    <h3>Performance Profile</h3>
+    <hr class="divider">
+    
+    <div class="metric-row">
+      <span class="label">Performer Type:</span>
+      <span class="value font-semibold">{{ performer.performerType }}</span>
+    </div>
+    <div class="metric-row">
+      <span class="label">Main Genre:</span>
+      <span class="value">{{ performer.genre }}</span>
+    </div>
+    <div class="metric-row">
+      <span class="label">Country of Origin:</span>
+      <span class="value">{{ performer.countryOfOrigin }}</span>
+    </div>
+    <div class="metric-row">
+      <span class="label">Band Members:</span>
+      <span class="value">{{ performer.numberOfMembers }}</span>
+    </div>
+    <div class="metric-row">
+      <span class="label">Avg Set Duration:</span>
+      <span class="value">{{ performer.averageDurationMinutes }} mins</span>
+    </div>
+    <div class="metric-row">
+      <span class="label">Popularity Score:</span>
+      <span class="value rating">⭐ {{ performer.popularity }}/100</span>
+    </div>
+  </div>
+
+  <div class="info-card details-extended">
+    <h3>Legal & Biographical Background</h3>
+    <hr class="divider">
+    
+    <div class="meta-names">
+      <div>
+        <span class="label">Legal First Name</span>
+        <p class="value-text">{{ performer.firstName || '—' }}</p>
+      </div>
+      <div>
+        <span class="label">Legal Last Name</span>
+        <p class="value-text">{{ performer.lastName || '—' }}</p>
+      </div>
+    </div>
+
+    <div class="bio-section">
+      <span class="label">Biography / Internal Administration Notes</span>
+      <p class="bio-text">
+        {{ performer.bio || 'No biographical overview or administrative notes provided for this performer yet.' }}
+      </p>
+    </div>
+  </div>
+
+</div>

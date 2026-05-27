@@ -1,0 +1,102 @@
+<div class="page-header">
+  <div class="header-title-zone">
+    <h1>Performers</h1>
+    <p class="subtitle">Manage festival performers, database entries, and profiles</p>
+  </div>
+  <button routerLink="new" class="btn-primary">+ Add New Performer</button>
+</div>
+
+<div class="status-tabs">
+  <button 
+    [class.active]="filterForm.get('status')?.value === PerformerStatus.ACTIVE"
+    (click)="setStatusFilter(PerformerStatus.ACTIVE)">
+    Active Performers
+  </button>
+  <button 
+    [class.active]="filterForm.get('status')?.value === PerformerStatus.ARCHIVED"
+    (click)="setStatusFilter(PerformerStatus.ARCHIVED)">
+    Archived Entries
+  </button>
+</div>
+
+<div class="filter-card" [formGroup]="filterForm" [formGroup]="filterForm">
+  <div class="filter-grid">
+    <div class="form-group search-box">
+      <input type="text" formControlName="searchName" placeholder="Search by stage name...">
+    </div>
+    
+    <div class="form-group">
+      <select formControlName="genre">
+        <option value="">All Genres</option>
+        <option value="Rock">Rock</option>
+        <option value="Pop">Pop</option>
+        <option value="Techno">Techno</option>
+        <option value="Metal">Metal</option>
+        <option value="Hip-Hop">Hip-Hop</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <select formControlName="performerType">
+        <option value="">All Types</option>
+        <option [value]="PerformerType.SOLO">Solo Artist</option>
+        <option [value]="PerformerType.BAND">Band / Group</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <input type="text" formControlName="countryOfOrigin" placeholder="Country...">
+    </div>
+  </div>
+</div>
+
+<div class="table-container">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Stage Name</th>
+        <th>Type</th>
+        <th>Genre</th>
+        <th>Origin</th>
+        <th>Members</th>
+        <th>Popularity</th>
+        <th>Status</th>
+        <th class="actions-th">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let performer of performers">
+        <td class="font-semibold">{{ performer.stageName }}</td>
+        <td>
+          <span class="type-tag" [ngClass]="performer.performerType.toLowerCase()">
+            {{ performer.performerType }}
+          </span>
+        </td>
+        <td>{{ performer.genre }}</td>
+        <td>{{ performer.countryOfOrigin }}</td>
+        <td>{{ performer.numberOfMembers }}</td>
+        <td>
+          <div class="popularity-badge">⭐ {{ performer.popularity }}/100</div>
+        </td>
+        <td>
+          <span class="status-badge" [ngClass]="performer.status.toLowerCase()">
+            {{ performer.status }}
+          </span>
+        </td>
+        <td class="actions-td">
+          <button [routerLink]="[performer.performerId]" class="btn-table-action view">View</button>
+          <button [routerLink]="[performer.performerId, 'edit']" class="btn-table-action edit">Edit</button>
+        </td>
+      </tr>
+      <tr *ngIf="performers.length === 0">
+        <td colspan="8" class="no-data">No performers found matching the criteria.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="pagination" *ngIf="totalPages > 1">
+    <button (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 0" class="btn-page">Prev</button>
+    <span class="page-info">Page {{ currentPage + 1 }} of {{ totalPages }}</span>
+    <button (click)="onPageChange(currentPage + 1)" [disabled]="currentPage === totalPages - 1" class="btn-page">Next</button>
+  </div>
+</div>
