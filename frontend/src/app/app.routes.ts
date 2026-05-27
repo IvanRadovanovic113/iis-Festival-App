@@ -237,18 +237,26 @@ export const routes: Routes = [
     data: { festivalRoles: ['FESTIVAL_MANAGER'] }
   },
   {
-    path: 'creative/ads',
+    path: 'creative/campaigns',
     loadComponent: () =>
       import('./features/creative-work/creative-ad-list/creative-ad-list.component').then(m => m.CreativeAdListComponent),
     canActivate: [authGuard],
     data: { festivalRoles: ['PRODUCT_DESIGNER', 'TECHNICAL_SUPPORT'] }
   },
   {
-    path: 'creative/ads/:adId',
+    path: 'creative/campaigns/:campaignId',
+    loadComponent: () =>
+      import('./features/creative-work/creative-campaign-ads/creative-campaign-ads.component').then(m => m.CreativeCampaignAdsComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['PRODUCT_DESIGNER', 'TECHNICAL_SUPPORT'] }
+  },
+  {
+    path: 'creative/campaigns/:campaignId/ads/:adId',
     loadComponent: () =>
       import('./features/creative-work/creative-ad-editor/creative-ad-editor.component').then(m => m.CreativeAdEditorComponent),
     canActivate: [authGuard],
     data: { festivalRoles: ['PRODUCT_DESIGNER', 'TECHNICAL_SUPPORT'] }
   },
+  { path: 'creative/ads', redirectTo: 'creative/campaigns', pathMatch: 'full' },
   { path: '**', redirectTo: '/dashboard' }
 ];

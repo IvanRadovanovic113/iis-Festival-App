@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: festival_user
       POSTGRES_PASSWORD: festival_pass
     ports:
-      - "5432:5432"
+      - "55432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:

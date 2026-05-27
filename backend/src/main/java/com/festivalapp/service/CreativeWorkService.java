@@ -1,12 +1,15 @@
 package com.festivalapp.service;
 
+import com.festivalapp.dto.CreativeCampaignResponse;
 import com.festivalapp.dto.AdResponse;
 import com.festivalapp.dto.CreativeAdUpdateRequest;
 import com.festivalapp.model.Ad;
+import com.festivalapp.model.Campaign;
 import com.festivalapp.model.Role;
 import com.festivalapp.model.User;
 import com.festivalapp.model.UserFestivalAssignment;
 import com.festivalapp.repository.AdRepository;
+import com.festivalapp.repository.CampaignRepository;
 import com.festivalapp.repository.UserFestivalAssignmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,12 +19,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class CreativeWorkService {
 
     private final AdRepository adRepository;
+    private final CampaignRepository campaignRepository;
     private final UserFestivalAssignmentRepository assignmentRepository;
     private final AdVersionSnapshotService adVersionSnapshotService;
 
@@ -35,19 +40,35 @@ public class CreativeWorkService {
     }
 
     @Transactional(readOnly = true)
-    public List<AdResponse> getAssignedAds(User user) {
+    public List<CreativeCampaignResponse> getCampaigns(User user) {
         UserFestivalAssignment assignment = requireCreativeAssignment(user);
-        return adRepository.findAllByCampaign_Festival_FestivalIdAndCurrentPhase_AssignedRoleOrderByLastChangeDateDescAdIdDesc(
-                assignment.getFestival().getFestivalId(),
-                assignment.getRole()
-            ).stream()
+        return campaignRepository.findAllByFestival_FestivalIdOrderByStartDateAsc(assignment.getFestival().getFestivalId()).stream()
+            .map(campaign -> CreativeCampaignResponse.from(campaign, getEligibleAds(campaign, assignment.getRole()).size()))
+            .filter(campaign -> campaign.getEligibleAds() > 0)
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdResponse> getCampaignAds(Long campaignId, User user) {
+        UserFestivalAssignment assignment = requireCreativeAssignment(user);
+        Campaign campaign = campaignRepository.findById(campaignId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Campaign not found"));
+        if (!campaign.getFestival().getFestivalId().equals(assignment.getFestival().getFestivalId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Campaign does not belong to your festival");
+        }
+        return getEligibleAds(campaign, assignment.getRole()).stream()
             .map(AdResponse::from)
             .toList();
     }
 
     @Transactional(readOnly = true)
-    public AdResponse getAd(Long adId, User user) {
+    public AdResponse getAd(Long campaignId, Long adId, User user) {
         UserFestivalAssignment assignment = requireCreativeAssignment(user);
+        Campaign campaign = campaignRepository.findById(campaignId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Campaign not found"));
+        if (!campaign.getFestival().getFestivalId().equals(assignment.getFestival().getFestivalId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Campaign does not belong to your festival");
+        }
         Ad ad = adRepository.findById(adId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ad not found"));
         ensureAdAccess(ad, assignment.getFestival().getFestivalId(), assignment.getRole());
@@ -55,25 +76,24 @@ public class CreativeWorkService {
     }
 
     @Transactional
-    public AdResponse updateAd(Long adId, CreativeAdUpdateRequest request, User user) {
+    public AdResponse updateAd(Long campaignId, Long adId, CreativeAdUpdateRequest request, User user) {
         UserFestivalAssignment assignment = requireCreativeAssignment(user);
+        Campaign campaign = campaignRepository.findById(campaignId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Campaign not found"));
+        if (!campaign.getFestival().getFestivalId().equals(assignment.getFestival().getFestivalId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Campaign does not belong to your festival");
+        }
         Ad ad = adRepository.findById(adId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ad not found"));
         ensureAdAccess(ad, assignment.getFestival().getFestivalId(), assignment.getRole());
 
-        String nextName = request.getName().trim();
-        String nextDescription = request.getDescription().trim();
         String nextContentValue = request.getContentValue().trim();
 
-        boolean changed = !ad.getName().equals(nextName)
-            || !ad.getDescription().equals(nextDescription)
-            || !ad.getContentFileName().equals(nextContentValue);
+        boolean changed = !ad.getContentFileName().equals(nextContentValue);
         if (!changed) {
             return AdResponse.from(ad);
         }
 
-        ad.setName(nextName);
-        ad.setDescription(nextDescription);
         ad.setContentFileName(nextContentValue);
         ad.setLastChangeDate(LocalDate.now());
         ad.setVersionNumber(ad.getVersionNumber() + 1);
@@ -82,12 +102,31 @@ public class CreativeWorkService {
         return AdResponse.from(savedAd);
     }
 
+    private List<Ad> getEligibleAds(Campaign campaign, Role role) {
+        return adRepository.findAllByCampaign_CampaignIdAndCurrentPhase_AssignedRoleOrderByLastChangeDateDescAdIdDesc(campaign.getCampaignId(), role).stream()
+            .filter(ad -> isAllowedContentType(role, ad.getAdType().getContentType()))
+            .toList();
+    }
+
+    private boolean isAllowedContentType(Role role, String contentType) {
+        Set<String> designerTypes = Set.of("Text", "Image");
+        Set<String> supportTypes = Set.of("Audio");
+        return switch (role) {
+            case PRODUCT_DESIGNER -> designerTypes.contains(contentType);
+            case TECHNICAL_SUPPORT -> supportTypes.contains(contentType);
+            default -> false;
+        };
+    }
+
     private void ensureAdAccess(Ad ad, Long festivalId, Role role) {
         if (!ad.getCampaign().getFestival().getFestivalId().equals(festivalId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Ad does not belong to your festival");
         }
         if (ad.getCurrentPhase().getAssignedRole() != role) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This ad is not currently assigned to your role");
+        }
+        if (!isAllowedContentType(role, ad.getAdType().getContentType())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This ad content type is not assigned to your role");
         }
     }
 }

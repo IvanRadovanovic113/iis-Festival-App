@@ -9,11 +9,5 @@ import lombok.Setter;
 public class CreativeAdUpdateRequest {
 
     @NotBlank
-    private String name;
-
-    @NotBlank
-    private String description;
-
-    @NotBlank
     private String contentValue;
 }

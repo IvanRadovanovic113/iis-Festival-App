@@ -1,31 +1,39 @@
 <div class="page-shell">
-  <header class="topbar">
-    <div>
-      <div class="eyebrow">{{ roleLabel }}</div>
-      <h1>Assigned ads</h1>
-      <p class="subtitle">Open every ad currently waiting for your phase and finish the content work there.</p>
-    </div>
-    <div class="topbar-actions">
-      @if (currentUser) {
-        <span class="user-chip">{{ currentUser.username }}</span>
-      }
-      <button type="button" (click)="logout()">Sign out</button>
-    </div>
-  </header>
+  <aside class="sidebar">
+    <div class="avatar">{{ currentUser?.username || 'User' }}</div>
+    <nav class="nav-stack">
+      <a class="nav-item active">Campaigns</a>
+      <a class="nav-item">Notifications</a>
+    </nav>
+    <button type="button" class="logout-btn" (click)="logout()">Log out</button>
+  </aside>
 
   <main class="page-content">
+    <header class="page-header">
+      <div>
+        <div class="eyebrow">{{ roleLabel }}</div>
+        <h1>Campaign access overview</h1>
+        <p class="subtitle">Open campaigns that currently need your content contribution.</p>
+      </div>
+      <div class="header-chip">{{ currentUser?.username }}</div>
+    </header>
+
     <section class="hero-card">
       <div>
         <p class="hero-kicker">Work queue</p>
-        <h2>Ads assigned to your current phase</h2>
+        <h2>Campaigns waiting for your role</h2>
         <p class="hero-copy">
-          You can update the ad name, description, and content from the detail view. The ad type stays locked.
+          Product designers handle text and image content. Technical support handles audio content only.
         </p>
       </div>
       <div class="hero-metrics">
         <div class="metric">
-          <span class="metric-value">{{ ads.length }}</span>
-          <span class="metric-label">Assigned ads</span>
+          <span class="metric-value">{{ campaigns.length }}</span>
+          <span class="metric-label">Campaigns</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">{{ totalEligibleAds }}</span>
+          <span class="metric-label">Eligible ads</span>
         </div>
       </div>
     </section>
@@ -36,13 +44,7 @@
 
     <section class="table-card">
       <div class="table-toolbar">
-        <input [(ngModel)]="search" (ngModelChange)="applyFilters()" placeholder="Search by ad or campaign name" />
-        <select [(ngModel)]="selectedType" (ngModelChange)="applyFilters()">
-          <option value="">All types</option>
-          @for (type of typeOptions; track type) {
-            <option [value]="type">{{ type }}</option>
-          }
-        </select>
+        <input [(ngModel)]="search" (ngModelChange)="applyFilters()" placeholder="Search by campaign or festival name" />
         <select [(ngModel)]="selectedFestival" (ngModelChange)="applyFilters()">
           <option value="">All festivals</option>
           @for (festival of festivalOptions; track festival) {
@@ -52,37 +54,35 @@
         <button class="btn-secondary" type="button" (click)="resetFilters()">Reset</button>
       </div>
 
-      @if (filteredAds.length === 0) {
-        <div class="empty-state">No ads are currently assigned to your role.</div>
+      @if (filteredCampaigns.length === 0) {
+        <div class="empty-state">No campaigns currently require your content work.</div>
       } @else {
         <div class="table-wrapper">
           <table>
             <thead>
               <tr>
-                <th>Ad</th>
-                <th>Festival</th>
                 <th>Campaign</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Version</th>
-                <th>Last change</th>
+                <th>Festival</th>
+                <th>Location</th>
+                <th>Start date</th>
+                <th>End date</th>
+                <th>Available ads</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
-              @for (ad of filteredAds; track ad.adId) {
+              @for (campaign of filteredCampaigns; track campaign.campaignId) {
                 <tr>
                   <td>
-                    <strong>{{ ad.name }}</strong>
+                    <strong>{{ campaign.campaignName }}</strong>
                   </td>
-                  <td>{{ ad.festivalName }}</td>
-                  <td>{{ ad.campaignName }}</td>
-                  <td>{{ ad.typeName }}</td>
-                  <td><span class="status-dot"></span>{{ ad.status }}</td>
-                  <td>Version {{ ad.versionNumber }}</td>
-                  <td>{{ ad.lastChangeDate | date:'dd.MM.yyyy' }}</td>
+                  <td>{{ campaign.festivalName }}</td>
+                  <td>{{ campaign.festivalLocation }}</td>
+                  <td>{{ campaign.startDate | date:'dd.MM.yyyy' }}</td>
+                  <td>{{ campaign.endDate | date:'dd.MM.yyyy' }}</td>
+                  <td>{{ campaign.eligibleAds }}</td>
                   <td>
-                    <a class="action-link" [routerLink]="['/creative/ads', ad.adId]">Open</a>
+                    <a class="action-link" [routerLink]="['/creative/campaigns', campaign.campaignId]">View campaign</a>
                   </td>
                 </tr>
               }

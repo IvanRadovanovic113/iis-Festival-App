@@ -1,6 +1,6 @@
 <div class="page-shell">
   <aside class="sidebar">
-    <div class="avatar">JV</div>
+    <div class="avatar">{{ currentUser?.username || 'User' }}</div>
     <nav class="nav-stack">
       <a class="nav-item" [routerLink]="festivalLink">Festivals</a>
       <a class="nav-item">Notifications</a>

@@ -19,6 +19,7 @@ export class AdReviewOverviewComponent implements OnInit {
 
   review: AdReview | null = null;
   errorMessage = '';
+  readonly currentUser = this.authService.getCurrentUser();
 
   ngOnInit(): void {
     const festivalId = Number(this.route.snapshot.paramMap.get('festivalId'));

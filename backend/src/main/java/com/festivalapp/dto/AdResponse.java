@@ -22,6 +22,7 @@ public class AdResponse {
     private Long currentPhaseId;
     private String contentValue;
     private String festivalName;
+    private String festivalLocation;
     private String campaignName;
 
     public static AdResponse from(Ad ad) {
@@ -38,6 +39,7 @@ public class AdResponse {
         response.currentPhaseId = ad.getCurrentPhase().getPhaseId();
         response.contentValue = ad.getContentFileName();
         response.festivalName = ad.getCampaign().getFestival().getName();
+        response.festivalLocation = ad.getCampaign().getFestival().getLocation();
         response.campaignName = ad.getCampaign().getName();
         return response;
     }

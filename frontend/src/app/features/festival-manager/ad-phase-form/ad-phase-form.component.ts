@@ -25,6 +25,7 @@ export class AdPhaseFormComponent implements OnInit {
   saving = false;
   draftTypeName = '';
   draftSelectedPhaseIds: number[] = [];
+  readonly currentUser = this.authService.getCurrentUser();
   readonly assignableRoles = [
     { value: 'PRODUCT_DESIGNER', label: 'Product Designer' },
     { value: 'TECHNICAL_SUPPORT', label: 'Technical Support' }

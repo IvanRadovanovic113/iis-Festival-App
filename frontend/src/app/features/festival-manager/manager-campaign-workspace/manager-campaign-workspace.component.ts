@@ -24,6 +24,7 @@ export class ManagerCampaignWorkspaceComponent implements OnInit {
   search = '';
   selectedType = '';
   selectedStatus = '';
+  readonly currentUser = this.authService.getCurrentUser();
 
   ngOnInit(): void {
     this.load();

@@ -24,6 +24,7 @@ export class AdTypeFormComponent implements OnInit {
   errorMessage = '';
   saving = false;
   readonly contentTypes = ['Video', 'Text', 'Audio', 'Image', 'Interactive'];
+  readonly currentUser = this.authService.getCurrentUser();
 
   form = this.fb.group({
     name: ['', Validators.required],
