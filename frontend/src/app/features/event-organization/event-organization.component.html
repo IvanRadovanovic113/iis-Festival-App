@@ -13,8 +13,10 @@
 
   @if (activeTab === 'requests') {
     <section class="sub-nav">
-      @for (filter of ['All', 'Pending', 'Confirmed', 'Past']; track filter) {
-        <button type="button" [class.active]="activeRequestFilter === filter" (click)="activeRequestFilter = filter">{{ filter }}</button>
+      @for (filter of ['All', 'PENDING', 'APPROVED', 'PAST']; track filter) {
+        <button type="button" [class.active]="activeRequestFilter === filter" (click)="setRequestFilter($any(filter))">
+          {{ filter === 'All' ? 'All' : filter === 'APPROVED' ? 'Confirmed' : filter === 'PAST' ? 'Past' : 'Pending' }}
+        </button>
       }
     </section>
   }
@@ -37,17 +39,49 @@
     @if (activeTab === 'requests') {
       <section class="page-heading">
         <h1>Reservation requests</h1>
-        <p>All incoming reservation requests</p>
+        <p>{{ requestsSubtitle }}</p>
       </section>
 
-      <div class="search-box">
+      <div class="request-search">
         <span class="search-icon" aria-hidden="true"></span>
-        <input type="search" placeholder="Search by performer, stage..." disabled />
+        <input type="search" placeholder="Search by performer, stage..." [value]="requestSearch" (input)="updateRequestSearch($event)" />
       </div>
 
-      <section class="empty-requests">
-        <h2>Requests are not implemented yet</h2>
-        <p>This tab is intentionally empty for the current resource management sprint.</p>
+      <section class="requests-table" aria-label="Reservation requests">
+        <div class="requests-row requests-head">
+          <span>Performer</span>
+          <span>Stage</span>
+          <span>Date</span>
+          <span>Duration</span>
+          <span>Resources</span>
+          <span>Status</span>
+          <span>Time</span>
+        </div>
+        @for (request of filteredReservationRequests; track request.id) {
+          <div class="requests-row">
+            <strong>{{ request.performerName }}</strong>
+            <span>{{ request.stageName }}</span>
+            <span>{{ formatRequestDate(request.performanceDate) }}</span>
+            <span>{{ requestDurationMinutes(request) }} min</span>
+            <span>{{ requestResourceCounts[request.id] || 0 }} res.</span>
+            <span>
+              <i class="status-pill" [class.pending]="request.status === 'PENDING'" [class.approved]="request.status === 'APPROVED' && !isPastRequest(request)" [class.past]="isPastRequest(request)">
+                {{ requestStatusLabel(request) }}
+              </i>
+            </span>
+            <span>
+              @if (request.status === 'PENDING' && activeRequestFilter !== 'PAST') {
+                <button type="button" class="view-button" (click)="viewReservationRequest(request)">View</button>
+              } @else {
+                <span class="time-pill" [class.past-time]="isPastRequest(request)">
+                  {{ request.startTime.slice(0, 5) }} - {{ request.endTime.slice(0, 5) }}
+                </span>
+              }
+            </span>
+          </div>
+        } @empty {
+          <p class="empty-table">No reservation requests match the selected filter.</p>
+        }
       </section>
     }
 
@@ -156,48 +190,102 @@
 
     @if (activeTab === 'timetable') {
       <section class="page-heading timetable-heading">
-        <h1>Stage timetable</h1>
-        <div class="week-filter" aria-label="Week filter">
-          <button type="button" aria-label="Previous week" (click)="previousWeek()">&lt;</button>
-          <span>{{ timetableWeekLabel }}</span>
-          <button type="button" aria-label="Next week" (click)="nextWeek()">&gt;</button>
-        </div>
+        <h1>{{ reservationMode ? 'Schedule reservation' : 'Stage timetable' }}</h1>
+        @if (!reservationMode) {
+          <div class="week-filter" aria-label="Week filter">
+            <button type="button" aria-label="Previous week" (click)="previousWeek()">&lt;</button>
+            <span>{{ timetableWeekLabel }}</span>
+            <button type="button" aria-label="Next week" (click)="nextWeek()">&gt;</button>
+          </div>
+        }
       </section>
+
+      @if (reservationMode && selectedReservationRequest) {
+        <section class="reservation-banner">
+          <span>Reserving for:</span>
+          <strong>{{ selectedReservationRequest.performerName }} - {{ selectedReservationRequest.stageName }} - {{ reservationDateLabel }} - {{ requestDurationMinutes(selectedReservationRequest) }} min - {{ requestResourceCounts[selectedReservationRequest.id] || 0 }} resources</strong>
+        </section>
+      }
 
       <div class="stage-tabs timetable-stage-tabs" aria-label="Timetable stages">
         @for (stage of stages; track stage.stageId) {
-          <button type="button" [class.active]="selectedStageId === stage.stageId" (click)="selectStage(stage.stageId)">
+          <button type="button" [class.active]="selectedStageId === stage.stageId" [disabled]="reservationMode && stage.stageId !== selectedReservationRequest?.stageId" (click)="selectStage(stage.stageId)">
             {{ stage.name }}
           </button>
         }
       </div>
 
-      <section class="weekly-timetable" aria-label="Weekly stage timetable">
-        <div class="time-grid timetable-header">
-          <div class="day-heading">Day</div>
-          @for (hour of timetableHours; track hour) {
-            <div>{{ hour }}</div>
-          }
-        </div>
-
-        @for (day of timetableDays; track day.key) {
-          <div class="time-grid timetable-row">
-            <div class="day-cell">
-              <strong>{{ day.dayName }}</strong>
-              <span>{{ day.dateLabel }}</span>
-            </div>
+      @if (reservationMode && selectedReservationRequest) {
+        <section class="reservation-scheduler" aria-label="Reservation timetable">
+          <div class="reservation-time-header">
+            <span>Time</span>
             @for (hour of timetableHours; track hour) {
-              <div class="free-slot">Free</div>
+              <span>{{ hour }}</span>
             }
           </div>
-        }
-      </section>
+          <div class="reservation-time-row">
+            @for (hour of timetableHours; track hour) {
+              <button type="button"
+                [class.occupied]="getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status === 'OCCUPIED'"
+                [class.available]="getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status !== 'OCCUPIED' && isScheduleSlotAvailable(hour)"
+                [class.selected]="isScheduleSlotSelected(hour)"
+                [class.unavailable]="getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status !== 'OCCUPIED' && !isScheduleSlotAvailable(hour)"
+                [disabled]="getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status === 'OCCUPIED' || !isScheduleSlotAvailable(hour)"
+                (click)="selectScheduleStart(hour)">
+                @if (getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status === 'OCCUPIED') {
+                  {{ getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.performerName }}
+                } @else if (isScheduleSlotSelected(hour) && selectedScheduleEnd) {
+                  {{ selectedReservationRequest.performerName }}
+                } @else if (isScheduleSlotAvailable(hour)) {
+                  Free
+                } @else {
+                  Unavailable
+                }
+              </button>
+            }
+          </div>
+        </section>
 
-      <section class="legend" aria-label="Timetable legend">
-        <strong>Legend:</strong>
-        <span><i class="legend-box occupied"></i>Occupied</span>
-        <span><i class="legend-box free"></i>Free slot</span>
-      </section>
+        <section class="legend reservation-legend" aria-label="Timetable legend">
+          <strong>Legend:</strong>
+          <span><i class="legend-box occupied"></i>Occupied</span>
+          <span><i class="legend-box suggestion"></i>Selectable slot</span>
+          <span><i class="legend-box free"></i>Selected</span>
+        </section>
+
+        <button type="button" class="primary-button reserve-button" [disabled]="!canReserveSelectedSlot" (click)="reserveSelectedSlot()">
+          Reserve
+        </button>
+      } @else {
+        <section class="weekly-timetable" aria-label="Weekly stage timetable">
+          <div class="time-grid timetable-header">
+            <div class="day-heading">Day</div>
+            @for (hour of timetableHours; track hour) {
+              <div>{{ hour }}</div>
+            }
+          </div>
+
+          @for (day of timetableDays; track day.key) {
+            <div class="time-grid timetable-row">
+              <div class="day-cell">
+                <strong>{{ day.dayName }}</strong>
+                <span>{{ day.dateLabel }}</span>
+              </div>
+              @for (hour of timetableHours; track hour) {
+                <div class="free-slot" [class.occupied-slot]="getTimetableSlot(day.key, hour)?.status === 'OCCUPIED'">
+                  {{ getTimetableSlot(day.key, hour)?.status === 'OCCUPIED' ? getTimetableSlot(day.key, hour)?.performerName : 'Free' }}
+                </div>
+              }
+            </div>
+          }
+        </section>
+
+        <section class="legend" aria-label="Timetable legend">
+          <strong>Legend:</strong>
+          <span><i class="legend-box occupied"></i>Occupied</span>
+          <span><i class="legend-box free"></i>Free slot</span>
+        </section>
+      }
     }
 
     @if (activeTab === 'tasks' || activeTab === 'analytics') {
@@ -261,6 +349,36 @@
           <button type="submit" class="primary-button">{{ modalMode === 'edit' ? 'Save changes' : 'Add resource' }}</button>
         </footer>
       </form>
+    </div>
+  }
+
+  @if (confirmedReservation) {
+    <div class="modal-backdrop" role="presentation">
+      <section class="confirmation-modal">
+        <header>
+          <h2>Reservation confirmed</h2>
+          <button type="button" class="close-button" aria-label="Close" (click)="closeConfirmation()">x</button>
+        </header>
+        <dl>
+          <div>
+            <dt>Performer:</dt>
+            <dd>{{ confirmedReservation.performerName }}</dd>
+          </div>
+          <div>
+            <dt>Stage:</dt>
+            <dd>{{ confirmedReservation.stageName }}</dd>
+          </div>
+          <div>
+            <dt>Time slot:</dt>
+            <dd>{{ confirmedReservation.startTime.slice(0, 5) }} - {{ confirmedReservation.endTime.slice(0, 5) }} · {{ formatRequestDate(confirmedReservation.performanceDate) }}</dd>
+          </div>
+          <div>
+            <dt>Resources:</dt>
+            <dd>{{ requestResourceCounts[confirmedReservation.id] || 0 }} resources attached</dd>
+          </div>
+        </dl>
+        <button type="button" class="primary-button" (click)="closeConfirmation()">Done</button>
+      </section>
     </div>
   }
 

@@ -6,12 +6,21 @@ import { AuthService } from '../../core/services/auth.service';
 import { BinaService } from '../../core/services/bina.service';
 import { EventOrganizationService } from '../../core/services/event-organization.service';
 import { Stage } from '../../core/models/bina.model';
-import { EventResource, StageResource } from '../../core/models/event-organization.model';
+import {
+  EventReservationRequest,
+  EventReservationStatus,
+  EventResource,
+  RequestResource,
+  StageResource,
+  TimetableSlot
+} from '../../core/models/event-organization.model';
 import { User } from '../../core/models/user.model';
 
 type MainTab = 'requests' | 'timetable' | 'resources' | 'tasks' | 'analytics';
 type ResourceTab = 'manage' | 'inventory';
 type ResourceModalMode = 'add' | 'edit';
+type RequestFilter = 'All' | 'PENDING' | 'APPROVED' | 'PAST';
+type TimetableMode = 'static' | 'reservation';
 
 interface InventoryRow {
   resource: EventResource;
@@ -41,16 +50,25 @@ export class EventOrganizationComponent implements OnInit {
 
   currentUser: User | null = null;
   activeTab: MainTab = 'requests';
-  activeRequestFilter = 'All';
+  activeRequestFilter: RequestFilter = 'All';
   activeResourceTab: ResourceTab = 'manage';
   errorMessage = '';
   successMessage = '';
+  requestSearch = '';
+  timetableMode: TimetableMode = 'static';
+  selectedScheduleStart: string | null = null;
+  confirmedReservation: EventReservationRequest | null = null;
 
   stages: Stage[] = [];
+  reservationRequests: EventReservationRequest[] = [];
+  selectedReservationRequest: EventReservationRequest | null = null;
+  selectedRequestResources: RequestResource[] = [];
+  requestResourceCounts: Record<number, number> = {};
   resources: EventResource[] = [];
   stageResources: StageResource[] = [];
   allStageResources: StageResource[] = [];
   selectedStageId: number | null = null;
+  timetableSlots: Record<string, Record<string, TimetableSlot>> = {};
 
   modalMode: ResourceModalMode | null = null;
   editingStageResource: StageResource | null = null;
@@ -60,6 +78,15 @@ export class EventOrganizationComponent implements OnInit {
   inventoryStageFilter = 'All';
   timetableWeekOffset = 0;
   timetableHours = ['14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
+
+  reviewForm = this.fb.group({
+    reviewNote: ['']
+  });
+
+  requestResourceForm = this.fb.group({
+    resourceId: [null as number | null, Validators.required],
+    quantity: [1, [Validators.required, Validators.min(1)]]
+  });
 
   resourceForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
@@ -72,6 +99,27 @@ export class EventOrganizationComponent implements OnInit {
 
   get selectedStage(): Stage | null {
     return this.stages.find(stage => stage.stageId === this.selectedStageId) ?? null;
+  }
+
+  get filteredReservationRequests(): EventReservationRequest[] {
+    const query = this.requestSearch.trim().toLowerCase();
+    return this.reservationRequests.filter(request => {
+      const matchesSearch = !query
+        || request.performerName.toLowerCase().includes(query)
+        || request.stageName.toLowerCase().includes(query);
+      if (!matchesSearch) return false;
+      if (this.activeRequestFilter === 'All') return true;
+      if (this.activeRequestFilter === 'PAST') return this.isPastRequest(request);
+      if (this.activeRequestFilter === 'APPROVED') return request.status === 'APPROVED' && !this.isPastRequest(request);
+      return request.status === this.activeRequestFilter;
+    });
+  }
+
+  get requestsSubtitle(): string {
+    if (this.activeRequestFilter === 'PENDING') return 'Requests awaiting review';
+    if (this.activeRequestFilter === 'APPROVED') return 'Confirmed reservations with time slots';
+    if (this.activeRequestFilter === 'PAST') return 'History of past reservations';
+    return 'All incoming reservation requests';
   }
 
   get inventoryRows(): InventoryRow[] {
@@ -115,7 +163,7 @@ export class EventOrganizationComponent implements OnInit {
       date.setDate(start.getDate() + index);
 
       return {
-        key: date.toISOString(),
+        key: this.formatApiDate(date),
         dayName,
         dateLabel: this.formatShortDate(date)
       };
@@ -128,6 +176,26 @@ export class EventOrganizationComponent implements OnInit {
     end.setDate(start.getDate() + 6);
 
     return `${this.formatLongDate(start)} - ${this.formatLongDate(end)}`;
+  }
+
+  get reservationMode(): boolean {
+    return this.activeTab === 'timetable'
+      && this.timetableMode === 'reservation'
+      && this.selectedReservationRequest?.status === 'PENDING';
+  }
+
+  get reservationDateLabel(): string {
+    if (!this.selectedReservationRequest) return '';
+    return this.formatLongDate(this.parseApiDate(this.selectedReservationRequest.performanceDate));
+  }
+
+  get selectedScheduleEnd(): string | null {
+    if (!this.selectedReservationRequest || !this.selectedScheduleStart) return null;
+    return this.addMinutes(this.selectedScheduleStart, this.requestDurationMinutes(this.selectedReservationRequest));
+  }
+
+  get canReserveSelectedSlot(): boolean {
+    return Boolean(this.selectedScheduleStart && this.isScheduleSlotAvailable(this.selectedScheduleStart));
   }
 
   stageNameById(stageId: number): string {
@@ -143,14 +211,20 @@ export class EventOrganizationComponent implements OnInit {
     this.clearMessages();
     forkJoin({
       stages: this.stageService.getAll(),
-      resources: this.eventOrganizationService.getResources()
+      resources: this.eventOrganizationService.getResources(),
+      requests: this.eventOrganizationService.getReservationRequests()
     }).subscribe({
-      next: ({ stages, resources }) => {
+      next: ({ stages, resources, requests }) => {
         this.stages = stages;
         this.resources = resources;
+        this.reservationRequests = requests;
+        this.selectedReservationRequest = requests[0] ?? null;
         this.selectedStageId = stages[0]?.stageId ?? null;
+        this.requestResourceForm.patchValue({ resourceId: resources[0]?.id ?? null });
         this.resourceForm.patchValue({ stageId: this.selectedStageId });
         this.refreshStageData();
+        this.loadRequestResourceCounts();
+        this.loadSelectedRequestResources();
       },
       error: () => this.errorMessage = 'Unable to load event organization data.'
     });
@@ -173,15 +247,133 @@ export class EventOrganizationComponent implements OnInit {
   }
 
   selectStage(stageId: number): void {
+    if (this.reservationMode && stageId !== this.selectedReservationRequest?.stageId) {
+      return;
+    }
     this.selectedStageId = stageId;
     this.resourceForm.patchValue({ stageId });
     this.stageResources = this.allStageResources.filter(item => item.stageId === stageId);
     this.clearMessages();
+    if (this.activeTab === 'timetable') {
+      this.loadTimetable();
+    }
   }
 
   setTab(tab: MainTab): void {
     this.activeTab = tab;
+    if (tab === 'timetable') {
+      this.timetableMode = 'static';
+      this.selectedReservationRequest = null;
+      this.selectedScheduleStart = null;
+    }
     this.clearMessages();
+    if (tab === 'timetable') {
+      this.loadTimetable();
+    }
+  }
+
+  setRequestFilter(filter: RequestFilter): void {
+    this.activeRequestFilter = filter;
+    this.selectedReservationRequest = this.filteredReservationRequests[0] ?? null;
+  }
+
+  updateRequestSearch(event: Event): void {
+    this.requestSearch = (event.target as HTMLInputElement).value;
+  }
+
+  viewReservationRequest(request: EventReservationRequest): void {
+    this.selectReservationRequest(request);
+    this.selectedStageId = request.stageId;
+    this.activeTab = 'timetable';
+    this.timetableMode = 'reservation';
+    this.selectedScheduleStart = this.normalizeHour(request.startTime);
+    this.setTimetableWeekToDate(request.performanceDate);
+    this.loadTimetable();
+  }
+
+  selectReservationRequest(request: EventReservationRequest): void {
+    this.selectedReservationRequest = request;
+    this.reviewForm.reset({ reviewNote: request.reviewNote ?? '' });
+    this.requestResourceForm.reset({ resourceId: this.resources[0]?.id ?? null, quantity: 1 });
+    this.loadSelectedRequestResources();
+    this.clearMessages();
+  }
+
+  approveSelectedRequest(): void {
+    if (!this.selectedReservationRequest) return;
+
+    const reviewNote = this.reviewForm.getRawValue().reviewNote || null;
+    this.eventOrganizationService.approveReservationRequest(this.selectedReservationRequest.id, { reviewNote }).subscribe({
+      next: request => {
+        this.successMessage = 'Reservation request approved.';
+        this.reloadReservationRequests(request.id);
+        if (this.activeTab === 'timetable') {
+          this.loadTimetable();
+        }
+      },
+      error: err => this.errorMessage = err.error?.message || 'Unable to approve reservation request.'
+    });
+  }
+
+  rejectSelectedRequest(): void {
+    if (!this.selectedReservationRequest) return;
+
+    const reviewNote = this.reviewForm.getRawValue().reviewNote || null;
+    this.eventOrganizationService.rejectReservationRequest(this.selectedReservationRequest.id, { reviewNote }).subscribe({
+      next: request => {
+        this.successMessage = 'Reservation request rejected.';
+        this.reloadReservationRequests(request.id);
+      },
+      error: err => this.errorMessage = err.error?.message || 'Unable to reject reservation request.'
+    });
+  }
+
+  addResourceToSelectedRequest(): void {
+    if (!this.selectedReservationRequest) return;
+    if (this.requestResourceForm.invalid) {
+      this.requestResourceForm.markAllAsTouched();
+      return;
+    }
+
+    const value = this.requestResourceForm.getRawValue();
+    this.eventOrganizationService.addResourceToRequest(this.selectedReservationRequest.id, {
+      resourceId: Number(value.resourceId),
+      quantity: Number(value.quantity)
+    }).subscribe({
+      next: () => {
+        this.successMessage = 'Resource requested for performance.';
+        this.requestResourceForm.reset({ resourceId: this.resources[0]?.id ?? null, quantity: 1 });
+        this.loadSelectedRequestResources();
+      },
+      error: err => this.errorMessage = err.error?.message || 'Unable to add resource to request.'
+    });
+  }
+
+  confirmRequestResource(resource: RequestResource): void {
+    if (!this.selectedReservationRequest) return;
+
+    this.eventOrganizationService.confirmRequestResource(this.selectedReservationRequest.id, resource.resourceId).subscribe({
+      next: () => {
+        this.successMessage = 'Resource availability confirmed.';
+        this.loadSelectedRequestResources();
+      },
+      error: err => {
+        this.errorMessage = err.error?.message || 'Unable to confirm resource availability.';
+        this.loadSelectedRequestResources();
+      }
+    });
+  }
+
+  removeRequestResource(resource: RequestResource): void {
+    if (!this.selectedReservationRequest) return;
+
+    this.eventOrganizationService.removeResourceFromRequest(this.selectedReservationRequest.id, resource.resourceId).subscribe({
+      next: () => {
+        this.successMessage = 'Resource removed from request.';
+        this.loadSelectedRequestResources();
+      },
+      error: () => this.errorMessage = 'Unable to remove resource from request.'
+    });
   }
 
   setResourceTab(tab: ResourceTab): void {
@@ -323,10 +515,95 @@ export class EventOrganizationComponent implements OnInit {
 
   previousWeek(): void {
     this.timetableWeekOffset -= 1;
+    this.loadTimetable();
   }
 
   nextWeek(): void {
     this.timetableWeekOffset += 1;
+    this.loadTimetable();
+  }
+
+  selectScheduleStart(hour: string): void {
+    if (!this.reservationMode || !this.isScheduleSlotAvailable(hour)) return;
+    this.selectedScheduleStart = hour;
+    this.clearMessages();
+  }
+
+  reserveSelectedSlot(): void {
+    if (!this.selectedReservationRequest || !this.selectedScheduleStart) return;
+    if (!this.isScheduleSlotAvailable(this.selectedScheduleStart)) {
+      this.errorMessage = 'Selected slot is no longer available.';
+      return;
+    }
+
+    this.eventOrganizationService.scheduleReservationRequest(this.selectedReservationRequest.id, {
+      startTime: this.selectedScheduleStart,
+      reviewNote: 'Scheduled from reservation timetable'
+    }).subscribe({
+      next: request => {
+        this.confirmedReservation = request;
+        this.successMessage = 'Reservation confirmed.';
+        this.timetableMode = 'static';
+        this.selectedScheduleStart = null;
+        this.reloadReservationRequests(request.id);
+        this.loadTimetable();
+      },
+      error: err => this.errorMessage = err.error?.message || 'Unable to reserve selected time slot.'
+    });
+  }
+
+  closeConfirmation(): void {
+    this.confirmedReservation = null;
+  }
+
+  getTimetableSlot(dayKey: string, hour: string): TimetableSlot | null {
+    return this.timetableSlots[dayKey]?.[hour] ?? null;
+  }
+
+  isScheduleSlotAvailable(hour: string): boolean {
+    if (!this.selectedReservationRequest) return false;
+    const start = this.minutesFromTime(hour);
+    const duration = this.requestDurationMinutes(this.selectedReservationRequest);
+    const end = start + duration;
+    if (end > 24 * 60) return false;
+
+    const daySlots = Object.values(this.timetableSlots[this.selectedReservationRequest.performanceDate] ?? {});
+    return !daySlots.some(slot => {
+      if (slot.status !== 'OCCUPIED') return false;
+      const slotStart = this.minutesFromTime(slot.startTime);
+      const rawSlotEnd = this.minutesFromTime(slot.endTime);
+      const slotEnd = rawSlotEnd <= slotStart ? 24 * 60 : rawSlotEnd;
+      return slotStart < end && slotEnd > start;
+    });
+  }
+
+  isScheduleSlotSelected(hour: string): boolean {
+    return this.selectedScheduleStart === hour;
+  }
+
+  statusLabel(status: EventReservationStatus): string {
+    return status.charAt(0) + status.slice(1).toLowerCase();
+  }
+
+  requestResourceStatusLabel(status: string): string {
+    return status.charAt(0) + status.slice(1).toLowerCase();
+  }
+
+  requestStatusLabel(request: EventReservationRequest): string {
+    if (this.isPastRequest(request)) return 'Past';
+    if (request.status === 'APPROVED') return 'Confirmed';
+    return this.statusLabel(request.status);
+  }
+
+  requestDurationMinutes(request: EventReservationRequest): number {
+    const [startHours, startMinutes] = request.startTime.split(':').map(Number);
+    const [endHours, endMinutes] = request.endTime.split(':').map(Number);
+    return (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+  }
+
+  formatRequestDate(date: string): string {
+    const [year, month, day] = date.split('-');
+    return `${day}.${month}.${year}`;
   }
 
   logout(): void {
@@ -340,6 +617,68 @@ export class EventOrganizationComponent implements OnInit {
         this.refreshStageData();
       },
       error: () => this.errorMessage = 'Unable to reload resources.'
+    });
+  }
+
+  private reloadReservationRequests(selectedRequestId?: number): void {
+    this.eventOrganizationService.getReservationRequests().subscribe({
+      next: requests => {
+        this.reservationRequests = requests;
+        this.selectedReservationRequest = requests.find(request => request.id === selectedRequestId)
+          ?? this.filteredReservationRequests[0]
+          ?? null;
+        this.loadRequestResourceCounts();
+        this.loadSelectedRequestResources();
+      },
+      error: () => this.errorMessage = 'Unable to reload reservation requests.'
+    });
+  }
+
+  private loadSelectedRequestResources(): void {
+    if (!this.selectedReservationRequest) {
+      this.selectedRequestResources = [];
+      return;
+    }
+
+    this.eventOrganizationService.getRequestResources(this.selectedReservationRequest.id).subscribe({
+      next: resources => this.selectedRequestResources = resources,
+      error: () => this.errorMessage = 'Unable to load request resources.'
+    });
+  }
+
+  private loadRequestResourceCounts(): void {
+    if (!this.reservationRequests.length) {
+      this.requestResourceCounts = {};
+      return;
+    }
+
+    forkJoin(this.reservationRequests.map(request => this.eventOrganizationService.getRequestResources(request.id))).subscribe({
+      next: resourceGroups => {
+        this.requestResourceCounts = {};
+        resourceGroups.forEach((resources, index) => {
+          this.requestResourceCounts[this.reservationRequests[index].id] = resources.length;
+        });
+      },
+      error: () => this.errorMessage = 'Unable to load request resource counts.'
+    });
+  }
+
+  private loadTimetable(): void {
+    if (!this.selectedStageId) return;
+
+    const days = this.timetableDays;
+    forkJoin(days.map(day => this.eventOrganizationService.getTimetable(this.selectedStageId!, day.key))).subscribe({
+      next: slotGroups => {
+        this.timetableSlots = {};
+        slotGroups.forEach((slots, index) => {
+          const dayKey = days[index].key;
+          this.timetableSlots[dayKey] = {};
+          slots.forEach(slot => {
+            this.timetableSlots[dayKey][this.normalizeHour(slot.startTime)] = slot;
+          });
+        });
+      },
+      error: () => this.errorMessage = 'Unable to load timetable.'
     });
   }
 
@@ -359,11 +698,59 @@ export class EventOrganizationComponent implements OnInit {
     return date;
   }
 
+  private setTimetableWeekToDate(date: string): void {
+    const targetWeekStart = this.weekStartForDate(this.parseApiDate(date));
+    const currentWeekStart = this.weekStartDate();
+    const diffMs = targetWeekStart.getTime() - currentWeekStart.getTime();
+    this.timetableWeekOffset += Math.round(diffMs / (7 * 24 * 60 * 60 * 1000));
+  }
+
+  private weekStartForDate(date: Date): Date {
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    const day = start.getDay();
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    start.setDate(start.getDate() + mondayOffset);
+    return start;
+  }
+
   private formatShortDate(date: Date): string {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
   private formatLongDate(date: Date): string {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  private formatApiDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private parseApiDate(date: string): Date {
+    const [year, month, day] = date.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  private normalizeHour(time: string): string {
+    return time.slice(0, 5);
+  }
+
+  private minutesFromTime(time: string): number {
+    const [hours, minutes] = time.slice(0, 5).split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
+  private addMinutes(time: string, minutesToAdd: number): string {
+    const total = this.minutesFromTime(time) + minutesToAdd;
+    const hours = Math.floor(total / 60);
+    const minutes = total % 60;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  }
+
+  isPastRequest(request: EventReservationRequest): boolean {
+    return request.performanceDate < this.formatApiDate(new Date());
   }
 }

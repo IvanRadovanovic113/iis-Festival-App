@@ -1,0 +1,105 @@
+<div class="page-header">
+  <div class="header-title-zone">
+    <a routerLink="/negotiation-manager/performers" class="back-link">← Back to Performers</a>
+    <h1>{{ isEditMode ? 'Edit Performer Profile' : 'Create New Performer Entry' }}</h1>
+    <p class="subtitle">Fill out the database specifications and profile summary for the performer</p>
+  </div>
+</div>
+
+<div class="error-banner" *ngIf="errorMessage">
+  ⚠️ {{ errorMessage }}
+</div>
+
+<div class="form-container">
+  <form [formGroup]="performerForm" (ngSubmit)="onSubmit()">
+    
+    <div class="form-section">
+      <h3>Basic Information</h3>
+      <hr class="section-divider">
+      
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label>Stage / Professional Name <span class="required">*</span></label>
+          <input type="text" formControlName="stageName" placeholder="e.g. Arctic Monkeys, Amelie Lens">
+          <div class="validation-error" *ngIf="performerForm.get('stageName')?.touched && performerForm.get('stageName')?.errors?.['required']">
+            Stage name is required.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>First Name (Optional)</label>
+          <input type="text" formControlName="firstName" placeholder="Real first name">
+        </div>
+
+        <div class="form-group">
+          <label>Last Name (Optional)</label>
+          <input type="text" formControlName="lastName" placeholder="Real last name">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3>Performance Metrics</h3>
+      <hr class="section-divider">
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Performer Type <span class="required">*</span></label>
+          <select formControlName="performerType">
+            <option [value]="PerformerType.SOLO">Solo Artist</option>
+            <option [value]="PerformerType.BAND">Band / Group</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Number of Members <span class="required">*</span></label>
+          <input type="number" formControlName="numberOfMembers">
+          <div class="validation-error" *ngIf="performerForm.get('numberOfMembers')?.touched && performerForm.get('numberOfMembers')?.errors?.['min']">
+            Must have at least 1 member.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Main Genre <span class="required">*</span></label>
+          <input type="text" formControlName="genre" placeholder="e.g. Techno, Indie Rock, Trap">
+          <div class="validation-error" *ngIf="performerForm.get('genre')?.touched && performerForm.get('genre')?.errors?.['required']">
+            Genre is required.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Country of Origin <span class="required">*</span></label>
+          <input type="text" formControlName="countryOfOrigin" placeholder="e.g. United Kingdom, Belgium">
+          <div class="validation-error" *ngIf="performerForm.get('countryOfOrigin')?.touched && performerForm.get('countryOfOrigin')?.errors?.['required']">
+            Country is required.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Average Performance Duration (Minutes) <span class="required">*</span></label>
+          <input type="number" formControlName="averageDurationMinutes">
+        </div>
+
+        <div class="form-group">
+          <label>Popularity Score (0 - 100) <span class="required">*</span></label>
+          <input type="number" formControlName="popularity" min="0" max="100">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3>Public Profile</h3>
+      <hr class="section-divider">
+      <div class="form-group full-width">
+        <label>Biography / Notes</label>
+        <textarea formControlName="bio" rows="5" placeholder="Write a brief background description, tech rider highlights or agency information..."></textarea>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" routerLink="/negotiation-manager/performers" class="btn-secondary">Cancel</button>
+      <button type="submit" class="btn-submit">{{ isEditMode ? 'Save Changes' : 'Create Entry' }}</button>
+    </div>
+
+  </form>
+</div>

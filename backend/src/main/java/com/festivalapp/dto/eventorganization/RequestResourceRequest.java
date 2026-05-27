@@ -1,4 +1,4 @@
-package com.festivalapp.eventorganization.dto;
+package com.festivalapp.dto.eventorganization;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -7,7 +7,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class StageResourceRequest {
+public class RequestResourceRequest {
 
     @NotNull
     private Long resourceId;

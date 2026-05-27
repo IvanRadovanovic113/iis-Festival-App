@@ -1,0 +1,202 @@
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.header-title-zone h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  color: #111;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: #666;
+  margin: 4px 0 0 0;
+}
+
+.btn-primary {
+  background-color: #1a1a1a;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: #333;
+}
+
+/* Tabovi */
+.status-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #e5e5e5;
+  margin-bottom: 20px;
+}
+
+.status-tabs button {
+  background: none;
+  border: none;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+  position: relative;
+}
+
+.status-tabs button.active {
+  color: #1a1a1a;
+}
+
+.status-tabs button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #1a1a1a;
+}
+
+/* Filteri */
+.filter-card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: 2fr repeat(3, 1fr);
+  gap: 12px;
+}
+
+.form-group input, .form-group select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 13px;
+  background-color: #fff;
+  box-sizing: border-box;
+}
+
+/* Tabela */
+.table-container {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 14px;
+}
+
+.data-table th {
+  background-color: #f8f9fa;
+  padding: 12px 16px;
+  font-weight: 600;
+  color: #444;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.data-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #333;
+  vertical-align: middle;
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+/* Tagovi */
+.type-tag, .status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.type-tag.solo { background-color: #e3f2fd; color: #0d47a1; }
+.type-tag.band { background-color: #f3e5f5; color: #4a148c; }
+
+.status-badge.active { background-color: #e8f5e9; color: #1b5e20; }
+.status-badge.archived { background-color: #efebe9; color: #4e342e; }
+
+.popularity-badge {
+  font-size: 12px;
+  background: #fff9c4;
+  color: #f57f17;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.actions-th { text-align: right; }
+.actions-td { text-align: right; display: flex; gap: 8px; justify-content: flex-end; }
+
+.btn-table-action {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background: #fff;
+}
+
+.btn-table-action.view:hover { background: #f5f5f5; }
+.btn-table-action.edit { background-color: #1a1a1a; color: #fff; border: none; }
+.btn-table-action.edit:hover { background-color: #333; }
+
+.no-data {
+  text-align: center;
+  padding: 32px !important;
+  color: #888;
+}
+
+/* Paginacija */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-top: 1px solid #e5e5e5;
+}
+
+.btn-page {
+  padding: 6px 12px;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-page:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-size: 13px;
+  color: #555;
+}

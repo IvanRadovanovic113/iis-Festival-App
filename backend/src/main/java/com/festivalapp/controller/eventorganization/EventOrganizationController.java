@@ -1,7 +1,8 @@
-package com.festivalapp.eventorganization.controller;
+package com.festivalapp.controller.eventorganization;
 
-import com.festivalapp.eventorganization.dto.*;
-import com.festivalapp.eventorganization.service.EventOrganizationService;
+import com.festivalapp.dto.eventorganization.*;
+import com.festivalapp.model.eventorganization.EventReservationStatus;
+import com.festivalapp.service.eventorganization.EventOrganizationService;
 import com.festivalapp.model.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,79 @@ import java.util.List;
 public class EventOrganizationController {
 
     private final EventOrganizationService eventOrganizationService;
+
+    @GetMapping("/requests")
+    public ResponseEntity<List<EventReservationResponse>> getReservationRequests(
+            @RequestParam(required = false) EventReservationStatus status,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(eventOrganizationService.getReservationRequests(status, user));
+    }
+
+    @PutMapping("/requests/{requestId}/approve")
+    public ResponseEntity<EventReservationResponse> approveReservationRequest(
+            @PathVariable Long requestId,
+            @RequestBody EventReservationReviewRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(eventOrganizationService.approveReservationRequest(requestId, request, user));
+    }
+
+    @PutMapping("/requests/{requestId}/schedule")
+    public ResponseEntity<EventReservationResponse> scheduleReservationRequest(
+            @PathVariable Long requestId,
+            @Valid @RequestBody EventReservationScheduleRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(eventOrganizationService.scheduleReservationRequest(requestId, request, user));
+    }
+
+    @PutMapping("/requests/{requestId}/reject")
+    public ResponseEntity<EventReservationResponse> rejectReservationRequest(
+            @PathVariable Long requestId,
+            @RequestBody EventReservationReviewRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(eventOrganizationService.rejectReservationRequest(requestId, request, user));
+    }
+
+    @GetMapping("/requests/{requestId}/resources")
+    public ResponseEntity<List<RequestResourceResponse>> getRequestResources(
+            @PathVariable Long requestId,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(eventOrganizationService.getRequestResources(requestId, user));
+    }
+
+    @PostMapping("/requests/{requestId}/resources")
+    public ResponseEntity<RequestResourceResponse> addResourceToRequest(
+            @PathVariable Long requestId,
+            @Valid @RequestBody RequestResourceRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(eventOrganizationService.addResourceToRequest(requestId, request, user));
+    }
+
+    @PutMapping("/requests/{requestId}/resources/{resourceId}")
+    public ResponseEntity<RequestResourceResponse> updateRequestResource(
+            @PathVariable Long requestId,
+            @PathVariable Long resourceId,
+            @Valid @RequestBody RequestResourceRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(eventOrganizationService.updateRequestResource(requestId, resourceId, request, user));
+    }
+
+    @PutMapping("/requests/{requestId}/resources/{resourceId}/confirm")
+    public ResponseEntity<RequestResourceResponse> confirmRequestResource(
+            @PathVariable Long requestId,
+            @PathVariable Long resourceId,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(eventOrganizationService.confirmRequestResource(requestId, resourceId, user));
+    }
+
+    @DeleteMapping("/requests/{requestId}/resources/{resourceId}")
+    public ResponseEntity<Void> removeResourceFromRequest(
+            @PathVariable Long requestId,
+            @PathVariable Long resourceId,
+            @AuthenticationPrincipal User user) {
+        eventOrganizationService.removeResourceFromRequest(requestId, resourceId, user);
+        return ResponseEntity.noContent().build();
+    }
 
     @GetMapping("/resources")
     public ResponseEntity<List<EventResourceResponse>> getResources(@AuthenticationPrincipal User user) {

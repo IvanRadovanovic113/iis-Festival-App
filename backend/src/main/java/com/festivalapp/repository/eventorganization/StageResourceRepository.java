@@ -1,6 +1,6 @@
-package com.festivalapp.eventorganization.repository;
+package com.festivalapp.repository.eventorganization;
 
-import com.festivalapp.eventorganization.model.StageResource;
+import com.festivalapp.model.eventorganization.StageResource;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
