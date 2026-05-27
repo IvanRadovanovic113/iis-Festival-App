@@ -119,26 +119,6 @@ public class EventOrganizationService {
         return requests.stream().map(EventReservationResponse::from).toList();
     }
 
-    public EventReservationResponse createReservationRequest(EventReservationCreateRequest request, User user) {
-        Festival festival = requireEventOrganizerFestival(user);
-        if (festival == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Admin users must create requests through an event organizer");
-        }
-        validateReservationTime(request.getStartTime(), request.getEndTime());
-        Stage stage = requireStage(request.getStageId(), festival);
-        EventReservationRequest reservationRequest = EventReservationRequest.builder()
-            .festival(festival)
-            .performerName(request.getPerformerName())
-            .stage(stage)
-            .performanceDate(request.getPerformanceDate())
-            .startTime(request.getStartTime())
-            .endTime(request.getEndTime())
-            .status(EventReservationStatus.PENDING)
-            .notes(request.getNotes())
-            .build();
-        return EventReservationResponse.from(reservationRequestRepository.save(reservationRequest));
-    }
-
     public EventReservationResponse approveReservationRequest(Long requestId, EventReservationReviewRequest reviewRequest, User user) {
         Festival festival = requireEventOrganizerFestival(user);
         EventReservationRequest reservationRequest = requireReservationRequest(requestId, festival);

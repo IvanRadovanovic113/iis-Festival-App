@@ -19,7 +19,7 @@ import { User } from '../../core/models/user.model';
 type MainTab = 'requests' | 'timetable' | 'resources' | 'tasks' | 'analytics';
 type ResourceTab = 'manage' | 'inventory';
 type ResourceModalMode = 'add' | 'edit';
-type RequestFilter = 'All' | EventReservationStatus;
+type RequestFilter = 'All' | 'PENDING' | 'APPROVED' | 'PAST';
 
 interface InventoryRow {
   resource: EventResource;
@@ -53,11 +53,13 @@ export class EventOrganizationComponent implements OnInit {
   activeResourceTab: ResourceTab = 'manage';
   errorMessage = '';
   successMessage = '';
+  requestSearch = '';
 
   stages: Stage[] = [];
   reservationRequests: EventReservationRequest[] = [];
   selectedReservationRequest: EventReservationRequest | null = null;
   selectedRequestResources: RequestResource[] = [];
+  requestResourceCounts: Record<number, number> = {};
   resources: EventResource[] = [];
   stageResources: StageResource[] = [];
   allStageResources: StageResource[] = [];
@@ -72,15 +74,6 @@ export class EventOrganizationComponent implements OnInit {
   inventoryStageFilter = 'All';
   timetableWeekOffset = 0;
   timetableHours = ['14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
-
-  requestForm = this.fb.group({
-    performerName: ['', [Validators.required, Validators.minLength(2)]],
-    stageId: [null as number | null, Validators.required],
-    performanceDate: [this.formatApiDate(new Date()), Validators.required],
-    startTime: ['18:00', Validators.required],
-    endTime: ['19:00', Validators.required],
-    notes: ['']
-  });
 
   reviewForm = this.fb.group({
     reviewNote: ['']
@@ -105,10 +98,24 @@ export class EventOrganizationComponent implements OnInit {
   }
 
   get filteredReservationRequests(): EventReservationRequest[] {
+    const query = this.requestSearch.trim().toLowerCase();
     return this.reservationRequests.filter(request => {
+      const matchesSearch = !query
+        || request.performerName.toLowerCase().includes(query)
+        || request.stageName.toLowerCase().includes(query);
+      if (!matchesSearch) return false;
       if (this.activeRequestFilter === 'All') return true;
+      if (this.activeRequestFilter === 'PAST') return this.isPastRequest(request);
+      if (this.activeRequestFilter === 'APPROVED') return request.status === 'APPROVED' && !this.isPastRequest(request);
       return request.status === this.activeRequestFilter;
     });
+  }
+
+  get requestsSubtitle(): string {
+    if (this.activeRequestFilter === 'PENDING') return 'Requests awaiting review';
+    if (this.activeRequestFilter === 'APPROVED') return 'Confirmed reservations with time slots';
+    if (this.activeRequestFilter === 'PAST') return 'History of past reservations';
+    return 'All incoming reservation requests';
   }
 
   get inventoryRows(): InventoryRow[] {
@@ -190,9 +197,9 @@ export class EventOrganizationComponent implements OnInit {
         this.selectedReservationRequest = requests[0] ?? null;
         this.selectedStageId = stages[0]?.stageId ?? null;
         this.requestResourceForm.patchValue({ resourceId: resources[0]?.id ?? null });
-        this.requestForm.patchValue({ stageId: this.selectedStageId });
         this.resourceForm.patchValue({ stageId: this.selectedStageId });
         this.refreshStageData();
+        this.loadRequestResourceCounts();
         this.loadSelectedRequestResources();
       },
       error: () => this.errorMessage = 'Unable to load event organization data.'
@@ -217,7 +224,6 @@ export class EventOrganizationComponent implements OnInit {
 
   selectStage(stageId: number): void {
     this.selectedStageId = stageId;
-    this.requestForm.patchValue({ stageId });
     this.resourceForm.patchValue({ stageId });
     this.stageResources = this.allStageResources.filter(item => item.stageId === stageId);
     this.clearMessages();
@@ -239,44 +245,23 @@ export class EventOrganizationComponent implements OnInit {
     this.selectedReservationRequest = this.filteredReservationRequests[0] ?? null;
   }
 
+  updateRequestSearch(event: Event): void {
+    this.requestSearch = (event.target as HTMLInputElement).value;
+  }
+
+  viewReservationRequest(request: EventReservationRequest): void {
+    this.selectReservationRequest(request);
+    this.selectedStageId = request.stageId;
+    this.activeTab = 'timetable';
+    this.loadTimetable();
+  }
+
   selectReservationRequest(request: EventReservationRequest): void {
     this.selectedReservationRequest = request;
     this.reviewForm.reset({ reviewNote: request.reviewNote ?? '' });
     this.requestResourceForm.reset({ resourceId: this.resources[0]?.id ?? null, quantity: 1 });
     this.loadSelectedRequestResources();
     this.clearMessages();
-  }
-
-  createReservationRequest(): void {
-    if (this.requestForm.invalid) {
-      this.requestForm.markAllAsTouched();
-      return;
-    }
-
-    const value = this.requestForm.getRawValue();
-    this.eventOrganizationService.createReservationRequest({
-      performerName: value.performerName!,
-      stageId: Number(value.stageId),
-      performanceDate: value.performanceDate!,
-      startTime: value.startTime!,
-      endTime: value.endTime!,
-      notes: value.notes || null
-    }).subscribe({
-      next: request => {
-        this.successMessage = 'Reservation request created.';
-        this.requestForm.reset({
-          performerName: '',
-          stageId: this.selectedStageId,
-          performanceDate: this.formatApiDate(new Date()),
-          startTime: '18:00',
-          endTime: '19:00',
-          notes: ''
-        });
-        this.reloadReservationRequests(request.id);
-        this.selectedRequestResources = [];
-      },
-      error: err => this.errorMessage = err.error?.message || 'Unable to create reservation request.'
-    });
   }
 
   approveSelectedRequest(): void {
@@ -515,6 +500,23 @@ export class EventOrganizationComponent implements OnInit {
     return status.charAt(0) + status.slice(1).toLowerCase();
   }
 
+  requestStatusLabel(request: EventReservationRequest): string {
+    if (this.isPastRequest(request)) return 'Past';
+    if (request.status === 'APPROVED') return 'Confirmed';
+    return this.statusLabel(request.status);
+  }
+
+  requestDurationMinutes(request: EventReservationRequest): number {
+    const [startHours, startMinutes] = request.startTime.split(':').map(Number);
+    const [endHours, endMinutes] = request.endTime.split(':').map(Number);
+    return (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+  }
+
+  formatRequestDate(date: string): string {
+    const [year, month, day] = date.split('-');
+    return `${day}.${month}.${year}`;
+  }
+
   logout(): void {
     this.authService.logout();
   }
@@ -536,6 +538,7 @@ export class EventOrganizationComponent implements OnInit {
         this.selectedReservationRequest = requests.find(request => request.id === selectedRequestId)
           ?? this.filteredReservationRequests[0]
           ?? null;
+        this.loadRequestResourceCounts();
         this.loadSelectedRequestResources();
       },
       error: () => this.errorMessage = 'Unable to reload reservation requests.'
@@ -551,6 +554,23 @@ export class EventOrganizationComponent implements OnInit {
     this.eventOrganizationService.getRequestResources(this.selectedReservationRequest.id).subscribe({
       next: resources => this.selectedRequestResources = resources,
       error: () => this.errorMessage = 'Unable to load request resources.'
+    });
+  }
+
+  private loadRequestResourceCounts(): void {
+    if (!this.reservationRequests.length) {
+      this.requestResourceCounts = {};
+      return;
+    }
+
+    forkJoin(this.reservationRequests.map(request => this.eventOrganizationService.getRequestResources(request.id))).subscribe({
+      next: resourceGroups => {
+        this.requestResourceCounts = {};
+        resourceGroups.forEach((resources, index) => {
+          this.requestResourceCounts[this.reservationRequests[index].id] = resources.length;
+        });
+      },
+      error: () => this.errorMessage = 'Unable to load request resource counts.'
     });
   }
 
@@ -606,5 +626,9 @@ export class EventOrganizationComponent implements OnInit {
 
   private normalizeHour(time: string): string {
     return time.slice(0, 5);
+  }
+
+  isPastRequest(request: EventReservationRequest): boolean {
+    return request.performanceDate < this.formatApiDate(new Date());
   }
 }

@@ -2,7 +2,6 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
-  EventReservationCreateRequest,
   EventReservationRequest,
   EventReservationReviewRequest,
   EventReservationStatus,
@@ -23,10 +22,6 @@ export class EventOrganizationService {
   getReservationRequests(status?: EventReservationStatus): Observable<EventReservationRequest[]> {
     const params = status ? new HttpParams().set('status', status) : undefined;
     return this.http.get<EventReservationRequest[]>(`${this.API}/requests`, { params });
-  }
-
-  createReservationRequest(request: EventReservationCreateRequest): Observable<EventReservationRequest> {
-    return this.http.post<EventReservationRequest>(`${this.API}/requests`, request);
   }
 
   approveReservationRequest(requestId: number, request: EventReservationReviewRequest): Observable<EventReservationRequest> {

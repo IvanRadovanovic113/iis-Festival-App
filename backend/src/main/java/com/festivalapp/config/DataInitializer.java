@@ -8,6 +8,14 @@ import com.festivalapp.model.UserFestivalAssignment;
 import com.festivalapp.model.Stage;
 import com.festivalapp.model.AdPhase;
 import com.festivalapp.model.AdType;
+import com.festivalapp.eventorganization.model.EventReservationRequest;
+import com.festivalapp.eventorganization.model.EventReservationStatus;
+import com.festivalapp.eventorganization.model.EventResource;
+import com.festivalapp.eventorganization.model.RequestResource;
+import com.festivalapp.eventorganization.model.RequestResourceStatus;
+import com.festivalapp.eventorganization.repository.EventReservationRequestRepository;
+import com.festivalapp.eventorganization.repository.EventResourceRepository;
+import com.festivalapp.eventorganization.repository.RequestResourceRepository;
 import com.festivalapp.prodaja.model.KupacTier;
 import com.festivalapp.prodaja.model.TierConfig;
 import com.festivalapp.prodaja.repository.TierConfigRepository;
@@ -26,6 +34,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @Component
@@ -42,6 +51,9 @@ public class DataInitializer implements ApplicationRunner {
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbcTemplate;
     private final TierConfigRepository tierConfigRepository;
+    private final EventReservationRequestRepository reservationRequestRepository;
+    private final EventResourceRepository eventResourceRepository;
+    private final RequestResourceRepository requestResourceRepository;
 
     @Override
     public void run(ApplicationArguments args) {
@@ -49,6 +61,7 @@ public class DataInitializer implements ApplicationRunner {
         migrateAssignmentRoleConstraint();
         migrateUsersRoleConstraint();
         createAdminUser();
+        seedEventOrganizationRequests();
         seedTierConfig();
         createTriggers();
     }
@@ -186,6 +199,154 @@ public class DataInitializer implements ApplicationRunner {
         ensureAdType("Animated", "Animated campaign assets for digital channels", "Video", draft, approvedTechnical, visuallyPrepared, approved, rejected, published);
         ensureAdType("Text", "Text-based copy for campaign communication", "Text", draft, approvedTechnical, approved, rejected, published);
         ensureAdType("Audio", "Audio spots and supporting sound assets", "Audio", draft, approvedTechnical, approved, rejected, published);
+    }
+
+    private void seedEventOrganizationRequests() {
+        Festival festival = festivalRepository.findAll().stream().findFirst().orElse(null);
+        if (festival == null) {
+            return;
+        }
+
+        Stage mainStage = ensureStage(festival, "Main Stage", 10000, "Central Zone");
+        Stage stageTwo = ensureStage(festival, "Stage 2", 6000, "East Field");
+        Stage smallStage = ensureStage(festival, "Small Stage", 2200, "Garden Zone");
+        Stage vipStage = ensureStage(festival, "VIP Stage", 1200, "VIP Lounge");
+
+        EventResource sound = ensureEventResource(festival, "Line array sound system", "Equipment", 6);
+        EventResource lights = ensureEventResource(festival, "Intelligent lighting rig", "Equipment", 8);
+        EventResource screens = ensureEventResource(festival, "LED screen panels", "Equipment", 10);
+        EventResource security = ensureEventResource(festival, "Security crew", "Personnel", 40);
+        EventResource technicians = ensureEventResource(festival, "Stage technicians", "Personnel", 24);
+        EventResource specialFx = ensureEventResource(festival, "Smoke and pyrotechnics", "Special FX", 5);
+
+        EventReservationRequest weeknd = ensureReservation(festival, mainStage, "The Weeknd",
+            LocalDate.of(2026, 6, 15), LocalTime.of(20, 0), LocalTime.of(21, 30), EventReservationStatus.PENDING, "Headline set awaiting stage slot confirmation");
+        ensureRequestResources(weeknd, List.of(sound, lights, screens, security, technicians));
+
+        EventReservationRequest dua = ensureReservation(festival, stageTwo, "Dua Lipa",
+            LocalDate.of(2026, 6, 16), LocalTime.of(19, 30), LocalTime.of(20, 45), EventReservationStatus.PENDING, "Dance-pop performance request");
+        ensureRequestResources(dua, List.of(sound, lights, screens));
+
+        EventReservationRequest marija = ensureReservation(festival, smallStage, "Marija B.",
+            LocalDate.of(2026, 6, 17), LocalTime.of(18, 0), LocalTime.of(19, 0), EventReservationStatus.PENDING, "Local performer request");
+        ensureRequestResources(marija, List.of(sound, technicians));
+
+        EventReservationRequest coby = ensureReservation(festival, stageTwo, "Coby B.",
+            LocalDate.of(2026, 6, 17), LocalTime.of(19, 0), LocalTime.of(19, 45), EventReservationStatus.APPROVED, "Approved rap performance");
+        ensureRequestResources(coby, List.of(sound, lights, security, technicians));
+
+        EventReservationRequest stromae = ensureReservation(festival, mainStage, "Stromae",
+            LocalDate.of(2026, 6, 20), LocalTime.of(21, 0), LocalTime.of(22, 20), EventReservationStatus.PENDING, "Main stage request");
+        ensureRequestResources(stromae, List.of(sound, lights, screens, security, technicians));
+
+        EventReservationRequest portishead = ensureReservation(festival, smallStage, "Portishead",
+            LocalDate.of(2026, 6, 21), LocalTime.of(18, 0), LocalTime.of(19, 10), EventReservationStatus.APPROVED, "Approved trip-hop performance");
+        ensureRequestResources(portishead, List.of(sound, technicians));
+
+        EventReservationRequest calvin = ensureReservation(festival, mainStage, "Calvin Harris",
+            LocalDate.of(2026, 6, 18), LocalTime.of(21, 0), LocalTime.of(22, 0), EventReservationStatus.APPROVED, "Approved EDM performance");
+        ensureRequestResources(calvin, List.of(sound, lights, screens, security, technicians, specialFx));
+
+        EventReservationRequest djSnake = ensureReservation(festival, vipStage, "DJ Snake",
+            LocalDate.of(2026, 6, 19), LocalTime.of(20, 0), LocalTime.of(20, 45), EventReservationStatus.APPROVED, "Approved VIP stage performance");
+        ensureRequestResources(djSnake, List.of(sound, lights, specialFx));
+
+        EventReservationRequest bicep = ensureReservation(festival, stageTwo, "Bicep",
+            LocalDate.of(2026, 6, 22), LocalTime.of(22, 0), LocalTime.of(23, 0), EventReservationStatus.APPROVED, "Approved electronic set");
+        ensureRequestResources(bicep, List.of(sound, lights, technicians, specialFx));
+
+        EventReservationRequest massiveAttack = ensureReservation(festival, vipStage, "Massive Attack",
+            LocalDate.of(2026, 6, 21), LocalTime.of(21, 0), LocalTime.of(21, 55), EventReservationStatus.PENDING, "VIP stage request");
+        ensureRequestResources(massiveAttack, List.of(sound, lights, screens));
+
+        EventReservationRequest tameImpala = ensureReservation(festival, mainStage, "Tame Impala",
+            LocalDate.of(2026, 5, 10), LocalTime.of(20, 0), LocalTime.of(21, 30), EventReservationStatus.APPROVED, "Past performance");
+        ensureRequestResources(tameImpala, List.of(sound, lights, screens, security, technicians));
+
+        EventReservationRequest billie = ensureReservation(festival, mainStage, "Billie Eilish",
+            LocalDate.of(2026, 5, 11), LocalTime.of(19, 0), LocalTime.of(20, 15), EventReservationStatus.APPROVED, "Past performance");
+        ensureRequestResources(billie, List.of(sound, lights, screens, security));
+
+        EventReservationRequest arctic = ensureReservation(festival, stageTwo, "Arctic Monkeys",
+            LocalDate.of(2026, 5, 12), LocalTime.of(18, 0), LocalTime.of(19, 0), EventReservationStatus.APPROVED, "Past performance");
+        ensureRequestResources(arctic, List.of(sound, lights, technicians));
+
+        EventReservationRequest radiohead = ensureReservation(festival, mainStage, "Radiohead",
+            LocalDate.of(2026, 5, 5), LocalTime.of(21, 0), LocalTime.of(22, 40), EventReservationStatus.APPROVED, "Past performance");
+        ensureRequestResources(radiohead, List.of(sound, lights, screens, security, technicians, specialFx));
+
+        EventReservationRequest trisha = ensureReservation(festival, stageTwo, "Thrisha Paytas",
+            LocalDate.of(2026, 5, 6), LocalTime.of(19, 0), LocalTime.of(20, 15), EventReservationStatus.APPROVED, "Past performance");
+        ensureRequestResources(trisha, List.of(sound, lights, technicians));
+
+        log.info("Event organization reservation requests seeded");
+    }
+
+    private Stage ensureStage(Festival festival, String name, int capacity, String location) {
+        return stageRepository.findByFestival_FestivalId(festival.getFestivalId()).stream()
+            .filter(stage -> stage.getName().equalsIgnoreCase(name))
+            .findFirst()
+            .orElseGet(() -> stageRepository.save(Stage.builder()
+                .name(name)
+                .capacity(capacity)
+                .location(location)
+                .festival(festival)
+                .build()));
+    }
+
+    private EventResource ensureEventResource(Festival festival, String name, String type, int totalQuantity) {
+        return eventResourceRepository.findByFestival_FestivalIdOrderByNameAsc(festival.getFestivalId()).stream()
+            .filter(resource -> resource.getName().equalsIgnoreCase(name))
+            .findFirst()
+            .orElseGet(() -> eventResourceRepository.save(EventResource.builder()
+                .name(name)
+                .type(type)
+                .description("Seeded resource for event organization requests")
+                .totalQuantity(totalQuantity)
+                .festival(festival)
+                .build()));
+    }
+
+    private EventReservationRequest ensureReservation(
+            Festival festival,
+            Stage stage,
+            String performerName,
+            LocalDate date,
+            LocalTime startTime,
+            LocalTime endTime,
+            EventReservationStatus status,
+            String notes) {
+        return reservationRequestRepository.findByFestival_FestivalIdOrderByPerformanceDateAscStartTimeAsc(festival.getFestivalId())
+            .stream()
+            .filter(request -> request.getPerformerName().equalsIgnoreCase(performerName)
+                && request.getPerformanceDate().equals(date))
+            .findFirst()
+            .orElseGet(() -> reservationRequestRepository.save(EventReservationRequest.builder()
+                .festival(festival)
+                .performerName(performerName)
+                .stage(stage)
+                .performanceDate(date)
+                .startTime(startTime)
+                .endTime(endTime)
+                .status(status)
+                .notes(notes)
+                .build()));
+    }
+
+    private void ensureRequestResources(EventReservationRequest request, List<EventResource> resources) {
+        for (EventResource resource : resources) {
+            if (requestResourceRepository.existsByReservationRequest_IdAndResource_Id(request.getId(), resource.getId())) {
+                continue;
+            }
+            requestResourceRepository.save(RequestResource.builder()
+                .reservationRequest(request)
+                .resource(resource)
+                .quantity(1)
+                .status(request.getStatus() == EventReservationStatus.APPROVED
+                    ? RequestResourceStatus.CONFIRMED
+                    : RequestResourceStatus.REQUESTED)
+                .build());
+        }
     }
 
     private AdPhase ensurePhase(String name, String description, int orderIndex, boolean emailNotification, Role assignedRole) {

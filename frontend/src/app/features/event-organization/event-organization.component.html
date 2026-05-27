@@ -13,9 +13,9 @@
 
   @if (activeTab === 'requests') {
     <section class="sub-nav">
-      @for (filter of ['All', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']; track filter) {
+      @for (filter of ['All', 'PENDING', 'APPROVED', 'PAST']; track filter) {
         <button type="button" [class.active]="activeRequestFilter === filter" (click)="setRequestFilter($any(filter))">
-          {{ filter === 'All' ? 'All' : statusLabel($any(filter)) }}
+          {{ filter === 'All' ? 'All' : filter === 'APPROVED' ? 'Confirmed' : filter === 'PAST' ? 'Past' : 'Pending' }}
         </button>
       }
     </section>
@@ -39,139 +39,49 @@
     @if (activeTab === 'requests') {
       <section class="page-heading">
         <h1>Reservation requests</h1>
-        <p>Review incoming performance reservations and approve free stage slots</p>
+        <p>{{ requestsSubtitle }}</p>
       </section>
 
-      <section class="request-workspace">
-        <form class="request-form" [formGroup]="requestForm" (ngSubmit)="createReservationRequest()">
-          <h2>New request</h2>
-          <label>
-            <span>Performer *</span>
-            <input type="text" formControlName="performerName" placeholder="e.g. Midnight Echo" />
-          </label>
-          <label>
-            <span>Stage *</span>
-            <select formControlName="stageId">
-              @for (stage of stages; track stage.stageId) {
-                <option [ngValue]="stage.stageId">{{ stage.name }}</option>
+      <div class="request-search">
+        <span class="search-icon" aria-hidden="true"></span>
+        <input type="search" placeholder="Search by performer, stage..." [value]="requestSearch" (input)="updateRequestSearch($event)" />
+      </div>
+
+      <section class="requests-table" aria-label="Reservation requests">
+        <div class="requests-row requests-head">
+          <span>Performer</span>
+          <span>Stage</span>
+          <span>Date</span>
+          <span>Duration</span>
+          <span>Resources</span>
+          <span>Status</span>
+          <span>Time</span>
+        </div>
+        @for (request of filteredReservationRequests; track request.id) {
+          <div class="requests-row">
+            <strong>{{ request.performerName }}</strong>
+            <span>{{ request.stageName }}</span>
+            <span>{{ formatRequestDate(request.performanceDate) }}</span>
+            <span>{{ requestDurationMinutes(request) }} min</span>
+            <span>{{ requestResourceCounts[request.id] || 0 }} res.</span>
+            <span>
+              <i class="status-pill" [class.pending]="request.status === 'PENDING'" [class.approved]="request.status === 'APPROVED' && !isPastRequest(request)" [class.past]="isPastRequest(request)">
+                {{ requestStatusLabel(request) }}
+              </i>
+            </span>
+            <span>
+              @if (request.status === 'PENDING' && activeRequestFilter !== 'PAST') {
+                <button type="button" class="view-button" (click)="viewReservationRequest(request)">View</button>
+              } @else {
+                <span class="time-pill" [class.past-time]="isPastRequest(request)">
+                  {{ request.startTime.slice(0, 5) }} - {{ request.endTime.slice(0, 5) }}
+                </span>
               }
-            </select>
-          </label>
-          <label>
-            <span>Date *</span>
-            <input type="date" formControlName="performanceDate" />
-          </label>
-          <div class="time-pair">
-            <label>
-              <span>Start *</span>
-              <input type="time" formControlName="startTime" />
-            </label>
-            <label>
-              <span>End *</span>
-              <input type="time" formControlName="endTime" />
-            </label>
+            </span>
           </div>
-          <label>
-            <span>Notes</span>
-            <textarea rows="3" formControlName="notes" placeholder="Technical or scheduling context"></textarea>
-          </label>
-          <button type="submit" class="primary-button">Create request</button>
-        </form>
-
-        <section class="request-list" aria-label="Reservation requests">
-          @for (request of filteredReservationRequests; track request.id) {
-            <article class="request-item" [class.active]="selectedReservationRequest?.id === request.id" (click)="selectReservationRequest(request)">
-              <div>
-                <h2>{{ request.performerName }}</h2>
-                <p>{{ request.stageName }} · {{ request.performanceDate }} · {{ request.startTime.slice(0, 5) }}-{{ request.endTime.slice(0, 5) }}</p>
-              </div>
-              <span class="status-pill" [class.pending]="request.status === 'PENDING'" [class.approved]="request.status === 'APPROVED'" [class.rejected]="request.status === 'REJECTED'">
-                {{ statusLabel(request.status) }}
-              </span>
-            </article>
-          } @empty {
-            <section class="empty-card">
-              <h2>No reservation requests</h2>
-              <p>Create a request for a performance slot.</p>
-            </section>
-          }
-        </section>
-
-        <section class="request-detail" aria-label="Reservation request details">
-          @if (selectedReservationRequest) {
-            <header>
-              <span class="status-pill" [class.pending]="selectedReservationRequest.status === 'PENDING'" [class.approved]="selectedReservationRequest.status === 'APPROVED'" [class.rejected]="selectedReservationRequest.status === 'REJECTED'">
-                {{ statusLabel(selectedReservationRequest.status) }}
-              </span>
-              <h2>{{ selectedReservationRequest.performerName }}</h2>
-              <p>{{ selectedReservationRequest.stageName }} · {{ selectedReservationRequest.performanceDate }}</p>
-            </header>
-            <dl>
-              <div>
-                <dt>Time</dt>
-                <dd>{{ selectedReservationRequest.startTime.slice(0, 5) }}-{{ selectedReservationRequest.endTime.slice(0, 5) }}</dd>
-              </div>
-              <div>
-                <dt>Created</dt>
-                <dd>{{ selectedReservationRequest.createdAt | date:'medium' }}</dd>
-              </div>
-              <div>
-                <dt>Notes</dt>
-                <dd>{{ selectedReservationRequest.notes || '-' }}</dd>
-              </div>
-              <div>
-                <dt>Review note</dt>
-                <dd>{{ selectedReservationRequest.reviewNote || '-' }}</dd>
-              </div>
-            </dl>
-
-            <form [formGroup]="reviewForm" class="review-form">
-              <label>
-                <span>Review note</span>
-                <textarea rows="3" formControlName="reviewNote" placeholder="Reason, conflict details, or approval context"></textarea>
-              </label>
-              <div class="review-actions">
-                <button type="button" class="outline-button danger" (click)="rejectSelectedRequest()">Reject</button>
-                <button type="button" class="primary-button" (click)="approveSelectedRequest()">Approve</button>
-              </div>
-            </form>
-
-            <section class="request-resources">
-              <h3>Requested resources</h3>
-              <form [formGroup]="requestResourceForm" (ngSubmit)="addResourceToSelectedRequest()" class="request-resource-form">
-                <select formControlName="resourceId">
-                  @for (resource of resources; track resource.id) {
-                    <option [ngValue]="resource.id">{{ resource.name }} · {{ resource.type }}</option>
-                  }
-                </select>
-                <input type="number" min="1" formControlName="quantity" />
-                <button type="submit" class="outline-button">Add</button>
-              </form>
-              <div class="request-resource-list">
-                @for (resource of selectedRequestResources; track resource.id) {
-                  <div class="request-resource-row">
-                    <div>
-                      <strong>{{ resource.resourceName }}</strong>
-                      <span>{{ resource.quantity }}/{{ resource.totalQuantity }} · {{ resource.resourceType }}</span>
-                    </div>
-                    <span class="resource-status" [class.confirmed]="resource.status === 'CONFIRMED'" [class.unavailable]="resource.status === 'UNAVAILABLE'">
-                      {{ requestResourceStatusLabel(resource.status) }}
-                    </span>
-                    <button type="button" class="outline-button" (click)="confirmRequestResource(resource)">Confirm</button>
-                    <button type="button" class="outline-button danger" (click)="removeRequestResource(resource)">Remove</button>
-                  </div>
-                } @empty {
-                  <p class="empty-table">No resources requested for this performance.</p>
-                }
-              </div>
-            </section>
-          } @else {
-            <section class="empty-card">
-              <h2>No request selected</h2>
-              <p>Select a request to review its details.</p>
-            </section>
-          }
-        </section>
+        } @empty {
+          <p class="empty-table">No reservation requests match the selected filter.</p>
+        }
       </section>
     }
 
@@ -287,6 +197,13 @@
           <button type="button" aria-label="Next week" (click)="nextWeek()">&gt;</button>
         </div>
       </section>
+
+      @if (selectedReservationRequest && selectedReservationRequest.status === 'PENDING') {
+        <section class="reservation-banner">
+          <span>Reserving for:</span>
+          <strong>{{ selectedReservationRequest.performerName }} - {{ selectedReservationRequest.stageName }} - {{ formatRequestDate(selectedReservationRequest.performanceDate) }} - {{ requestDurationMinutes(selectedReservationRequest) }} min - {{ requestResourceCounts[selectedReservationRequest.id] || 0 }} resources</strong>
+        </section>
+      }
 
       <div class="stage-tabs timetable-stage-tabs" aria-label="Timetable stages">
         @for (stage of stages; track stage.stageId) {

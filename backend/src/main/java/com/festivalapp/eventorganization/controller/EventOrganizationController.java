@@ -29,14 +29,6 @@ public class EventOrganizationController {
         return ResponseEntity.ok(eventOrganizationService.getReservationRequests(status, user));
     }
 
-    @PostMapping("/requests")
-    public ResponseEntity<EventReservationResponse> createReservationRequest(
-            @Valid @RequestBody EventReservationCreateRequest request,
-            @AuthenticationPrincipal User user) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-            .body(eventOrganizationService.createReservationRequest(request, user));
-    }
-
     @PutMapping("/requests/{requestId}/approve")
     public ResponseEntity<EventReservationResponse> approveReservationRequest(
             @PathVariable Long requestId,

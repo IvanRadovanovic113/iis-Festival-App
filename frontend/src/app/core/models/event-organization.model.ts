@@ -47,15 +47,6 @@ export interface EventReservationRequest {
   reviewedAt: string | null;
 }
 
-export interface EventReservationCreateRequest {
-  performerName: string;
-  stageId: number;
-  performanceDate: string;
-  startTime: string;
-  endTime: string;
-  notes: string | null;
-}
-
 export interface EventReservationReviewRequest {
   reviewNote: string | null;
 }
