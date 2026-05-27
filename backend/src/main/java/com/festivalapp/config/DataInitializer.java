@@ -241,7 +241,7 @@ public class DataInitializer implements ApplicationRunner {
             "ALTER TABLE users ADD CONSTRAINT users_role_check " +
             "CHECK (role IS NULL OR role IN ('ADMIN','FESTIVAL_DIRECTOR','FESTIVAL_MANAGER','PRODUCT_DESIGNER'," +
             "'TECHNICAL_SUPPORT','SALES_DIRECTOR','SALES_MANAGER','EVENT_ORGANIZER'," +
-            "'MARKETING_MANAGER','BUYER'))");
+            "'MARKETING_MANAGER','BUYER','NEGOTIATION_MANAGER'))");
         log.info("users_role_check constraint updated with all roles");
     }
 
@@ -257,7 +257,7 @@ public class DataInitializer implements ApplicationRunner {
             "ALTER TABLE user_festival_assignments ADD CONSTRAINT user_festival_assignments_role_check " +
             "CHECK (role IN ('ADMIN','FESTIVAL_DIRECTOR','FESTIVAL_MANAGER','PRODUCT_DESIGNER'," +
             "'TECHNICAL_SUPPORT','SALES_DIRECTOR','SALES_MANAGER','EVENT_ORGANIZER'," +
-            "'MARKETING_MANAGER','BUYER'))");
+            "'MARKETING_MANAGER','BUYER','NEGOTIATION_MANAGER'))");
         log.info("user_festival_assignments_role_check constraint updated with all roles");
     }
 

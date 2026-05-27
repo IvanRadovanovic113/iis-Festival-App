@@ -46,6 +46,8 @@ export class LoginComponent {
           this.router.navigate(['/creative/ads']);
         } else if (festivalRole === 'EVENT_ORGANIZER') {
           this.router.navigate(['/event-organization']);
+        } else if (festivalRole === 'NEGOTIATION_MANAGER') {
+          this.router.navigate(['/negotiation-manager']);
         } else {
           this.router.navigate(['/pending']);
         }
