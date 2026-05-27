@@ -1,6 +1,7 @@
 package com.festivalapp.eventorganization.controller;
 
 import com.festivalapp.eventorganization.dto.*;
+import com.festivalapp.eventorganization.model.EventReservationStatus;
 import com.festivalapp.eventorganization.service.EventOrganizationService;
 import com.festivalapp.model.User;
 import jakarta.validation.Valid;
@@ -20,6 +21,37 @@ import java.util.List;
 public class EventOrganizationController {
 
     private final EventOrganizationService eventOrganizationService;
+
+    @GetMapping("/requests")
+    public ResponseEntity<List<EventReservationResponse>> getReservationRequests(
+            @RequestParam(required = false) EventReservationStatus status,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(eventOrganizationService.getReservationRequests(status, user));
+    }
+
+    @PostMapping("/requests")
+    public ResponseEntity<EventReservationResponse> createReservationRequest(
+            @Valid @RequestBody EventReservationCreateRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(eventOrganizationService.createReservationRequest(request, user));
+    }
+
+    @PutMapping("/requests/{requestId}/approve")
+    public ResponseEntity<EventReservationResponse> approveReservationRequest(
+            @PathVariable Long requestId,
+            @RequestBody EventReservationReviewRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(eventOrganizationService.approveReservationRequest(requestId, request, user));
+    }
+
+    @PutMapping("/requests/{requestId}/reject")
+    public ResponseEntity<EventReservationResponse> rejectReservationRequest(
+            @PathVariable Long requestId,
+            @RequestBody EventReservationReviewRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(eventOrganizationService.rejectReservationRequest(requestId, request, user));
+    }
 
     @GetMapping("/resources")
     public ResponseEntity<List<EventResourceResponse>> getResources(@AuthenticationPrincipal User user) {

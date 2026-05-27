@@ -2,8 +2,11 @@ package com.festivalapp.eventorganization.service;
 
 import com.festivalapp.eventorganization.dto.*;
 import com.festivalapp.eventorganization.model.EventResource;
+import com.festivalapp.eventorganization.model.EventReservationRequest;
+import com.festivalapp.eventorganization.model.EventReservationStatus;
 import com.festivalapp.eventorganization.model.StageResource;
 import com.festivalapp.eventorganization.repository.EventResourceRepository;
+import com.festivalapp.eventorganization.repository.EventReservationRequestRepository;
 import com.festivalapp.eventorganization.repository.StageResourceRepository;
 import com.festivalapp.model.*;
 import com.festivalapp.model.Stage;
@@ -16,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +31,7 @@ public class EventOrganizationService {
     private static final String AVAILABLE_STATUS = "AVAILABLE";
 
     private final EventResourceRepository eventResourceRepository;
+    private final EventReservationRequestRepository reservationRequestRepository;
     private final StageResourceRepository stageResourceRepository;
     private final StageRepository stageRepository;
     private final UserFestivalAssignmentRepository assignmentRepository;
@@ -61,12 +66,96 @@ public class EventOrganizationService {
         return resource;
     }
 
+    private EventReservationRequest requireReservationRequest(Long requestId, Festival festival) {
+        EventReservationRequest request = reservationRequestRepository.findById(requestId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reservation request was not found"));
+        if (festival != null && !request.getFestival().getFestivalId().equals(festival.getFestivalId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Reservation request does not belong to your festival");
+        }
+        return request;
+    }
+
+    private void validateReservationTime(LocalTime startTime, LocalTime endTime) {
+        if (!startTime.isBefore(endTime)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Start time must be before end time");
+        }
+    }
+
     public List<EventResourceResponse> getResources(User user) {
         Festival festival = requireEventOrganizerFestival(user);
         List<EventResource> resources = festival == null
             ? eventResourceRepository.findAll()
             : eventResourceRepository.findByFestival_FestivalIdOrderByNameAsc(festival.getFestivalId());
         return resources.stream().map(EventResourceResponse::from).toList();
+    }
+
+    public List<EventReservationResponse> getReservationRequests(EventReservationStatus status, User user) {
+        Festival festival = requireEventOrganizerFestival(user);
+        List<EventReservationRequest> requests;
+        if (festival == null) {
+            requests = status == null
+                ? reservationRequestRepository.findAll()
+                : reservationRequestRepository.findAll().stream()
+                    .filter(request -> request.getStatus() == status)
+                    .toList();
+        } else {
+            requests = status == null
+                ? reservationRequestRepository.findByFestival_FestivalIdOrderByPerformanceDateAscStartTimeAsc(festival.getFestivalId())
+                : reservationRequestRepository.findByFestival_FestivalIdAndStatusOrderByPerformanceDateAscStartTimeAsc(
+                    festival.getFestivalId(),
+                    status
+                );
+        }
+        return requests.stream().map(EventReservationResponse::from).toList();
+    }
+
+    public EventReservationResponse createReservationRequest(EventReservationCreateRequest request, User user) {
+        Festival festival = requireEventOrganizerFestival(user);
+        if (festival == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Admin users must create requests through an event organizer");
+        }
+        validateReservationTime(request.getStartTime(), request.getEndTime());
+        Stage stage = requireStage(request.getStageId(), festival);
+        EventReservationRequest reservationRequest = EventReservationRequest.builder()
+            .festival(festival)
+            .performerName(request.getPerformerName())
+            .stage(stage)
+            .performanceDate(request.getPerformanceDate())
+            .startTime(request.getStartTime())
+            .endTime(request.getEndTime())
+            .status(EventReservationStatus.PENDING)
+            .notes(request.getNotes())
+            .build();
+        return EventReservationResponse.from(reservationRequestRepository.save(reservationRequest));
+    }
+
+    public EventReservationResponse approveReservationRequest(Long requestId, EventReservationReviewRequest reviewRequest, User user) {
+        Festival festival = requireEventOrganizerFestival(user);
+        EventReservationRequest reservationRequest = requireReservationRequest(requestId, festival);
+        validateReservationTime(reservationRequest.getStartTime(), reservationRequest.getEndTime());
+        boolean overlaps = reservationRequestRepository.existsOverlappingApprovedRequest(
+            reservationRequest.getStage().getStageId(),
+            reservationRequest.getPerformanceDate(),
+            reservationRequest.getStartTime(),
+            reservationRequest.getEndTime(),
+            reservationRequest.getId()
+        );
+        if (overlaps) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Selected stage already has an approved request in this time slot");
+        }
+        reservationRequest.setStatus(EventReservationStatus.APPROVED);
+        reservationRequest.setReviewNote(reviewRequest.getReviewNote());
+        reservationRequest.setReviewedAt(LocalDateTime.now());
+        return EventReservationResponse.from(reservationRequestRepository.save(reservationRequest));
+    }
+
+    public EventReservationResponse rejectReservationRequest(Long requestId, EventReservationReviewRequest reviewRequest, User user) {
+        Festival festival = requireEventOrganizerFestival(user);
+        EventReservationRequest reservationRequest = requireReservationRequest(requestId, festival);
+        reservationRequest.setStatus(EventReservationStatus.REJECTED);
+        reservationRequest.setReviewNote(reviewRequest.getReviewNote());
+        reservationRequest.setReviewedAt(LocalDateTime.now());
+        return EventReservationResponse.from(reservationRequestRepository.save(reservationRequest));
     }
 
     public EventResourceResponse createResource(EventResourceRequest request, User user) {
@@ -160,14 +249,27 @@ public class EventOrganizationService {
     public List<TimetableSlotResponse> getStageTimetable(Long stageId, LocalDate date, User user) {
         Festival festival = requireEventOrganizerFestival(user);
         requireStage(stageId, festival);
+        List<EventReservationRequest> approvedRequests = reservationRequestRepository
+            .findByStage_StageIdAndPerformanceDateAndStatusOrderByStartTimeAsc(
+                stageId,
+                date,
+                EventReservationStatus.APPROVED
+            );
         List<TimetableSlotResponse> slots = new ArrayList<>();
         for (int hour = 12; hour < 24; hour++) {
+            LocalTime startTime = LocalTime.of(hour, 0);
+            LocalTime endTime = hour == 23 ? LocalTime.MIDNIGHT : LocalTime.of(hour + 1, 0);
+            LocalTime comparisonEndTime = hour == 23 ? LocalTime.MAX : endTime;
+            EventReservationRequest occupyingRequest = approvedRequests.stream()
+                .filter(request -> request.getStartTime().isBefore(comparisonEndTime) && request.getEndTime().isAfter(startTime))
+                .findFirst()
+                .orElse(null);
             slots.add(new TimetableSlotResponse(
                 date,
-                LocalTime.of(hour, 0),
-                hour == 23 ? LocalTime.MIDNIGHT : LocalTime.of(hour + 1, 0),
-                AVAILABLE_STATUS,
-                null
+                startTime,
+                endTime,
+                occupyingRequest == null ? AVAILABLE_STATUS : "OCCUPIED",
+                occupyingRequest == null ? null : occupyingRequest.getPerformerName()
             ));
         }
         return slots;
