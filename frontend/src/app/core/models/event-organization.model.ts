@@ -51,6 +51,11 @@ export interface EventReservationReviewRequest {
   reviewNote: string | null;
 }
 
+export interface EventReservationScheduleRequest {
+  startTime: string;
+  reviewNote: string | null;
+}
+
 export type RequestResourceStatus = 'REQUESTED' | 'CONFIRMED' | 'UNAVAILABLE';
 
 export interface RequestResource {

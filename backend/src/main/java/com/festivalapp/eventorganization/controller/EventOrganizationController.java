@@ -37,6 +37,14 @@ public class EventOrganizationController {
         return ResponseEntity.ok(eventOrganizationService.approveReservationRequest(requestId, request, user));
     }
 
+    @PutMapping("/requests/{requestId}/schedule")
+    public ResponseEntity<EventReservationResponse> scheduleReservationRequest(
+            @PathVariable Long requestId,
+            @Valid @RequestBody EventReservationScheduleRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(eventOrganizationService.scheduleReservationRequest(requestId, request, user));
+    }
+
     @PutMapping("/requests/{requestId}/reject")
     public ResponseEntity<EventReservationResponse> rejectReservationRequest(
             @PathVariable Long requestId,

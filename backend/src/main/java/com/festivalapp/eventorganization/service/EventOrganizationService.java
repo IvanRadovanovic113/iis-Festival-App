@@ -123,18 +123,38 @@ public class EventOrganizationService {
         Festival festival = requireEventOrganizerFestival(user);
         EventReservationRequest reservationRequest = requireReservationRequest(requestId, festival);
         validateReservationTime(reservationRequest.getStartTime(), reservationRequest.getEndTime());
-        boolean overlaps = reservationRequestRepository.existsOverlappingApprovedRequest(
-            reservationRequest.getStage().getStageId(),
-            reservationRequest.getPerformanceDate(),
-            reservationRequest.getStartTime(),
-            reservationRequest.getEndTime(),
-            reservationRequest.getId()
-        );
-        if (overlaps) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Selected stage already has an approved request in this time slot");
-        }
+        validateStageAvailability(reservationRequest);
         reservationRequest.setStatus(EventReservationStatus.APPROVED);
         reservationRequest.setReviewNote(reviewRequest.getReviewNote());
+        reservationRequest.setReviewedAt(LocalDateTime.now());
+        return EventReservationResponse.from(reservationRequestRepository.save(reservationRequest));
+    }
+
+    public EventReservationResponse scheduleReservationRequest(Long requestId, EventReservationScheduleRequest scheduleRequest, User user) {
+        Festival festival = requireEventOrganizerFestival(user);
+        EventReservationRequest reservationRequest = requireReservationRequest(requestId, festival);
+        if (reservationRequest.getStatus() != EventReservationStatus.PENDING) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only pending requests can be scheduled");
+        }
+
+        long durationMinutes = java.time.Duration.between(
+            reservationRequest.getStartTime(),
+            reservationRequest.getEndTime()
+        ).toMinutes();
+        if (durationMinutes <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Reservation request duration is invalid");
+        }
+
+        LocalTime startTime = scheduleRequest.getStartTime();
+        LocalTime endTime = startTime.plusMinutes(durationMinutes);
+        validateReservationTime(startTime, endTime);
+
+        reservationRequest.setStartTime(startTime);
+        reservationRequest.setEndTime(endTime);
+        validateStageAvailability(reservationRequest);
+
+        reservationRequest.setStatus(EventReservationStatus.APPROVED);
+        reservationRequest.setReviewNote(scheduleRequest.getReviewNote());
         reservationRequest.setReviewedAt(LocalDateTime.now());
         return EventReservationResponse.from(reservationRequestRepository.save(reservationRequest));
     }
@@ -334,6 +354,19 @@ public class EventOrganizationService {
     private void validateQuantity(Integer quantity, EventResource resource) {
         if (quantity > resource.getTotalQuantity()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Assigned quantity cannot exceed total quantity");
+        }
+    }
+
+    private void validateStageAvailability(EventReservationRequest reservationRequest) {
+        boolean overlaps = reservationRequestRepository.existsOverlappingApprovedRequest(
+            reservationRequest.getStage().getStageId(),
+            reservationRequest.getPerformanceDate(),
+            reservationRequest.getStartTime(),
+            reservationRequest.getEndTime(),
+            reservationRequest.getId()
+        );
+        if (overlaps) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Selected stage already has an approved request in this time slot");
         }
     }
 }

@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import {
   EventReservationRequest,
   EventReservationReviewRequest,
+  EventReservationScheduleRequest,
   EventReservationStatus,
   EventResource,
   EventResourceRequest,
@@ -26,6 +27,10 @@ export class EventOrganizationService {
 
   approveReservationRequest(requestId: number, request: EventReservationReviewRequest): Observable<EventReservationRequest> {
     return this.http.put<EventReservationRequest>(`${this.API}/requests/${requestId}/approve`, request);
+  }
+
+  scheduleReservationRequest(requestId: number, request: EventReservationScheduleRequest): Observable<EventReservationRequest> {
+    return this.http.put<EventReservationRequest>(`${this.API}/requests/${requestId}/schedule`, request);
   }
 
   rejectReservationRequest(requestId: number, request: EventReservationReviewRequest): Observable<EventReservationRequest> {
