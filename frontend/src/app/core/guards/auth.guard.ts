@@ -21,6 +21,7 @@ export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   // Maps festival role to its home route
   const festivalHome = (fr: string | undefined): string => {
     if (fr === 'SALES_DIRECTOR' || fr === 'SALES_MANAGER') return '/manager';
+    if (fr === 'NEGOTIATION_MANAGER') return '/negotiation-manager';
     return '/pending';
   };
 

@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { NegotiationManagerLayoutComponent } from './features/negotiation-manager/negotiation-manager-layout/negotiation-manager-layout.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
@@ -249,6 +250,35 @@ export const routes: Routes = [
       import('./features/creative-work/creative-ad-editor/creative-ad-editor.component').then(m => m.CreativeAdEditorComponent),
     canActivate: [authGuard],
     data: { festivalRoles: ['PRODUCT_DESIGNER', 'TECHNICAL_SUPPORT'] }
+  },
+  {
+    path: 'negotiation-manager',
+    component: NegotiationManagerLayoutComponent,
+    canActivate: [authGuard],
+    data: { festivalRoles: ['NEGOTIATION_MANAGER'] },
+    children: [
+      { path: '', redirectTo: 'performers', pathMatch: 'full' },
+      {
+        path: 'performers',
+        loadComponent: () =>
+          import('./features/negotiation-manager/performers/performer-list/performer-list.component').then(m => m.PerformerListComponent)
+      },
+      {
+        path: 'performers/new',
+        loadComponent: () =>
+          import('./features/negotiation-manager/performers/performer-form/performer-form.component').then(m => m.PerformerFormComponent)
+      },
+      {
+        path: 'performers/:id',
+        loadComponent: () =>
+          import('./features/negotiation-manager/performers/performer-detail/performer-detail.component').then(m => m.PerformerDetailComponent)
+      },
+      {
+        path: 'performers/:id/edit',
+        loadComponent: () =>
+          import('./features/negotiation-manager/performers/performer-form/performer-form.component').then(m => m.PerformerFormComponent)
+      }
+    ]
   },
   { path: '**', redirectTo: '/dashboard' }
 ];

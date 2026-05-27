@@ -10,5 +10,6 @@ public enum Role {
     SALES_MANAGER,
     EVENT_ORGANIZER,
     MARKETING_MANAGER,
-    BUYER
+    BUYER,
+    NEGOTIATION_MANAGER
 }
