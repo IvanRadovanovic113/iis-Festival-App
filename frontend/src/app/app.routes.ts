@@ -316,6 +316,27 @@ export const routes: Routes = [
         path: 'offers/:offerId/edit',
         loadComponent: () =>
           import('./features/negotiation-manager/offers/offer-form/offer-form.component').then(m => m.OfferFormComponent)
+      },
+
+      // Workflow template Modul
+
+      {
+        path: 'workflow-templates',
+        loadComponent: () =>
+          import('./features/negotiation-manager/workflow-template/workflow-template-list/workflow-template-list.component')
+            .then(m => m.WorkflowTemplateListComponent)
+      },
+      {
+        path: 'workflow-templates/new',
+        loadComponent: () =>
+          import('./features/negotiation-manager/workflow-template/workflow-template-form/workflow-template-form.component')
+            .then(m => m.WorkflowTemplateFormComponent)
+      },
+      {
+        path: 'workflow-templates/:id',
+        loadComponent: () =>
+          import('./features/negotiation-manager/workflow-template/workflow-template-detail/workflow-template-detail.component')
+            .then(m => m.WorkflowTemplateDetailComponent)
       }
     ]
   },

@@ -37,4 +37,8 @@ export class NegotiationManagerLayoutComponent implements OnInit {
       this.userInitials = name.substring(0, 2).toUpperCase();
     }
   }
+
+  onLogout(): void {
+    this.authService.logout();
+  }
 }
