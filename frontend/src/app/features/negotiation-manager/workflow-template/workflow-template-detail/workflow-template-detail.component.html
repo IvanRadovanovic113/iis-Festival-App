@@ -1,0 +1,129 @@
+<div class="detail-container">
+  
+  <a routerLink="/negotiation-manager/workflow-templates" class="back-link">← Back to Templates</a>
+
+  <div *ngIf="isLoading" class="loading-card">
+    <p>Loading workflow graph specifications...</p>
+  </div>
+
+  <div *ngIf="errorMessage" class="error-banner">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="!isLoading && template" class="profile-grid">
+    
+    <div class="info-card">
+      <div class="title-with-badge" style="margin-bottom: 4px;">
+        <h1>v{{ template.id }}</h1>
+        <span class="status-badge" [ngClass]="template.archived ? 'archived' : 'active'">
+          {{ template.archived ? 'Archived' : 'Active' }}
+        </span>
+      </div>
+      <p class="subtitle" style="margin-bottom: 16px;">Graph Engine Specification</p>
+      
+      <div class="divider"></div>
+
+      <div class="metric-row">
+        <span class="label">Template Name</span>
+        <span class="value">{{ template.name }}</span>
+      </div>
+      <div class="metric-row">
+        <span class="label">Total Nodes (States)</span>
+        <span class="value">{{ template.states.length }}</span>
+      </div>
+      <div class="metric-row">
+        <span class="label">Total Edges (Transitions)</span>
+        <span class="value">{{ template.transitions.length }}</span>
+      </div>
+      <div class="metric-row">
+        <span class="label">Active Instances</span>
+        <span class="value" style="font-weight: 700;">{{ template.activeNegotiationsCount }}</span>
+      </div>
+      <div class="metric-row">
+        <span class="label">Created Date</span>
+        <span class="value">{{ template.createdAt | date:'mediumDate' }}</span>
+      </div>
+
+      <div *ngIf="!template.archived" style="margin-top: 20px; padding-top: 16px;">
+        <button (click)="onArchive()" class="btn-status-toggle archive" style="width: 100%;">
+            Archive Template Schema
+        </button>
+      </div>
+    </div>
+
+    <div class="info-card" style="flex: 2;">
+      
+      <div class="section-block">
+        <h3>Interactive Workflow Graph Visualizer</h3>
+        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
+          Nodes are draggable. Green represents the initial phase, red represents the final phase.
+        </p>
+        <div class="divider"></div>
+        
+        <div #networkContainer class="workflow-graph-canvas"></div>
+      </div>
+
+      <div class="section-block" style="margin-top: 32px;">
+        <h3>1. Graph Nodes Configuration (Workflow States)</h3>
+        <div class="divider"></div>
+        
+        <table class="detail-table">
+          <thead>
+            <tr>
+              <th style="width: 40%;">State Name</th>
+              <th style="width: 30%;">Node Type</th>
+              <th style="width: 30%;">Default SLA Deadline</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let state of template.states">
+              <td style="font-weight: 600; color: #111;">{{ state.name }}</td>
+              <td>
+                <span class="node-type-badge" [ngClass]="{'initial': state.initial, 'final': state.finalState, 'intermediate': !state.initial && !state.finalState}">
+                  {{ state.initial ? 'Initial' : state.finalState ? 'Final' : 'Intermediate' }}
+                </span>
+              </td>
+              <td>{{ state.defaultDeadlineDays }} days ({{ state.defaultDeadlineDays * 24 }} hours)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section-block" style="margin-top: 32px;">
+        <h3>2. Valid Graph Edges & Guard Rules (Transitions)</h3>
+        <div class="divider"></div>
+
+        <table class="detail-table">
+          <thead>
+            <tr>
+              <th style="width: 25%;">Trigger Action</th>
+              <th style="width: 25%;">Source Node (From)</th>
+              <th style="width: 25%;">Target Node (To)</th>
+              <th style="width: 25%;">Guard Requirements</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let trans of template.transitions">
+              <td style="font-weight: 600; color: #111; font-style: italic;">"{{ trans.label }}"</td>
+              <td style="color: #0d47a1; font-weight: 500;">{{ getStateName(trans.sourceStateId) }}</td>
+              <td style="color: #2e7d32; font-weight: 500;">{{ getStateName(trans.targetStateId) }}</td>
+              <td>
+                <div class="conditions-list-wrapper">
+                  <div *ngIf="trans.conditions.length === 0" style="color: #999; font-size: 12px; font-style: italic;">
+                    No conditions required (Auto-pass)
+                  </div>
+                  <div *ngFor="let cond of trans.conditions" class="condition-pill">
+                    <span *ngIf="cond.necessary" class="star-icon" title="Necessary Condition">★</span>
+                    <span>{{ cond.label }}</span>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </div>
+</div>

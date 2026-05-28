@@ -1,0 +1,134 @@
+<div class="templates-container">
+  
+  <div class="header-row">
+    <div>
+      <span class="sub-title">APP NAME</span>
+      <h2>Workflow Templates</h2>
+    </div>
+    <button routerLink="/negotiation-manager/workflow-templates/new" class="btn-primary">
+      + New Template
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-wrapper">
+      <input type="text" 
+             [(ngModel)]="searchTerm" 
+             (ngModelChange)="onSearch()"
+             placeholder="Search templates by name..." />
+    </div>
+
+    <div class="toggle-tabs">
+      <button (click)="toggleArchivedFilter(false)" [class.active]="!showArchived" class="tab-btn">
+        Active
+      </button>
+      <button (click)="toggleArchivedFilter(true)" [class.active]="showArchived" class="tab-btn">
+        Archived
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-wrapper">
+    <div class="spinner"></div>
+  </div>
+
+  <div *ngIf="!isLoading && templates.length === 0" class="no-data-card">
+    No workflow templates found.
+  </div>
+
+  <div *ngIf="!isLoading && templates.length > 0" class="templates-list">
+    <div *ngFor="let template of templates" class="template-card">
+      
+      <div class="card-header">
+        <div class="title-section">
+          <div class="title-with-badge">
+            <h3 [routerLink]="['/negotiation-manager/workflow-templates', template.id]">
+              {{ template.name }}
+            </h3>
+            <span *ngIf="template.copiedFromId" class="version-badge">
+              v{{ template.id }}
+            </span>
+            <span class="status-badge" [ngClass]="template.archived ? 'archived' : 'active'">
+              {{ template.archived ? 'Archived' : 'Active' }}
+            </span>
+          </div>
+          <p class="subtitle" style="margin-top: 6px;">
+            Used in {{ template.activeNegotiationsCount }} active negotiations • Created at {{ template.createdAt | date:'shortDate' }}
+          </p>
+        </div>
+
+        <div class="card-actions" *ngIf="!template.archived">
+          <button (click)="onCreateVersion(template.id, $event)" class="btn-view">
+            Create New Version
+          </button>
+          <button (click)="onArchive(template.id, $event)" class="btn-view danger">
+            Archive
+          </button>
+        </div>
+      </div>
+
+      <div class="graph-flow-container" *ngIf="templateGraphs[template.id]">
+        <ng-container *ngFor="let state of templateGraphs[template.id].states; let i = index">
+          
+          <div class="state-node">
+            <div class="node-tag" [ngClass]="{'initial': state.initial, 'final': state.finalState, 'intermediate': !state.initial && !state.finalState}">
+              {{ state.initial ? 'INITIAL' : state.finalState ? 'FINAL' : 'INTERMEDIATE' }}
+            </div>
+
+            <div class="node-body">
+              <h4>{{ state.name }}</h4>
+              <p class="node-deadline">Deadline: {{ state.defaultDeadlineDays * 24 }}h</p>
+
+              <div class="node-conditions-list">
+                <ng-container *ngFor="let transition of templateGraphs[template.id].transitions">
+                  <ng-container *ngIf="transition.targetStateId === state.id">
+                    <div *ngFor="let cond of transition.conditions" 
+                         class="condition-item" 
+                         [ngClass]="cond.necessary ? 'required' : 'optional'">
+                      
+                      <span *ngIf="cond.necessary" class="star-icon">★</span>
+                      <span *ngIf="!cond.necessary" class="circle-icon">○</span>
+                      
+                      <span class="value" style="font-size: 11px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                        {{ cond.label }}
+                      </span>
+                    </div>
+                  </ng-container>
+                </ng-container>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="i < templateGraphs[template.id].states.length - 1" class="arrow-divider">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </div>
+
+        </ng-container>
+      </div>
+
+      <div class="card-footer-info">
+        <span><span class="star-icon">★</span> Required condition</span>
+        <span><span class="circle-icon">○</span> Optional condition</span>
+        <span>• All transitions allow "Mark as Failed" from any state.</span>
+      </div>
+
+    </div>
+  </div>
+
+  <div *ngIf="totalPages > 1" class="pagination-row">
+    <div>
+      Showing page <b>{{ currentPage + 1 }}</b> of <b>{{ totalPages }}</b>
+    </div>
+    <div class="pagination-actions">
+      <button (click)="prevPage()" [disabled]="currentPage === 0" class="btn-view">
+        Previous
+      </button>
+      <button (click)="nextPage()" [disabled]="currentPage === totalPages - 1" class="btn-view">
+        Next
+      </button>
+    </div>
+  </div>
+
+</div>
