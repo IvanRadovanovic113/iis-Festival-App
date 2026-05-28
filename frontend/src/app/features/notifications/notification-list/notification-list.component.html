@@ -31,7 +31,7 @@
       } @else {
         <div class="notification-list">
           @for (notification of notifications; track notification.notificationId) {
-            <article class="notification-card" [class.unread]="!notification.read">
+            <article class="notification-card" [class.unread]="!notification.read" [class.read]="notification.read">
               <div class="notification-copy">
                 <div class="notification-meta">
                   <span class="type-chip">{{ notification.type.replaceAll('_', ' ') }}</span>

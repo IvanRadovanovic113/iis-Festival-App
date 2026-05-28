@@ -92,7 +92,7 @@
                       }
                       @if (canReviewAd(ad)) {
                         <button type="button" class="action-btn approve" [disabled]="processingAdId === ad.adId" (click)="approve(ad)">✓</button>
-                        <button type="button" class="action-btn reject" [disabled]="processingAdId === ad.adId" (click)="reject(ad)">⊖</button>
+                        <button type="button" class="action-btn reject" [disabled]="processingAdId === ad.adId" (click)="openRejectModal(ad)">⊖</button>
                       }
                     </td>
                   </tr>
@@ -102,6 +102,28 @@
           </div>
         }
       </section>
+
+      @if (rejectingAd) {
+        <div class="modal-backdrop" (click)="closeRejectModal()">
+          <section class="reject-modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h2>Reject ad</h2>
+              <button type="button" class="modal-close" (click)="closeRejectModal()">✕</button>
+            </div>
+            <p class="modal-copy">Explain why <strong>{{ rejectingAd.name }}</strong> is being rejected before it returns to the previous phase.</p>
+            <label class="modal-field">
+              <span>Reason for rejection *</span>
+              <textarea [(ngModel)]="rejectReason" rows="5" placeholder="Write a clear reason for rejection..."></textarea>
+            </label>
+            <div class="modal-actions">
+              <button type="button" class="modal-cancel" (click)="closeRejectModal()">Cancel</button>
+              <button type="button" class="modal-submit" [disabled]="!rejectReason.trim() || processingAdId === rejectingAd.adId" (click)="reject()">
+                {{ processingAdId === rejectingAd.adId ? 'Rejecting...' : 'Reject ad' }}
+              </button>
+            </div>
+          </section>
+        </div>
+      }
     }
   </main>
 </div>

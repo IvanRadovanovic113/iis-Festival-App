@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CampaignService } from '../../../core/services/campaign.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -8,7 +9,7 @@ import { Ad, CampaignWorkspace } from '../../../core/models/campaign.model';
 @Component({
   selector: 'app-campaign-details',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './campaign-details.component.html',
   styleUrls: ['./campaign-details.component.css']
 })
@@ -21,6 +22,8 @@ export class CampaignDetailsComponent implements OnInit {
   workspace: CampaignWorkspace | null = null;
   errorMessage = '';
   processingAdId: number | null = null;
+  rejectingAd: Ad | null = null;
+  rejectReason = '';
   readonly currentUser = this.authService.getCurrentUser();
 
   ngOnInit(): void {
@@ -82,14 +85,25 @@ export class CampaignDetailsComponent implements OnInit {
     });
   }
 
-  reject(ad: Ad): void {
-    if (!this.workspace) return;
-    const reason = globalThis.prompt(`Why is "${ad.name}" rejected?`);
-    if (!reason || !reason.trim()) return;
+  openRejectModal(ad: Ad): void {
+    this.rejectingAd = ad;
+    this.rejectReason = '';
+    this.errorMessage = '';
+  }
+
+  closeRejectModal(): void {
+    this.rejectingAd = null;
+    this.rejectReason = '';
+  }
+
+  reject(): void {
+    if (!this.workspace || !this.rejectingAd || !this.rejectReason.trim()) return;
+    const ad = this.rejectingAd;
     this.processingAdId = ad.adId;
-    this.campaignService.rejectDirectorAd(this.workspace.campaign.festivalId, ad.adId, reason.trim()).subscribe({
+    this.campaignService.rejectDirectorAd(this.workspace.campaign.festivalId, ad.adId, this.rejectReason.trim()).subscribe({
       next: () => {
         this.processingAdId = null;
+        this.closeRejectModal();
         this.ngOnInit();
       },
       error: err => {

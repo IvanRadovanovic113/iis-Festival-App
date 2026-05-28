@@ -260,6 +260,34 @@ tbody tr:hover {
   font-size: 1rem;
 }
 
+.action-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.action-link {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+.action-link:disabled {
+  opacity: 0.68;
+  cursor: wait;
+}
+
+.action-link.edit {
+  background: #efe5d1;
+  color: #57462e;
+}
+
+.action-link.delete {
+  background: #f7dfdc;
+  color: #8c2f2a;
+}
+
 .status-badge,
 .campaign-chip {
   display: inline-flex;
@@ -289,11 +317,19 @@ tbody tr:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 9.5rem;
-  padding: 0.65rem 0.95rem;
-  border-radius: 999px;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
   text-decoration: none;
   font-weight: 600;
+}
+
+.action-icon {
+  width: 1.1rem;
+  display: inline-flex;
+  justify-content: center;
+  flex: 0 0 1.1rem;
+  font-size: 1rem;
 }
 
 .action-link.view {
@@ -302,6 +338,11 @@ tbody tr:hover {
 }
 
 .action-link.create {
+  width: auto;
+  height: auto;
+  min-width: 0;
+  padding: 0.65rem 1rem;
+  border-radius: 999px;
   background: #f6b73c;
   color: #2b2219;
 }

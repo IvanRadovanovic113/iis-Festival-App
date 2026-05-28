@@ -2,7 +2,7 @@
   <header class="topbar">
     <div>
       <a routerLink="/director/festivals" class="back-link">← Back to festivals</a>
-      <h1>Create campaign</h1>
+      <h1>{{ title }}</h1>
     </div>
     <button type="button" (click)="logout()">Sign out</button>
   </header>
@@ -57,7 +57,7 @@
         <div class="actions">
           <a routerLink="/director/festivals" class="btn-secondary">Cancel</a>
           <button type="submit" class="btn-primary" [disabled]="saving">
-            {{ saving ? 'Creating...' : 'Create campaign' }}
+            {{ submitLabel }}
           </button>
         </div>
       </form>

@@ -136,10 +136,31 @@ h1 {
   border-radius: 22px;
   background: #fbfaf6;
   border: 1px solid #e6ddce;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
 }
 
 .notification-card.unread {
   box-shadow: inset 4px 0 0 #f6b73c;
+}
+
+.notification-card.read {
+  background: #f5f2eb;
+  border-color: #ece3d5;
+}
+
+.notification-card.read .notification-meta,
+.notification-card.read .notification-copy p,
+.notification-card.read .notification-copy small {
+  color: #928777;
+}
+
+.notification-card.read .notification-copy h3 {
+  color: #4f473d;
+}
+
+.notification-card.read .type-chip {
+  background: #ebe2d4;
+  color: #7a6f61;
 }
 
 .notification-meta {

@@ -50,6 +50,14 @@ export class CampaignService {
     return this.http.post<Campaign>(`${this.DIRECTOR_API}/festivals/${festivalId}/campaign`, request);
   }
 
+  updateCampaign(festivalId: number, request: CampaignRequest): Observable<Campaign> {
+    return this.http.put<Campaign>(`${this.DIRECTOR_API}/festivals/${festivalId}/campaign`, request);
+  }
+
+  deleteCampaign(festivalId: number) {
+    return this.http.delete<void>(`${this.DIRECTOR_API}/festivals/${festivalId}/campaign`);
+  }
+
   getFestivalManagers(festivalId: number): Observable<CampaignManagerOption[]> {
     return this.http.get<CampaignManagerOption[]>(`${this.DIRECTOR_API}/festivals/${festivalId}/managers`);
   }

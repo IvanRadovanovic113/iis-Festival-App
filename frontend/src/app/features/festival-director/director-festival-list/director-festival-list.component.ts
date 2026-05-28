@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { RouterLink } from '@angular/router';
 import { CampaignService } from '../../../core/services/campaign.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -17,6 +18,7 @@ import { FESTIVAL_STATUS_LABELS, FestivalStatus } from '../../../core/models/fes
 export class DirectorFestivalListComponent implements OnInit {
   private readonly campaignService = inject(CampaignService);
   private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
   festivals: FestivalCampaignOverview[] = [];
   filteredFestivals: FestivalCampaignOverview[] = [];
@@ -28,6 +30,7 @@ export class DirectorFestivalListComponent implements OnInit {
   dateTo = '';
   selectedStatus = '';
   sortBy = 'startDateAsc';
+  deletingFestivalId: number | null = null;
 
   ngOnInit(): void {
     this.load();
@@ -109,6 +112,29 @@ export class DirectorFestivalListComponent implements OnInit {
 
   getStatusLabel(status: string): string {
     return this.statusLabels[status as FestivalStatus] ?? status;
+  }
+
+  editCampaign(festivalId: number): void {
+    void this.router.navigate(['/director/festivals', festivalId, 'campaign', 'edit']);
+  }
+
+  deleteCampaign(festival: FestivalCampaignOverview): void {
+    if (!festival.hasCampaign) return;
+    const confirmed = globalThis.confirm(`Delete campaign "${festival.campaignName}" for festival "${festival.name}"? This will remove only ads from that campaign.`);
+    if (!confirmed) return;
+
+    this.deletingFestivalId = festival.festivalId;
+    this.errorMessage = '';
+    this.campaignService.deleteCampaign(festival.festivalId).subscribe({
+      next: () => {
+        this.deletingFestivalId = null;
+        this.load();
+      },
+      error: err => {
+        this.deletingFestivalId = null;
+        this.errorMessage = err?.error?.message ?? 'Error deleting campaign.';
+      }
+    });
   }
 
   logout(): void {

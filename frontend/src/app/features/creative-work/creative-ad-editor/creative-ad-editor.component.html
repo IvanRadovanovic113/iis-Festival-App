@@ -72,23 +72,34 @@
               } @else if (usesFileUpload) {
                 <div class="upload-stack">
                   <label class="upload-box">
-                    <input type="file" [accept]="fileAccept" (change)="onFileSelected($event)" hidden />
+                    <input #fileInput type="file" [accept]="fileAccept" (change)="onFileSelected($event)" hidden />
                     <strong>{{ hasPreview ? 'Replace content' : 'Upload content' }}</strong>
                     <small>{{ selectedFileName || uploadHint }}</small>
                   </label>
 
                   @if (hasPreview) {
                     <div class="preview-shell">
+                      <div class="preview-meta">
+                        <strong>{{ selectedFileName || contentLabel }}</strong>
+                        <small>Remove the current file and upload a new one before saving.</small>
+                      </div>
                       @if (isImagePreview) {
                         <img class="media-preview image-preview" [src]="previewUrl" alt="Selected content preview" />
                       } @else if (isAudioPreview) {
-                        <audio class="media-preview" controls [src]="previewUrl"></audio>
+                        <audio class="media-preview" controls preload="metadata" [src]="previewUrl"></audio>
                       } @else if (isVideoPreview) {
-                        <video class="media-preview video-preview" controls [src]="previewUrl"></video>
+                        <video class="media-preview video-preview" controls preload="metadata" playsinline [src]="previewUrl"></video>
                       }
 
                       <div class="preview-actions">
                         <button type="button" class="btn-secondary" (click)="clearSelectedContent()">Remove</button>
+                      </div>
+                    </div>
+                  } @else if (contentCleared) {
+                    <div class="preview-shell empty-preview-shell">
+                      <div class="preview-meta">
+                        <strong>Current content removed</strong>
+                        <small>Select a new {{ ad.contentType.toLowerCase() }} file before saving your changes.</small>
                       </div>
                     </div>
                   }

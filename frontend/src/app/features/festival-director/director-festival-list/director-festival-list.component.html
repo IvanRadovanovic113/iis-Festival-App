@@ -107,7 +107,17 @@
                   </td>
                   <td>
                     @if (festival.hasCampaign) {
-                      <a class="action-link view" [routerLink]="['/director/festivals', festival.festivalId, 'campaign']">View campaign</a>
+                      <div class="action-stack">
+                        <a class="action-link view" title="View campaign" aria-label="View campaign" [routerLink]="['/director/festivals', festival.festivalId, 'campaign']">
+                          <span class="action-icon">👁</span>
+                        </a>
+                        <button type="button" class="action-link edit" title="Edit campaign" aria-label="Edit campaign" (click)="editCampaign(festival.festivalId)">
+                          <span class="action-icon">✎</span>
+                        </button>
+                        <button type="button" class="action-link delete" title="Delete campaign" aria-label="Delete campaign" [disabled]="deletingFestivalId === festival.festivalId" (click)="deleteCampaign(festival)">
+                          <span class="action-icon">{{ deletingFestivalId === festival.festivalId ? '…' : '🗑' }}</span>
+                        </button>
+                      </div>
                     } @else {
                       <a class="action-link create" [routerLink]="['/director/festivals', festival.festivalId, 'campaign', 'new']">Create campaign</a>
                     }

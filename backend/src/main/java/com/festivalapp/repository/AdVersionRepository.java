@@ -11,4 +11,6 @@ public interface AdVersionRepository extends JpaRepository<AdVersion, Long> {
     List<AdVersion> findAllByAd_AdIdOrderByVersionNumberDesc(Long adId);
 
     Optional<AdVersion> findByAd_AdIdAndVersionNumber(Long adId, Integer versionNumber);
+
+    void deleteAllByAd_AdId(Long adId);
 }

@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface AdPromotionRepository extends JpaRepository<AdPromotion, Long> {
     Optional<AdPromotion> findByAd_AdId(Long adId);
     List<AdPromotion> findAllByEndDateAndReminderSentAtIsNull(LocalDate endDate);
+    void deleteByAd_AdId(Long adId);
 }
