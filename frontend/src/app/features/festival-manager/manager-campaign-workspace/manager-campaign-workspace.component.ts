@@ -25,6 +25,8 @@ export class ManagerCampaignWorkspaceComponent implements OnInit {
   selectedType = '';
   selectedStatus = '';
   processingAdId: number | null = null;
+  rejectingAd: Ad | null = null;
+  rejectReason = '';
   readonly currentUser = this.authService.getCurrentUser();
 
   ngOnInit(): void {
@@ -86,7 +88,7 @@ export class ManagerCampaignWorkspaceComponent implements OnInit {
   }
 
   canReviewAd(ad: Ad): boolean {
-    return ad.currentPhaseAssignedRole === this.currentRole;
+    return ad.currentPhaseAssignedRole === this.currentRole && ad.status.toUpperCase() !== 'PUBLISHED';
   }
 
   canEditAd(ad: Ad): boolean {
@@ -112,14 +114,25 @@ export class ManagerCampaignWorkspaceComponent implements OnInit {
     });
   }
 
-  reject(ad: Ad): void {
-    if (!this.workspace) return;
-    const reason = globalThis.prompt(`Why is "${ad.name}" rejected?`);
-    if (!reason || !reason.trim()) return;
+  openRejectModal(ad: Ad): void {
+    this.rejectingAd = ad;
+    this.rejectReason = '';
+    this.errorMessage = '';
+  }
+
+  closeRejectModal(): void {
+    this.rejectingAd = null;
+    this.rejectReason = '';
+  }
+
+  reject(): void {
+    if (!this.workspace || !this.rejectingAd || !this.rejectReason.trim()) return;
+    const ad = this.rejectingAd;
     this.processingAdId = ad.adId;
-    this.campaignService.rejectManagerAd(this.workspace.campaign.festivalId, ad.adId, reason.trim()).subscribe({
+    this.campaignService.rejectManagerAd(this.workspace.campaign.festivalId, ad.adId, this.rejectReason.trim()).subscribe({
       next: () => {
         this.processingAdId = null;
+        this.closeRejectModal();
         this.load();
       },
       error: err => {

@@ -147,6 +147,13 @@ export const routes: Routes = [
     data: { festivalRoles: ['FESTIVAL_DIRECTOR'] }
   },
   {
+    path: 'director/festivals/:festivalId/campaign/edit',
+    loadComponent: () =>
+      import('./features/festival-director/campaign-form/campaign-form.component').then(m => m.CampaignFormComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['FESTIVAL_DIRECTOR'] }
+  },
+  {
     path: 'director/festivals/:festivalId/campaign',
     loadComponent: () =>
       import('./features/festival-director/campaign-details/campaign-details.component').then(m => m.CampaignDetailsComponent),

@@ -82,23 +82,25 @@
 
       <section class="flow-card">
         <h2>Flow</h2>
-        @if (phaseFlowItems.length > 0) {
-          @for (phase of phaseFlowItems; track i; let i = $index) {
-            <div class="flow-item">
-              <div class="flow-index">{{ i + 1 }}</div>
-              <div>
-                <strong>{{ phase.name }} @if (phase.isDraft) { <span class="draft-badge">New</span> }</strong>
-                <p>{{ phase.description }}</p>
-                <small>{{ phase.assignedRole }}</small>
-              </div>
+        @for (phase of phaseFlowItems; track phase.name; let i = $index) {
+          <div class="flow-item" [class.locked]="phase.locked">
+            <div class="flow-index">{{ i + 1 }}</div>
+            <div>
+              <strong>
+                {{ phase.name }}
+                @if (phase.isDraft) { <span class="draft-badge">New</span> }
+                @if (phase.locked) { <span class="locked-badge">Required</span> }
+              </strong>
+              <p>{{ phase.description }}</p>
+              <small>{{ phase.assignedRole }}</small>
+            </div>
+            @if (!phase.locked) {
               <div class="flow-actions">
                 <button type="button" class="flow-action-btn" (click)="moveFlowItem(i, -1)">↑</button>
                 <button type="button" class="flow-action-btn" (click)="moveFlowItem(i, 1)">↓</button>
               </div>
-            </div>
-          }
-        } @else {
-          <p>Select an add type to preview its current phase flow.</p>
+            }
+          </div>
         }
       </section>
     </div>

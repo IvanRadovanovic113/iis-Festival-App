@@ -6,6 +6,13 @@ import { CampaignService } from '../../../core/services/campaign.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { AdPhase } from '../../../core/models/campaign.model';
 
+type DraftFlowPhase = {
+  phaseId: number;
+  name: string;
+  description: string;
+  assignedRole: string;
+};
+
 @Component({
   selector: 'app-ad-type-form',
   standalone: true,
@@ -134,9 +141,19 @@ export class AdTypeFormComponent implements OnInit {
         draftTypeDescription: this.form.value.description ?? '',
         draftTypeContentType: this.form.value.contentType ?? '',
         selectedPhaseIds: this.selectedPhaseIds.join(','),
+        draftFlow: JSON.stringify(this.buildDraftFlow()),
         draftOrderIndex: this.selectedPhaseIds.length + 1
       }
     });
+  }
+
+  private buildDraftFlow(): DraftFlowPhase[] {
+    return this.selectedPhases.map(phase => ({
+      phaseId: phase.phaseId,
+      name: phase.name,
+      description: phase.description,
+      assignedRole: phase.assignedRole
+    }));
   }
 
   save(): void {

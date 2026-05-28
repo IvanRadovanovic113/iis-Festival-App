@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -25,7 +25,10 @@ export class CreativeAdEditorComponent implements OnInit {
   saving = false;
   selectedFileName = '';
   previewUrl = '';
+  originalContentValue = '';
+  contentCleared = false;
   readonly currentUser = this.authService.getCurrentUser();
+  @ViewChild('fileInput') fileInput?: ElementRef<HTMLInputElement>;
 
   form = this.fb.group({
     contentValue: ['', Validators.required]
@@ -76,6 +79,10 @@ export class CreativeAdEditorComponent implements OnInit {
 
   get hasPreview(): boolean {
     return !!this.previewUrl;
+  }
+
+  get hasExistingUploadedContent(): boolean {
+    return !!this.originalContentValue;
   }
 
   get isImagePreview(): boolean {
@@ -129,7 +136,9 @@ export class CreativeAdEditorComponent implements OnInit {
     this.campaignService.getCreativeAd(campaignId, adId).subscribe({
       next: ad => {
         this.ad = ad;
-        this.selectedFileName = ad.contentValue ?? '';
+        this.originalContentValue = ad.contentValue ?? '';
+        this.contentCleared = false;
+        this.selectedFileName = this.resolveDisplayFileName(ad.contentValue ?? '');
         this.previewUrl = this.resolvePreviewUrl(ad.contentValue ?? '');
         this.form.patchValue({
           contentValue: ad.contentValue ?? ''
@@ -157,6 +166,7 @@ export class CreativeAdEditorComponent implements OnInit {
     const reader = new FileReader();
     reader.onload = () => {
       this.errorMessage = '';
+      this.contentCleared = false;
       this.selectedFileName = file.name;
       this.previewUrl = typeof reader.result === 'string' ? reader.result : '';
       this.form.patchValue({ contentValue: this.previewUrl });
@@ -178,10 +188,30 @@ export class CreativeAdEditorComponent implements OnInit {
     return contentValue.startsWith('data:') ? contentValue : '';
   }
 
+  private resolveDisplayFileName(contentValue: string): string {
+    if (!contentValue) {
+      return '';
+    }
+    if (contentValue.startsWith('data:video/')) {
+      return 'Current uploaded video';
+    }
+    if (contentValue.startsWith('data:audio/')) {
+      return 'Current uploaded audio';
+    }
+    if (contentValue.startsWith('data:image/')) {
+      return 'Current uploaded image';
+    }
+    return contentValue;
+  }
+
   clearSelectedContent(): void {
     this.selectedFileName = '';
     this.previewUrl = '';
+    this.contentCleared = true;
     this.form.patchValue({ contentValue: '' });
+    if (this.fileInput) {
+      this.fileInput.nativeElement.value = '';
+    }
   }
 
   save(): void {
@@ -197,7 +227,9 @@ export class CreativeAdEditorComponent implements OnInit {
     }).subscribe({
       next: updatedAd => {
         this.ad = updatedAd;
-        this.selectedFileName = this.ad.contentValue ?? '';
+        this.originalContentValue = this.ad.contentValue ?? '';
+        this.contentCleared = false;
+        this.selectedFileName = this.resolveDisplayFileName(this.ad.contentValue ?? '');
         this.previewUrl = this.resolvePreviewUrl(this.ad.contentValue ?? '');
         this.form.patchValue({
           contentValue: this.ad.contentValue ?? ''

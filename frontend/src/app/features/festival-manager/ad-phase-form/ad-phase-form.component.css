@@ -208,6 +208,10 @@ select {
   padding: 0.75rem 0;
 }
 
+.flow-item.locked {
+  opacity: 0.88;
+}
+
 .flow-index {
   width: 44px;
   height: 44px;
@@ -237,6 +241,16 @@ select {
   padding: 0.15rem 0.45rem;
   border-radius: 999px;
   background: #f3e6cf;
+  font-size: 0.72rem;
+}
+
+.locked-badge {
+  display: inline-flex;
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: #ebe5d9;
+  color: #645948;
   font-size: 0.72rem;
 }
 

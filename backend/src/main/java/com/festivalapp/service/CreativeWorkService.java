@@ -162,7 +162,7 @@ public class CreativeWorkService {
 
     private boolean isAllowedContentType(Role role, String contentType) {
         Set<String> designerTypes = Set.of("Text", "Image");
-        Set<String> supportTypes = Set.of("Audio");
+        Set<String> supportTypes = Set.of("Audio", "Video");
         return switch (role) {
             case PRODUCT_DESIGNER -> designerTypes.contains(contentType);
             case TECHNICAL_SUPPORT -> supportTypes.contains(contentType);

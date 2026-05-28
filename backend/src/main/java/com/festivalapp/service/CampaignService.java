@@ -14,6 +14,9 @@ import com.festivalapp.model.Role;
 import com.festivalapp.model.User;
 import com.festivalapp.model.UserFestivalAssignment;
 import com.festivalapp.repository.AdRepository;
+import com.festivalapp.repository.AdNotificationRepository;
+import com.festivalapp.repository.AdPromotionRepository;
+import com.festivalapp.repository.AdVersionRepository;
 import com.festivalapp.repository.CampaignRepository;
 import com.festivalapp.repository.FestivalRepository;
 import com.festivalapp.repository.UserRepository;
@@ -21,6 +24,7 @@ import com.festivalapp.repository.UserFestivalAssignmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -39,6 +43,9 @@ public class CampaignService {
     private final UserRepository userRepository;
     private final UserFestivalAssignmentRepository assignmentRepository;
     private final AdRepository adRepository;
+    private final AdVersionRepository adVersionRepository;
+    private final AdNotificationRepository adNotificationRepository;
+    private final AdPromotionRepository adPromotionRepository;
 
     private void requireFestivalDirector(User user) {
         UserFestivalAssignment assignment = assignmentRepository.findByUser_Id(user.getId())
@@ -130,6 +137,60 @@ public class CampaignService {
             .build();
 
         return CampaignResponse.from(campaignRepository.save(campaign));
+    }
+
+    @Transactional
+    public CampaignResponse updateCampaign(Long festivalId, CampaignRequest request, User user) {
+        requireFestivalDirector(user);
+
+        Campaign campaign = campaignRepository.findByFestival_FestivalId(festivalId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Campaign not found"));
+        Festival festival = campaign.getFestival();
+        User managerUser = userRepository.findById(request.getManagerUserId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Manager user not found"));
+        UserFestivalAssignment managerAssignment = assignmentRepository.findByUser_Id(managerUser.getId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Manager must be assigned to a festival"));
+
+        if (managerAssignment.getRole() != Role.FESTIVAL_MANAGER) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selected user is not a festival manager");
+        }
+        if (!request.getEndDate().isAfter(request.getStartDate())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End date must be after start date");
+        }
+        if (request.getEndDate().isAfter(festival.getEndDate())) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Campaign end date must not be after the selected festival end date"
+            );
+        }
+
+        managerAssignment.setFestival(festival);
+        assignmentRepository.save(managerAssignment);
+
+        campaign.setName(request.getName().trim());
+        campaign.setDescription(request.getDescription().trim());
+        campaign.setStartDate(request.getStartDate());
+        campaign.setEndDate(request.getEndDate());
+        campaign.setManagerUser(managerUser);
+
+        return CampaignResponse.from(campaignRepository.save(campaign));
+    }
+
+    @Transactional
+    public void deleteCampaign(Long festivalId, User user) {
+        requireFestivalDirector(user);
+        Campaign campaign = campaignRepository.findByFestival_FestivalId(festivalId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Campaign not found"));
+
+        List<Ad> ads = adRepository.findAllByCampaign_CampaignIdOrderByLastChangeDateDescAdIdDesc(campaign.getCampaignId());
+        for (Ad ad : ads) {
+            adNotificationRepository.deleteAllByAd_AdId(ad.getAdId());
+            adVersionRepository.deleteAllByAd_AdId(ad.getAdId());
+            adPromotionRepository.deleteByAd_AdId(ad.getAdId());
+            adRepository.delete(ad);
+        }
+
+        campaignRepository.delete(campaign);
     }
 
     private CampaignStatsResponse buildStats(List<Ad> ads) {

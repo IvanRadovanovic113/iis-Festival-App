@@ -8,4 +8,6 @@ import java.util.List;
 public interface AdNotificationRepository extends JpaRepository<AdNotification, Long> {
 
     List<AdNotification> findAllByRecipientUser_IdOrderByCreatedAtDescNotificationIdDesc(Long recipientUserId);
+
+    void deleteAllByAd_AdId(Long adId);
 }

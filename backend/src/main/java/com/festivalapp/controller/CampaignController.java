@@ -60,6 +60,24 @@ public class CampaignController {
         return ResponseEntity.status(HttpStatus.CREATED).body(campaignService.createCampaign(festivalId, request, user));
     }
 
+    @PutMapping("/festivals/{festivalId}/campaign")
+    public ResponseEntity<CampaignResponse> updateCampaign(
+        @PathVariable Long festivalId,
+        @Valid @RequestBody CampaignRequest request,
+        @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(campaignService.updateCampaign(festivalId, request, user));
+    }
+
+    @DeleteMapping("/festivals/{festivalId}/campaign")
+    public ResponseEntity<Void> deleteCampaign(
+        @PathVariable Long festivalId,
+        @AuthenticationPrincipal User user
+    ) {
+        campaignService.deleteCampaign(festivalId, user);
+        return ResponseEntity.noContent().build();
+    }
+
     @PutMapping("/festivals/{festivalId}/ads/{adId}/approve")
     public ResponseEntity<AdResponse> approveAd(
         @PathVariable Long festivalId,
