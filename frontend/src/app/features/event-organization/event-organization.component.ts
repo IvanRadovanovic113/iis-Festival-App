@@ -4,7 +4,10 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { forkJoin, of, switchMap } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { BinaService } from '../../core/services/bina.service';
-import { EventOrganizationService } from '../../core/services/event-organization.service';
+import { EventReservationService } from '../../core/services/event-reservation.service';
+import { EventResourceService } from '../../core/services/event-resource.service';
+import { RequestResourceService } from '../../core/services/request-resource.service';
+import { StageResourceService } from '../../core/services/stage-resource.service';
 import { Stage } from '../../core/models/bina.model';
 import {
   EventReservationRequest,
@@ -35,6 +38,12 @@ interface TimetableDay {
   dateLabel: string;
 }
 
+interface InitialEventOrganizationData {
+  stages: Stage[];
+  resources: EventResource[];
+  requests: EventReservationRequest[];
+}
+
 @Component({
   selector: 'app-event-organization',
   standalone: true,
@@ -45,7 +54,10 @@ interface TimetableDay {
 export class EventOrganizationComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly stageService = inject(BinaService);
-  private readonly eventOrganizationService = inject(EventOrganizationService);
+  private readonly eventReservationService = inject(EventReservationService);
+  private readonly eventResourceService = inject(EventResourceService);
+  private readonly requestResourceService = inject(RequestResourceService);
+  private readonly stageResourceService = inject(StageResourceService);
   private readonly fb = inject(FormBuilder);
 
   currentUser: User | null = null;
@@ -73,15 +85,12 @@ export class EventOrganizationComponent implements OnInit {
   modalMode: ResourceModalMode | null = null;
   editingStageResource: StageResource | null = null;
   deletingStageResource: StageResource | null = null;
+  resourceModalError = '';
 
   inventorySearch = '';
   inventoryStageFilter = 'All';
   timetableWeekOffset = 0;
   timetableHours = ['14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
-
-  reviewForm = this.fb.group({
-    reviewNote: ['']
-  });
 
   requestResourceForm = this.fb.group({
     resourceId: [null as number | null, Validators.required],
@@ -133,7 +142,7 @@ export class EventOrganizationComponent implements OnInit {
         resource,
         assignedQuantity: assignments.reduce((sum, item) => sum + item.quantity, 0),
         stageNames,
-        shared: new Set(stageNames).size > 1
+        shared: resource.shareable
       };
     });
 
@@ -211,10 +220,10 @@ export class EventOrganizationComponent implements OnInit {
     this.clearMessages();
     forkJoin({
       stages: this.stageService.getAll(),
-      resources: this.eventOrganizationService.getResources(),
-      requests: this.eventOrganizationService.getReservationRequests()
+      resources: this.eventResourceService.getResources(),
+      requests: this.eventReservationService.getReservationRequests()
     }).subscribe({
-      next: ({ stages, resources, requests }) => {
+      next: ({ stages, resources, requests }: InitialEventOrganizationData) => {
         this.stages = stages;
         this.resources = resources;
         this.reservationRequests = requests;
@@ -232,7 +241,7 @@ export class EventOrganizationComponent implements OnInit {
 
   refreshStageData(): void {
     const allAssignments$ = this.stages.length
-      ? forkJoin(this.stages.map(stage => this.eventOrganizationService.getStageResources(stage.stageId)))
+      ? forkJoin(this.stages.map(stage => this.stageResourceService.getStageResources(stage.stageId)))
       : of([] as StageResource[][]);
 
     allAssignments$.subscribe({
@@ -293,7 +302,6 @@ export class EventOrganizationComponent implements OnInit {
 
   selectReservationRequest(request: EventReservationRequest): void {
     this.selectedReservationRequest = request;
-    this.reviewForm.reset({ reviewNote: request.reviewNote ?? '' });
     this.requestResourceForm.reset({ resourceId: this.resources[0]?.id ?? null, quantity: 1 });
     this.loadSelectedRequestResources();
     this.clearMessages();
@@ -302,8 +310,7 @@ export class EventOrganizationComponent implements OnInit {
   approveSelectedRequest(): void {
     if (!this.selectedReservationRequest) return;
 
-    const reviewNote = this.reviewForm.getRawValue().reviewNote || null;
-    this.eventOrganizationService.approveReservationRequest(this.selectedReservationRequest.id, { reviewNote }).subscribe({
+    this.eventReservationService.approveReservationRequest(this.selectedReservationRequest.id).subscribe({
       next: request => {
         this.successMessage = 'Reservation request approved.';
         this.reloadReservationRequests(request.id);
@@ -318,8 +325,7 @@ export class EventOrganizationComponent implements OnInit {
   rejectSelectedRequest(): void {
     if (!this.selectedReservationRequest) return;
 
-    const reviewNote = this.reviewForm.getRawValue().reviewNote || null;
-    this.eventOrganizationService.rejectReservationRequest(this.selectedReservationRequest.id, { reviewNote }).subscribe({
+    this.eventReservationService.rejectReservationRequest(this.selectedReservationRequest.id).subscribe({
       next: request => {
         this.successMessage = 'Reservation request rejected.';
         this.reloadReservationRequests(request.id);
@@ -336,7 +342,7 @@ export class EventOrganizationComponent implements OnInit {
     }
 
     const value = this.requestResourceForm.getRawValue();
-    this.eventOrganizationService.addResourceToRequest(this.selectedReservationRequest.id, {
+    this.requestResourceService.addResourceToRequest(this.selectedReservationRequest.id, {
       resourceId: Number(value.resourceId),
       quantity: Number(value.quantity)
     }).subscribe({
@@ -352,7 +358,7 @@ export class EventOrganizationComponent implements OnInit {
   confirmRequestResource(resource: RequestResource): void {
     if (!this.selectedReservationRequest) return;
 
-    this.eventOrganizationService.confirmRequestResource(this.selectedReservationRequest.id, resource.resourceId).subscribe({
+    this.requestResourceService.confirmRequestResource(this.selectedReservationRequest.id, resource.resourceId).subscribe({
       next: () => {
         this.successMessage = 'Resource availability confirmed.';
         this.loadSelectedRequestResources();
@@ -367,7 +373,7 @@ export class EventOrganizationComponent implements OnInit {
   removeRequestResource(resource: RequestResource): void {
     if (!this.selectedReservationRequest) return;
 
-    this.eventOrganizationService.removeResourceFromRequest(this.selectedReservationRequest.id, resource.resourceId).subscribe({
+    this.requestResourceService.removeResourceFromRequest(this.selectedReservationRequest.id, resource.resourceId).subscribe({
       next: () => {
         this.successMessage = 'Resource removed from request.';
         this.loadSelectedRequestResources();
@@ -385,6 +391,8 @@ export class EventOrganizationComponent implements OnInit {
   openAddResource(): void {
     this.modalMode = 'add';
     this.editingStageResource = null;
+    this.resourceModalError = '';
+    this.clearMessages();
     this.resourceForm.reset({
       name: '',
       type: 'Equipment',
@@ -399,12 +407,14 @@ export class EventOrganizationComponent implements OnInit {
     const resource = this.resources.find(item => item.id === stageResource.resourceId);
     this.modalMode = 'edit';
     this.editingStageResource = stageResource;
+    this.resourceModalError = '';
+    this.clearMessages();
     this.resourceForm.reset({
       name: stageResource.resourceName,
       type: stageResource.resourceType,
       quantity: stageResource.quantity,
       stageId: stageResource.stageId,
-      shareable: this.inventoryRows.find(row => row.resource.id === stageResource.resourceId)?.shared ?? false,
+      shareable: resource?.shareable ?? false,
       note: resource?.description ?? ''
     });
   }
@@ -412,6 +422,7 @@ export class EventOrganizationComponent implements OnInit {
   closeResourceModal(): void {
     this.modalMode = null;
     this.editingStageResource = null;
+    this.resourceModalError = '';
     this.resourceForm.reset({
       name: '',
       type: 'Equipment',
@@ -431,17 +442,25 @@ export class EventOrganizationComponent implements OnInit {
     const value = this.resourceForm.getRawValue();
     const stageId = Number(value.stageId);
     const quantity = Number(value.quantity);
+    const resourceName = value.name!;
+    if (this.resourceNameExistsOnStage(resourceName, stageId, this.editingStageResource?.resourceId)) {
+      this.resourceModalError = 'A resource with this name already exists on this stage.';
+      return;
+    }
+    this.resourceModalError = '';
+
     const resourceRequest = {
-      name: value.name!,
+      name: resourceName,
       type: value.type!,
       description: value.note || null,
-      totalQuantity: quantity
+      totalQuantity: quantity,
+      shareable: Boolean(value.shareable)
     };
 
     const operation = this.editingStageResource
-      ? this.eventOrganizationService.updateResource(this.editingStageResource.resourceId, resourceRequest).pipe(
+      ? this.eventResourceService.updateResource(this.editingStageResource.resourceId, resourceRequest).pipe(
           switchMap(() => {
-            const updateAssignment = this.eventOrganizationService.updateStageResource(
+            const updateAssignment = this.stageResourceService.updateStageResource(
               this.editingStageResource!.stageId,
               this.editingStageResource!.resourceId,
               { resourceId: this.editingStageResource!.resourceId, quantity }
@@ -452,19 +471,19 @@ export class EventOrganizationComponent implements OnInit {
             }
 
             return updateAssignment.pipe(
-              switchMap(() => this.eventOrganizationService.removeResourceFromStage(
+              switchMap(() => this.stageResourceService.removeResourceFromStage(
                 this.editingStageResource!.stageId,
                 this.editingStageResource!.resourceId
               )),
-              switchMap(() => this.eventOrganizationService.assignResourceToStage(stageId, {
+              switchMap(() => this.stageResourceService.assignResourceToStage(stageId, {
                 resourceId: this.editingStageResource!.resourceId,
                 quantity
               }))
             );
           })
         )
-      : this.eventOrganizationService.createResource(resourceRequest).pipe(
-          switchMap(resource => this.eventOrganizationService.assignResourceToStage(stageId, {
+      : this.eventResourceService.createResource(resourceRequest).pipe(
+          switchMap(resource => this.stageResourceService.assignResourceToStage(stageId, {
             resourceId: resource.id,
             quantity
           }))
@@ -477,8 +496,17 @@ export class EventOrganizationComponent implements OnInit {
         this.closeResourceModal();
         this.reloadResourcesAndAssignments();
       },
-      error: err => this.errorMessage = err.error?.message || 'Unable to save resource.'
+      error: err => this.resourceModalError = err.error?.message || 'Unable to save resource.'
     });
+  }
+
+  private resourceNameExistsOnStage(resourceName: string, stageId: number, ignoredResourceId?: number): boolean {
+    const normalizedName = resourceName.trim().toLowerCase();
+    return this.allStageResources.some(resource =>
+      resource.stageId === stageId
+      && resource.resourceId !== ignoredResourceId
+      && resource.resourceName.trim().toLowerCase() === normalizedName
+    );
   }
 
   confirmDelete(stageResource: StageResource): void {
@@ -492,16 +520,13 @@ export class EventOrganizationComponent implements OnInit {
   deleteStageResource(): void {
     if (!this.deletingStageResource) return;
 
-    this.eventOrganizationService.removeResourceFromStage(
-      this.deletingStageResource.stageId,
-      this.deletingStageResource.resourceId
-    ).subscribe({
+    this.eventResourceService.deleteResource(this.deletingStageResource.resourceId).subscribe({
       next: () => {
-        this.successMessage = 'Resource removed from stage.';
+        this.successMessage = 'Resource deleted.';
         this.closeDeleteModal();
-        this.refreshStageData();
+        this.reloadResourcesAndAssignments();
       },
-      error: () => this.errorMessage = 'Unable to delete resource from stage.'
+      error: () => this.errorMessage = 'Unable to delete resource.'
     });
   }
 
@@ -536,9 +561,8 @@ export class EventOrganizationComponent implements OnInit {
       return;
     }
 
-    this.eventOrganizationService.scheduleReservationRequest(this.selectedReservationRequest.id, {
-      startTime: this.selectedScheduleStart,
-      reviewNote: 'Scheduled from reservation timetable'
+    this.eventReservationService.scheduleReservationRequest(this.selectedReservationRequest.id, {
+      startTime: this.selectedScheduleStart
     }).subscribe({
       next: request => {
         this.confirmedReservation = request;
@@ -611,7 +635,7 @@ export class EventOrganizationComponent implements OnInit {
   }
 
   private reloadResourcesAndAssignments(): void {
-    this.eventOrganizationService.getResources().subscribe({
+    this.eventResourceService.getResources().subscribe({
       next: resources => {
         this.resources = resources;
         this.refreshStageData();
@@ -621,7 +645,7 @@ export class EventOrganizationComponent implements OnInit {
   }
 
   private reloadReservationRequests(selectedRequestId?: number): void {
-    this.eventOrganizationService.getReservationRequests().subscribe({
+    this.eventReservationService.getReservationRequests().subscribe({
       next: requests => {
         this.reservationRequests = requests;
         this.selectedReservationRequest = requests.find(request => request.id === selectedRequestId)
@@ -640,7 +664,7 @@ export class EventOrganizationComponent implements OnInit {
       return;
     }
 
-    this.eventOrganizationService.getRequestResources(this.selectedReservationRequest.id).subscribe({
+    this.requestResourceService.getRequestResources(this.selectedReservationRequest.id).subscribe({
       next: resources => this.selectedRequestResources = resources,
       error: () => this.errorMessage = 'Unable to load request resources.'
     });
@@ -652,7 +676,7 @@ export class EventOrganizationComponent implements OnInit {
       return;
     }
 
-    forkJoin(this.reservationRequests.map(request => this.eventOrganizationService.getRequestResources(request.id))).subscribe({
+    forkJoin(this.reservationRequests.map(request => this.requestResourceService.getRequestResources(request.id))).subscribe({
       next: resourceGroups => {
         this.requestResourceCounts = {};
         resourceGroups.forEach((resources, index) => {
@@ -667,7 +691,7 @@ export class EventOrganizationComponent implements OnInit {
     if (!this.selectedStageId) return;
 
     const days = this.timetableDays;
-    forkJoin(days.map(day => this.eventOrganizationService.getTimetable(this.selectedStageId!, day.key))).subscribe({
+    forkJoin(days.map(day => this.eventReservationService.getTimetable(this.selectedStageId!, day.key))).subscribe({
       next: slotGroups => {
         this.timetableSlots = {};
         slotGroups.forEach((slots, index) => {

@@ -18,7 +18,6 @@ public record EventReservationResponse(
     LocalTime endTime,
     EventReservationStatus status,
     String notes,
-    String reviewNote,
     LocalDateTime createdAt,
     LocalDateTime reviewedAt
 ) {
@@ -34,7 +33,6 @@ public record EventReservationResponse(
             request.getEndTime(),
             request.getStatus(),
             request.getNotes(),
-            request.getReviewNote(),
             request.getCreatedAt(),
             request.getReviewedAt()
         );

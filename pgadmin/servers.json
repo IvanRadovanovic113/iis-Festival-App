@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Festival PostgreSQL",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "festival_db",
+      "Username": "festival_user",
+      "SSLMode": "prefer"
+    }
+  }
+}

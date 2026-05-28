@@ -1,5 +1,6 @@
 :host {
   display: block;
+  zoom: 0.9;
 }
 
 .event-shell {
@@ -916,6 +917,16 @@ button {
 
 .modal-body input::placeholder {
   color: #b3acc3;
+}
+
+.modal-error {
+  margin: -8px 0 0;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #ffe9ed;
+  color: #b8243d;
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .share-row {

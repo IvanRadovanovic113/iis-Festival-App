@@ -4,6 +4,7 @@ export interface EventResource {
   type: string;
   description: string | null;
   totalQuantity: number;
+  shareable: boolean;
   festivalId: number;
 }
 
@@ -12,6 +13,7 @@ export interface EventResourceRequest {
   type: string;
   description: string | null;
   totalQuantity: number;
+  shareable: boolean;
 }
 
 export interface StageResource {
@@ -42,18 +44,12 @@ export interface EventReservationRequest {
   endTime: string;
   status: EventReservationStatus;
   notes: string | null;
-  reviewNote: string | null;
   createdAt: string;
   reviewedAt: string | null;
 }
 
-export interface EventReservationReviewRequest {
-  reviewNote: string | null;
-}
-
 export interface EventReservationScheduleRequest {
   startTime: string;
-  reviewNote: string | null;
 }
 
 export type RequestResourceStatus = 'REQUESTED' | 'CONFIRMED' | 'UNAVAILABLE';

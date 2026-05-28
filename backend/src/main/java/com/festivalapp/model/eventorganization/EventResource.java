@@ -29,6 +29,10 @@ public class EventResource {
     @Column(nullable = false)
     private Integer totalQuantity;
 
+    @Builder.Default
+    @Column(name = "is_shareable")
+    private Boolean shareable = false;
+
     @ManyToOne
     @JoinColumn(name = "festival_id", nullable = false)
     private Festival festival;

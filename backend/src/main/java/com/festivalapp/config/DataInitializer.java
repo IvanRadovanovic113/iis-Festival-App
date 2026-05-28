@@ -15,9 +15,11 @@ import com.festivalapp.model.eventorganization.EventReservationStatus;
 import com.festivalapp.model.eventorganization.EventResource;
 import com.festivalapp.model.eventorganization.RequestResource;
 import com.festivalapp.model.eventorganization.RequestResourceStatus;
+import com.festivalapp.model.eventorganization.StageResource;
 import com.festivalapp.repository.eventorganization.EventReservationRequestRepository;
 import com.festivalapp.repository.eventorganization.EventResourceRepository;
 import com.festivalapp.repository.eventorganization.RequestResourceRepository;
+import com.festivalapp.repository.eventorganization.StageResourceRepository;
 import com.festivalapp.prodaja.model.KupacTier;
 import com.festivalapp.prodaja.model.TierConfig;
 import com.festivalapp.prodaja.repository.TierConfigRepository;
@@ -62,6 +64,7 @@ public class DataInitializer implements ApplicationRunner {
     private final EventReservationRequestRepository reservationRequestRepository;
     private final EventResourceRepository eventResourceRepository;
     private final RequestResourceRepository requestResourceRepository;
+    private final StageResourceRepository stageResourceRepository;
 
     @Override
     public void run(ApplicationArguments args) {
@@ -71,8 +74,11 @@ public class DataInitializer implements ApplicationRunner {
         migrateAdContentColumns();
         normalizeWorkflowPhaseAssignments();
         createStatisticsFunctions();
+        migrateStageResourcesStageForeignKey();
+        migrateEventReservationReviewNoteColumn();
         createAdminUser();
         seedEventOrganizationRequests();
+        assignUnassignedEventResources();
         seedTierConfig();
         createTriggers();
     }
@@ -298,6 +304,46 @@ public class DataInitializer implements ApplicationRunner {
             LocalDate.of(2026, 6, 21), LocalTime.of(21, 0), LocalTime.of(21, 55), EventReservationStatus.PENDING, "VIP stage request");
         ensureRequestResources(massiveAttack, List.of(sound, lights, screens));
 
+        EventReservationRequest florence = ensureReservation(festival, mainStage, "Florence + The Machine",
+            LocalDate.of(2026, 6, 23), LocalTime.of(20, 30), LocalTime.of(21, 45), EventReservationStatus.PENDING, "Indie rock headline request");
+        ensureRequestResources(florence, List.of(sound, lights, screens, security, technicians));
+
+        EventReservationRequest disclosure = ensureReservation(festival, stageTwo, "Disclosure",
+            LocalDate.of(2026, 6, 23), LocalTime.of(22, 0), LocalTime.of(23, 0), EventReservationStatus.PENDING, "Electronic live set request");
+        ensureRequestResources(disclosure, List.of(sound, lights, specialFx, technicians));
+
+        EventReservationRequest sigrid = ensureReservation(festival, smallStage, "Sigrid",
+            LocalDate.of(2026, 6, 24), LocalTime.of(18, 30), LocalTime.of(19, 20), EventReservationStatus.PENDING, "Pop showcase request");
+        ensureRequestResources(sigrid, List.of(sound, lights, technicians));
+
+        EventReservationRequest kaytranada = ensureReservation(festival, vipStage, "Kaytranada",
+            LocalDate.of(2026, 6, 24), LocalTime.of(21, 0), LocalTime.of(22, 0), EventReservationStatus.PENDING, "VIP dance set request");
+        ensureRequestResources(kaytranada, List.of(sound, lights, specialFx));
+
+        EventReservationRequest lorde = ensureReservation(festival, mainStage, "Lorde",
+            LocalDate.of(2026, 6, 25), LocalTime.of(19, 45), LocalTime.of(20, 45), EventReservationStatus.PENDING, "Alternative pop performance request");
+        ensureRequestResources(lorde, List.of(sound, lights, screens, security));
+
+        EventReservationRequest overlapAurora = ensureReservation(festival, mainStage, "Aurora",
+            LocalDate.of(2026, 6, 26), LocalTime.of(18, 0), LocalTime.of(19, 0), EventReservationStatus.PENDING, "Overlap test request on Main Stage");
+        ensureRequestResources(overlapAurora, List.of(sound, lights, technicians));
+
+        EventReservationRequest overlapFoals = ensureReservation(festival, mainStage, "Foals",
+            LocalDate.of(2026, 6, 26), LocalTime.of(18, 30), LocalTime.of(19, 30), EventReservationStatus.PENDING, "Overlap test request on Main Stage");
+        ensureRequestResources(overlapFoals, List.of(sound, lights, screens));
+
+        EventReservationRequest overlapM83 = ensureReservation(festival, mainStage, "M83",
+            LocalDate.of(2026, 6, 26), LocalTime.of(19, 15), LocalTime.of(20, 15), EventReservationStatus.PENDING, "Overlap test request on Main Stage");
+        ensureRequestResources(overlapM83, List.of(sound, lights, specialFx));
+
+        EventReservationRequest overlapRaye = ensureReservation(festival, mainStage, "Raye",
+            LocalDate.of(2026, 6, 26), LocalTime.of(20, 0), LocalTime.of(21, 0), EventReservationStatus.PENDING, "Overlap test request on Main Stage");
+        ensureRequestResources(overlapRaye, List.of(sound, screens, security));
+
+        EventReservationRequest overlapJungle = ensureReservation(festival, mainStage, "Jungle",
+            LocalDate.of(2026, 6, 26), LocalTime.of(20, 45), LocalTime.of(21, 45), EventReservationStatus.PENDING, "Overlap test request on Main Stage");
+        ensureRequestResources(overlapJungle, List.of(sound, lights, technicians, specialFx));
+
         EventReservationRequest tameImpala = ensureReservation(festival, mainStage, "Tame Impala",
             LocalDate.of(2026, 5, 10), LocalTime.of(20, 0), LocalTime.of(21, 30), EventReservationStatus.APPROVED, "Past performance");
         ensureRequestResources(tameImpala, List.of(sound, lights, screens, security, technicians));
@@ -342,8 +388,37 @@ public class DataInitializer implements ApplicationRunner {
                 .type(type)
                 .description("Seeded resource for event organization requests")
                 .totalQuantity(totalQuantity)
+                .shareable(false)
                 .festival(festival)
                 .build()));
+    }
+
+    private void assignUnassignedEventResources() {
+        for (Festival festival : festivalRepository.findAll()) {
+            List<Stage> stages = stageRepository.findByFestival_FestivalId(festival.getFestivalId());
+            if (stages.isEmpty()) {
+                continue;
+            }
+
+            for (EventResource resource : eventResourceRepository.findByFestival_FestivalIdOrderByNameAsc(festival.getFestivalId())) {
+                if (stageResourceRepository.existsByResource_Id(resource.getId())) {
+                    continue;
+                }
+
+                stages.stream()
+                    .filter(stage -> !stageResourceRepository.existsByStage_StageIdAndResource_NameIgnoreCase(
+                        stage.getStageId(),
+                        resource.getName()
+                    ))
+                    .findFirst()
+                    .ifPresent(stage -> stageResourceRepository.save(StageResource.builder()
+                        .stage(stage)
+                        .resource(resource)
+                        .quantity(resource.getTotalQuantity())
+                        .build()));
+            }
+        }
+        log.info("Unassigned event resources linked to available stages");
     }
 
     private EventReservationRequest ensureReservation(
@@ -461,6 +536,18 @@ public class DataInitializer implements ApplicationRunner {
             "'TECHNICAL_SUPPORT','SALES_DIRECTOR','SALES_MANAGER','EVENT_ORGANIZER'," +
             "'MARKETING_MANAGER','BUYER','NEGOTIATION_MANAGER'))");
         log.info("users_role_check constraint updated with all roles");
+    }
+
+    private void migrateStageResourcesStageForeignKey() {
+        jdbcTemplate.execute(
+            "ALTER TABLE stage_resources DROP CONSTRAINT IF EXISTS fk2u66vfasyd73286d218p2cp3k");
+        log.info("Legacy stage_resources foreign key to bine removed");
+    }
+
+    private void migrateEventReservationReviewNoteColumn() {
+        jdbcTemplate.execute(
+            "ALTER TABLE event_reservation_requests DROP COLUMN IF EXISTS review_note");
+        log.info("Legacy event reservation review_note column removed");
     }
 
     /**
