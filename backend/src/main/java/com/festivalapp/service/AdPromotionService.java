@@ -44,8 +44,17 @@ public class AdPromotionService {
         if (!"PUBLISHED".equalsIgnoreCase(ad.getCurrentPhase().getName())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only published ads can be configured for promotion");
         }
+        if (request.getStartDate().isBefore(LocalDate.now())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Promotion start date cannot be before today");
+        }
         if (!request.getEndDate().isAfter(request.getStartDate())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Promotion end date must be after start date");
+        }
+        if (request.getEndDate().isAfter(ad.getCampaign().getEndDate())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Promotion end date cannot be after the campaign end date");
+        }
+        if (request.getEndDate().isAfter(ad.getCampaign().getFestival().getEndDate())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Promotion end date cannot be after the festival end date");
         }
 
         AdPromotion promotion = adPromotionRepository.findByAd_AdId(adId)
