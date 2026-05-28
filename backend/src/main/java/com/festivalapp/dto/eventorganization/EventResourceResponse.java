@@ -8,6 +8,7 @@ public record EventResourceResponse(
     String type,
     String description,
     Integer totalQuantity,
+    Boolean shareable,
     Long festivalId
 ) {
     public static EventResourceResponse from(EventResource resource) {
@@ -17,6 +18,7 @@ public record EventResourceResponse(
             resource.getType(),
             resource.getDescription(),
             resource.getTotalQuantity(),
+            Boolean.TRUE.equals(resource.getShareable()),
             resource.getFestival().getFestivalId()
         );
     }

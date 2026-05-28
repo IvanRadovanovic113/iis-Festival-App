@@ -21,4 +21,6 @@ public class EventResourceRequest {
     @NotNull
     @Min(1)
     private Integer totalQuantity;
+
+    private Boolean shareable;
 }

@@ -4,6 +4,7 @@ export interface EventResource {
   type: string;
   description: string | null;
   totalQuantity: number;
+  shareable: boolean;
   festivalId: number;
 }
 
@@ -12,6 +13,7 @@ export interface EventResourceRequest {
   type: string;
   description: string | null;
   totalQuantity: number;
+  shareable: boolean;
 }
 
 export interface StageResource {

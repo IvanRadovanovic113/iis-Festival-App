@@ -38,6 +38,12 @@ interface TimetableDay {
   dateLabel: string;
 }
 
+interface InitialEventOrganizationData {
+  stages: Stage[];
+  resources: EventResource[];
+  requests: EventReservationRequest[];
+}
+
 @Component({
   selector: 'app-event-organization',
   standalone: true,
@@ -139,7 +145,7 @@ export class EventOrganizationComponent implements OnInit {
         resource,
         assignedQuantity: assignments.reduce((sum, item) => sum + item.quantity, 0),
         stageNames,
-        shared: new Set(stageNames).size > 1
+        shared: resource.shareable
       };
     });
 
@@ -220,7 +226,7 @@ export class EventOrganizationComponent implements OnInit {
       resources: this.eventResourceService.getResources(),
       requests: this.eventReservationService.getReservationRequests()
     }).subscribe({
-      next: ({ stages, resources, requests }) => {
+      next: ({ stages, resources, requests }: InitialEventOrganizationData) => {
         this.stages = stages;
         this.resources = resources;
         this.reservationRequests = requests;
@@ -410,7 +416,7 @@ export class EventOrganizationComponent implements OnInit {
       type: stageResource.resourceType,
       quantity: stageResource.quantity,
       stageId: stageResource.stageId,
-      shareable: this.inventoryRows.find(row => row.resource.id === stageResource.resourceId)?.shared ?? false,
+      shareable: resource?.shareable ?? false,
       note: resource?.description ?? ''
     });
   }
@@ -437,11 +443,18 @@ export class EventOrganizationComponent implements OnInit {
     const value = this.resourceForm.getRawValue();
     const stageId = Number(value.stageId);
     const quantity = Number(value.quantity);
+    const resourceName = value.name!;
+    if (this.resourceNameExistsOnStage(resourceName, stageId, this.editingStageResource?.resourceId)) {
+      this.errorMessage = 'A resource with this name already exists on this stage.';
+      return;
+    }
+
     const resourceRequest = {
-      name: value.name!,
+      name: resourceName,
       type: value.type!,
       description: value.note || null,
-      totalQuantity: quantity
+      totalQuantity: quantity,
+      shareable: Boolean(value.shareable)
     };
 
     const operation = this.editingStageResource
@@ -485,6 +498,15 @@ export class EventOrganizationComponent implements OnInit {
       },
       error: err => this.errorMessage = err.error?.message || 'Unable to save resource.'
     });
+  }
+
+  private resourceNameExistsOnStage(resourceName: string, stageId: number, ignoredResourceId?: number): boolean {
+    const normalizedName = resourceName.trim().toLowerCase();
+    return this.allStageResources.some(resource =>
+      resource.stageId === stageId
+      && resource.resourceId !== ignoredResourceId
+      && resource.resourceName.trim().toLowerCase() === normalizedName
+    );
   }
 
   confirmDelete(stageResource: StageResource): void {

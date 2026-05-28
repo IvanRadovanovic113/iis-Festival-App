@@ -337,10 +337,11 @@ public class DataInitializer implements ApplicationRunner {
             .orElseGet(() -> eventResourceRepository.save(EventResource.builder()
                 .name(name)
                 .type(type)
-                .description("Seeded resource for event organization requests")
-                .totalQuantity(totalQuantity)
-                .festival(festival)
-                .build()));
+            .description("Seeded resource for event organization requests")
+            .totalQuantity(totalQuantity)
+            .shareable(false)
+            .festival(festival)
+            .build()));
     }
 
     private EventReservationRequest ensureReservation(

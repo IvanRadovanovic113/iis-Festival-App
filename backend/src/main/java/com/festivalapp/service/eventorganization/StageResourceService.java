@@ -40,6 +40,9 @@ public class StageResourceService {
         if (stageResourceRepository.existsByStage_StageIdAndResource_Id(stageId, request.getResourceId())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This resource is already assigned to the stage");
         }
+        if (stageResourceRepository.existsByStage_StageIdAndResource_NameIgnoreCase(stageId, resource.getName())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A resource with this name already exists on this stage");
+        }
         validateQuantity(request.getQuantity(), resource);
         StageResource stageResource = StageResource.builder()
             .stage(stage)

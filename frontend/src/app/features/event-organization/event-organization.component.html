@@ -335,7 +335,7 @@
 
           <label class="share-row full">
             <input type="checkbox" formControlName="shareable" />
-            <span>Resource is sharable between different stages</span>
+            <span>Resource is shareable between different stages</span>
           </label>
 
           <label class="full">
@@ -393,9 +393,8 @@
           <div class="warning-box">
             <strong>Are you sure you want to delete this resource?</strong>
             <p>"{{ deletingStageResource.resourceName }}" from {{ stageNameById(deletingStageResource.stageId) }} will be permanently removed.</p>
-            <span>! This resource is currently assigned to 2 upcoming bookings.</span>
           </div>
-          <p class="info-box">Deleting will automatically remove it from these requests.</p>
+          <p class="info-box">Deleting this resource will remove it from requests.</p>
         </div>
         <footer>
           <button type="button" class="cancel-button" (click)="closeDeleteModal()">Cancel</button>

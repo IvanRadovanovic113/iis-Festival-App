@@ -36,14 +36,12 @@ public class EventResourceService {
         if (festival == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Admin users must assign resources through an event organizer");
         }
-        if (eventResourceRepository.existsByNameIgnoreCaseAndFestival_FestivalId(request.getName(), festival.getFestivalId())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "A resource with this name already exists");
-        }
         EventResource resource = EventResource.builder()
             .name(request.getName())
             .type(request.getType())
             .description(request.getDescription())
             .totalQuantity(request.getTotalQuantity())
+            .shareable(Boolean.TRUE.equals(request.getShareable()))
             .festival(festival)
             .build();
         return EventResourceResponse.from(eventResourceRepository.save(resource));
@@ -52,14 +50,14 @@ public class EventResourceService {
     public EventResourceResponse updateResource(Long resourceId, EventResourceRequest request, User user) {
         Festival festival = accessService.requireEventOrganizerFestival(user);
         EventResource resource = accessService.requireResource(resourceId, festival);
-        Long festivalId = resource.getFestival().getFestivalId();
-        if (eventResourceRepository.existsByNameIgnoreCaseAndFestival_FestivalIdAndIdNot(request.getName(), festivalId, resourceId)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "A resource with this name already exists");
+        if (stageResourceRepository.existsDuplicateResourceNameOnAssignedStages(resourceId, request.getName())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A resource with this name already exists on this stage");
         }
         resource.setName(request.getName());
         resource.setType(request.getType());
         resource.setDescription(request.getDescription());
         resource.setTotalQuantity(request.getTotalQuantity());
+        resource.setShareable(Boolean.TRUE.equals(request.getShareable()));
         return EventResourceResponse.from(eventResourceRepository.save(resource));
     }
 
