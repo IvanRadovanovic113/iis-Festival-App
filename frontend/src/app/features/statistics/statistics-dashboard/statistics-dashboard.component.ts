@@ -56,6 +56,10 @@ export class StatisticsDashboardComponent implements OnInit {
     return this.audience === 'director' ? '/director/festivals' : '/manager/festivals';
   }
 
+  get notificationsLink(): string {
+    return this.audience === 'director' ? '/director/notifications' : '/manager/notifications';
+  }
+
   get phaseCards(): StatisticsPhaseCount[] {
     return this.statistics?.phaseCounts ?? [];
   }
@@ -95,6 +99,19 @@ export class StatisticsDashboardComponent implements OnInit {
     const max = this.statusChartMax;
     const steps = 4;
     return Array.from({ length: steps + 1 }, (_, index) => Math.round((max / steps) * (steps - index)));
+  }
+
+  get displayName(): string {
+    return this.currentUser?.username || 'User';
+  }
+
+  get avatarLabel(): string {
+    const name = this.displayName.trim();
+    const parts = name.split(/[._-]+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
   }
 
   loadStatistics(): void {

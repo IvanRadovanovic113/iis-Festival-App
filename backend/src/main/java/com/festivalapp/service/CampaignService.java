@@ -26,6 +26,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -77,8 +78,15 @@ public class CampaignService {
         if (!festivalRepository.existsById(festivalId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Festival not found");
         }
-        return assignmentRepository.findAllByFestival_FestivalIdAndRole(festivalId, Role.FESTIVAL_MANAGER).stream()
+        return assignmentRepository.findAllByRole(Role.FESTIVAL_MANAGER).stream()
             .map(UserFestivalAssignment::getUser)
+            .collect(Collectors.toMap(
+                User::getId,
+                Function.identity(),
+                (left, right) -> left,
+                LinkedHashMap::new
+            ))
+            .values().stream()
             .map(CampaignManagerOptionResponse::from)
             .toList();
     }
@@ -99,18 +107,18 @@ public class CampaignService {
         if (managerAssignment.getRole() != Role.FESTIVAL_MANAGER) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selected user is not a festival manager");
         }
-        if (!managerAssignment.getFestival().getFestivalId().equals(festivalId)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Manager must belong to the selected festival");
-        }
         if (!request.getEndDate().isAfter(request.getStartDate())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End date must be after start date");
         }
-        if (request.getStartDate().isBefore(festival.getStartDate()) || request.getEndDate().isAfter(festival.getEndDate())) {
+        if (request.getEndDate().isAfter(festival.getEndDate())) {
             throw new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
-                "Campaign dates must stay within the selected festival dates"
+                "Campaign end date must not be after the selected festival end date"
             );
         }
+
+        managerAssignment.setFestival(festival);
+        assignmentRepository.save(managerAssignment);
 
         Campaign campaign = Campaign.builder()
             .name(request.getName().trim())

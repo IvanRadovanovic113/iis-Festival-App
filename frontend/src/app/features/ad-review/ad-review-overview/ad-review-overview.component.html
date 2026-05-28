@@ -1,6 +1,9 @@
 <div class="page-shell">
   <aside class="sidebar">
-    <div class="avatar">{{ currentUser?.username || 'User' }}</div>
+    <div class="profile-block">
+      <div class="avatar">{{ avatarLabel }}</div>
+      <div class="profile-name">{{ displayName }}</div>
+    </div>
     <div class="nav-card active">Festivals</div>
     <div class="nav-card">Notifications</div>
     <div class="nav-card">Statistics</div>
@@ -14,6 +17,9 @@
 
     @if (errorMessage) {
       <div class="error-banner">{{ errorMessage }}</div>
+    }
+    @if (successMessage) {
+      <div class="success-banner">{{ successMessage }}</div>
     }
 
     @if (review) {
@@ -55,6 +61,12 @@
         <div class="content-preview" [class.text-preview]="review.ad.contentType === 'Text'">
           @if (review.ad.contentType === 'Text') {
             <p>{{ review.ad.contentValue || 'No text content added yet.' }}</p>
+          } @else if (isImageContent(review.ad.contentValue)) {
+            <img class="media-preview image-preview" [src]="review.ad.contentValue" alt="Ad image preview" />
+          } @else if (isAudioContent(review.ad.contentValue)) {
+            <audio class="media-preview" controls [src]="review.ad.contentValue"></audio>
+          } @else if (isVideoContent(review.ad.contentValue)) {
+            <video class="media-preview video-preview" controls [src]="review.ad.contentValue"></video>
           } @else {
             <div>
               <strong>{{ review.ad.contentType }} preview</strong>
@@ -95,6 +107,80 @@
           </table>
         </div>
       </section>
+
+      @if (canManagePromotion) {
+        <section class="history-card promotion-summary-card">
+          <div class="history-header promotion-summary-header">
+            <div>
+              <h2>{{ hasPromotion ? 'Promotion details' : 'Ready to publish' }}</h2>
+              @if (hasPromotion) {
+                <p>
+                  {{ review.ad.promotion?.channel }} ·
+                  {{ review.ad.promotion?.startDate | date:'dd.MM.yyyy' }} -
+                  {{ review.ad.promotion?.endDate | date:'dd.MM.yyyy' }} ·
+                  {{ review.ad.promotion?.pricePerDay }} per day
+                </p>
+              } @else {
+                <p>The ad is published and ready for promotion setup.</p>
+              }
+            </div>
+            @if (!showPromotionForm) {
+              <button type="button" class="publish-btn secondary-publish-btn" (click)="openPromotionForm()">
+                {{ promotionActionLabel }}
+              </button>
+            }
+          </div>
+        </section>
+
+        @if (showPromotionForm) {
+        <section class="history-card promotion-card">
+          <div class="history-header">
+            <h2>{{ promotionHeading }}</h2>
+            <p>Choose where the ad will be promoted, how long the promotion will run, and the daily cost.</p>
+          </div>
+
+          <form class="promotion-form" [formGroup]="promotionForm" (ngSubmit)="savePromotion()">
+            <label class="promotion-field">
+              <span>Promotion channel *</span>
+              <select formControlName="channel">
+                @for (channel of promotionChannels; track channel.value) {
+                  <option [value]="channel.value">{{ channel.label }}</option>
+                }
+              </select>
+            </label>
+
+            <div class="duration-grid">
+              <button type="button" class="duration-card" [class.selected]="selectedDuration === '2w'" (click)="selectDuration('2w')">2 weeks</button>
+              <button type="button" class="duration-card" [class.selected]="selectedDuration === '4w'" (click)="selectDuration('4w')">4 weeks</button>
+              <button type="button" class="duration-card" [class.selected]="selectedDuration === 'custom'" (click)="selectDuration('custom')">Custom period</button>
+            </div>
+
+            <div class="promotion-grid">
+              <label class="promotion-field">
+                <span>Start date *</span>
+                <input type="date" formControlName="startDate" (change)="selectDuration(selectedDuration)" />
+              </label>
+
+              <label class="promotion-field">
+                <span>End date *</span>
+                <input type="date" formControlName="endDate" />
+              </label>
+
+              <label class="promotion-field">
+                <span>Price per day *</span>
+                <input type="number" min="1" formControlName="pricePerDay" />
+              </label>
+            </div>
+
+            <div class="promotion-actions">
+              <button type="submit" class="publish-btn" [disabled]="savingPromotion">
+                {{ savingPromotion ? 'Saving...' : (review.ad.promotion ? 'Prolong' : 'Publish') }}
+              </button>
+            </div>
+          </form>
+        </section>
+        }
+      }
     }
   </main>
 </div>

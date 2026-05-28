@@ -33,6 +33,19 @@ export class AdFormComponent implements OnInit {
     adTypeId: [null as number | null, Validators.required]
   });
 
+  get displayName(): string {
+    return this.currentUser?.username || 'User';
+  }
+
+  get avatarLabel(): string {
+    const name = this.displayName.trim();
+    const parts = name.split(/[._-]+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  }
+
   get isEditMode(): boolean {
     return this.route.snapshot.routeConfig?.path === 'manager/festivals/:festivalId/campaign/ads/:adId/edit';
   }

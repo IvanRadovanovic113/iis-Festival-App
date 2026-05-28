@@ -6,51 +6,92 @@
 .form-page {
   display: grid;
   grid-template-columns: 230px 1fr;
-  background: linear-gradient(180deg, #f8f7f1 0%, #efede5 100%);
+  background:
+    radial-gradient(circle at top right, rgba(245, 175, 25, 0.14), transparent 20%),
+    linear-gradient(180deg, #f8f5ee 0%, #ece7da 100%);
+  color: #1e1c18;
 }
 
 .sidebar {
   margin: 1.5rem;
   padding: 1rem;
   border-radius: 28px;
-  background: rgba(214, 212, 205, 0.95);
+  background: rgba(58, 44, 33, 0.92);
+  color: #f8f4eb;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.profile-block {
+  display: grid;
+  justify-items: center;
+  gap: 0.55rem;
+  text-align: center;
 }
 
 .avatar {
   width: 68px;
   height: 68px;
   border-radius: 50%;
-  background: white;
+  background: #f6b73c;
+  color: #2b2219;
   display: grid;
   place-items: center;
-  padding: 0.4rem;
-  font-size: 0.72rem;
+  font-size: 1rem;
   font-weight: 700;
-  line-height: 1.1;
-  text-align: center;
-  word-break: break-word;
+  letter-spacing: 0.06em;
+}
+
+.profile-name {
+  max-width: 100%;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: rgba(248, 244, 235, 0.92);
+  overflow-wrap: anywhere;
+}
+
+.nav-stack {
+  display: grid;
+  gap: 0.75rem;
 }
 
 .nav-card,
 .logout-btn {
+  display: block;
   padding: 1rem;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
   font-weight: 700;
+  text-decoration: none;
 }
 
-.nav-card.active,
+.nav-card,
 .logout-btn {
-  background: white;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.nav-icon {
+  width: 1.1rem;
+  display: inline-flex;
+  justify-content: center;
+  flex: 0 0 1.1rem;
+}
+
+.nav-card.active {
+  background: #f6b73c;
+  color: #2b2219;
 }
 
 .logout-btn {
   margin-top: auto;
   border: 0;
   cursor: pointer;
+  text-align: left;
 }
 
 .content {
@@ -128,6 +169,11 @@ select {
   border: 1px solid #e1d9cd;
 }
 
+.selected-phase-card.locked {
+  background: #efe7d6;
+  border-color: #d7c49c;
+}
+
 .selected-phase-card p {
   margin: 0.3rem 0 0;
   color: #746c60;
@@ -136,6 +182,23 @@ select {
 .selected-phase-actions {
   display: flex;
   gap: 0.4rem;
+  align-items: center;
+}
+
+.locked-badge,
+.hint-text {
+  color: #746047;
+}
+
+.locked-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 0.8rem;
+  border-radius: 999px;
+  background: #e0d1ac;
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
 .order-btn {
@@ -168,7 +231,7 @@ select {
 }
 
 .phase-chip.selected {
-  background: #1f1b17;
+  background: #2f5d50;
   color: white;
 }
 
@@ -184,6 +247,12 @@ select {
   color: #1f1b17;
   border: 0;
   cursor: pointer;
+}
+
+.hint-text {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
 }
 
 .actions {
@@ -207,7 +276,7 @@ select {
 
 .create-btn {
   border: 0;
-  background: #1f1b17;
+  background: #2f5d50;
   color: white;
   cursor: pointer;
 }

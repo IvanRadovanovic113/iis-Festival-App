@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   Ad,
+  AdPromotionRequest,
   AdPhase,
   AdPhaseRequest,
   AdReview,
@@ -18,7 +19,8 @@ import {
   CreativeAdUpdateRequest,
   FestivalCampaignOverview,
   ManagerAdUpdateRequest,
-  StatisticsResponse
+  StatisticsResponse,
+  WorkflowNotification
 } from '../models/campaign.model';
 
 @Injectable({ providedIn: 'root' })
@@ -40,12 +42,24 @@ export class CampaignService {
     return this.http.get<CampaignWorkspace>(`${this.DIRECTOR_API}/festivals/${festivalId}/campaign/workspace`);
   }
 
+  saveDirectorPromotion(festivalId: number, adId: number, request: AdPromotionRequest) {
+    return this.http.put<Ad>(`${this.DIRECTOR_API}/festivals/${festivalId}/ads/${adId}/promotion`, request);
+  }
+
   createCampaign(festivalId: number, request: CampaignRequest): Observable<Campaign> {
     return this.http.post<Campaign>(`${this.DIRECTOR_API}/festivals/${festivalId}/campaign`, request);
   }
 
   getFestivalManagers(festivalId: number): Observable<CampaignManagerOption[]> {
     return this.http.get<CampaignManagerOption[]>(`${this.DIRECTOR_API}/festivals/${festivalId}/managers`);
+  }
+
+  approveDirectorAd(festivalId: number, adId: number) {
+    return this.http.put<Ad>(`${this.DIRECTOR_API}/festivals/${festivalId}/ads/${adId}/approve`, {});
+  }
+
+  rejectDirectorAd(festivalId: number, adId: number, reason: string) {
+    return this.http.put<Ad>(`${this.DIRECTOR_API}/festivals/${festivalId}/ads/${adId}/reject`, { reason });
   }
 
   getManagerFestivalOverviews(): Observable<FestivalCampaignOverview[]> {
@@ -74,6 +88,18 @@ export class CampaignService {
 
   updateManagerAd(festivalId: number, adId: number, request: ManagerAdUpdateRequest) {
     return this.http.put<Ad>(`${this.MANAGER_API}/festivals/${festivalId}/ads/${adId}`, request);
+  }
+
+  deleteManagerAd(festivalId: number, adId: number) {
+    return this.http.delete<void>(`${this.MANAGER_API}/festivals/${festivalId}/ads/${adId}`);
+  }
+
+  approveManagerAd(festivalId: number, adId: number) {
+    return this.http.put<Ad>(`${this.MANAGER_API}/festivals/${festivalId}/ads/${adId}/approve`, {});
+  }
+
+  rejectManagerAd(festivalId: number, adId: number, reason: string) {
+    return this.http.put<Ad>(`${this.MANAGER_API}/festivals/${festivalId}/ads/${adId}/reject`, { reason });
   }
 
   createAdType(request: AdTypeRequest) {
@@ -121,5 +147,13 @@ export class CampaignService {
     if (params.adTypeId) query.set('adTypeId', String(params.adTypeId));
     const suffix = query.toString() ? `?${query.toString()}` : '';
     return this.http.get<StatisticsResponse>(`/api/statistics${suffix}`);
+  }
+
+  getNotifications() {
+    return this.http.get<WorkflowNotification[]>(`/api/notifications`);
+  }
+
+  markNotificationAsRead(notificationId: number) {
+    return this.http.put<WorkflowNotification>(`/api/notifications/${notificationId}/read`, {});
   }
 }

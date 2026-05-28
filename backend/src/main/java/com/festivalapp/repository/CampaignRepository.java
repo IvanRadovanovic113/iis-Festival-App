@@ -13,4 +13,6 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
     Optional<Campaign> findByFestival_FestivalId(Long festivalId);
 
     List<Campaign> findAllByFestival_FestivalIdOrderByStartDateAsc(Long festivalId);
+
+    List<Campaign> findAllByOrderByStartDateAsc();
 }

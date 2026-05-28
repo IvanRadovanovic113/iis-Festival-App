@@ -19,8 +19,8 @@ export class CreativeAdListComponent implements OnInit {
 
   campaigns: CreativeCampaign[] = [];
   filteredCampaigns: CreativeCampaign[] = [];
-  search = '';
   selectedFestival = '';
+  sortBy: 'startDateAsc' | 'startDateDesc' | 'eligibleAdsDesc' | 'eligibleAdsAsc' = 'startDateAsc';
   errorMessage = '';
   readonly currentUser = this.authService.getCurrentUser();
 
@@ -31,6 +31,19 @@ export class CreativeAdListComponent implements OnInit {
   get roleLabel(): string {
     const role = this.currentUser?.assignment?.festivalRole;
     return role === 'PRODUCT_DESIGNER' ? 'Product designer' : 'Technical support';
+  }
+
+  get displayName(): string {
+    return this.currentUser?.username || 'User';
+  }
+
+  get avatarLabel(): string {
+    const name = this.displayName.trim();
+    const parts = name.split(/[._-]+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
   }
 
   get festivalOptions(): string[] {
@@ -53,19 +66,29 @@ export class CreativeAdListComponent implements OnInit {
   }
 
   applyFilters(): void {
-    const term = this.search.trim().toLowerCase();
-    this.filteredCampaigns = this.campaigns.filter(campaign => {
-      const matchesSearch = !term
-        || campaign.campaignName.toLowerCase().includes(term)
-        || campaign.festivalName.toLowerCase().includes(term);
+    this.filteredCampaigns = this.campaigns
+      .filter(campaign => {
       const matchesFestival = !this.selectedFestival || campaign.festivalName === this.selectedFestival;
-      return matchesSearch && matchesFestival;
-    });
+      return matchesFestival;
+      })
+      .sort((left, right) => {
+        switch (this.sortBy) {
+          case 'startDateDesc':
+            return right.startDate.localeCompare(left.startDate);
+          case 'eligibleAdsDesc':
+            return right.eligibleAds - left.eligibleAds;
+          case 'eligibleAdsAsc':
+            return left.eligibleAds - right.eligibleAds;
+          case 'startDateAsc':
+          default:
+            return left.startDate.localeCompare(right.startDate);
+        }
+      });
   }
 
   resetFilters(): void {
-    this.search = '';
     this.selectedFestival = '';
+    this.sortBy = 'startDateAsc';
     this.applyFilters();
   }
 

@@ -33,7 +33,7 @@ public class AdVersion {
     @Column(nullable = false, length = 2000)
     private String description;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String contentValue;
 
     @Column(nullable = false)

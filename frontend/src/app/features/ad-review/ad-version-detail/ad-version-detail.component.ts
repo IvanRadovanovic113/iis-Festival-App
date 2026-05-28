@@ -43,6 +43,31 @@ export class AdVersionDetailComponent implements OnInit {
       : ['/manager/festivals', festivalId, 'campaign', 'ads', adId];
   }
 
+  isImageContent(contentValue: string | undefined): boolean {
+    return !!contentValue && contentValue.startsWith('data:image/');
+  }
+
+  isAudioContent(contentValue: string | undefined): boolean {
+    return !!contentValue && contentValue.startsWith('data:audio/');
+  }
+
+  isVideoContent(contentValue: string | undefined): boolean {
+    return !!contentValue && contentValue.startsWith('data:video/');
+  }
+
+  get displayName(): string {
+    return this.currentUser?.username || 'User';
+  }
+
+  get avatarLabel(): string {
+    const name = this.displayName.trim();
+    const parts = name.split(/[._-]+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  }
+
   logout(): void {
     this.authService.logout();
   }

@@ -175,6 +175,13 @@ export const routes: Routes = [
     data: { festivalRoles: ['FESTIVAL_DIRECTOR'], audience: 'director' }
   },
   {
+    path: 'director/notifications',
+    loadComponent: () =>
+      import('./features/notifications/notification-list/notification-list.component').then(m => m.NotificationListComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['FESTIVAL_DIRECTOR'], audience: 'director' }
+  },
+  {
     path: 'manager/festivals',
     loadComponent: () =>
       import('./features/festival-manager/manager-festival-list/manager-festival-list.component').then(m => m.ManagerFestivalListComponent),
@@ -213,6 +220,13 @@ export const routes: Routes = [
     path: 'manager/statistics',
     loadComponent: () =>
       import('./features/statistics/statistics-dashboard/statistics-dashboard.component').then(m => m.StatisticsDashboardComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['FESTIVAL_MANAGER'], audience: 'manager' }
+  },
+  {
+    path: 'manager/notifications',
+    loadComponent: () =>
+      import('./features/notifications/notification-list/notification-list.component').then(m => m.NotificationListComponent),
     canActivate: [authGuard],
     data: { festivalRoles: ['FESTIVAL_MANAGER'], audience: 'manager' }
   },
@@ -257,6 +271,13 @@ export const routes: Routes = [
       import('./features/creative-work/creative-ad-editor/creative-ad-editor.component').then(m => m.CreativeAdEditorComponent),
     canActivate: [authGuard],
     data: { festivalRoles: ['PRODUCT_DESIGNER', 'TECHNICAL_SUPPORT'] }
+  },
+  {
+    path: 'creative/notifications',
+    loadComponent: () =>
+      import('./features/notifications/notification-list/notification-list.component').then(m => m.NotificationListComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['PRODUCT_DESIGNER', 'TECHNICAL_SUPPORT'], audience: 'creative' }
   },
   { path: 'creative/ads', redirectTo: 'creative/campaigns', pathMatch: 'full' },
   {

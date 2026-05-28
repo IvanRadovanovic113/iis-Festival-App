@@ -1,12 +1,15 @@
 <div class="page-shell">
   <aside class="sidebar">
-    <div class="avatar">{{ currentUser?.username || 'User' }}</div>
+    <div class="profile-block">
+      <div class="avatar">{{ avatarLabel }}</div>
+      <div class="profile-name">{{ displayName }}</div>
+    </div>
     <nav class="nav-stack">
-      <a class="nav-item active">Festivals</a>
-      <a class="nav-item">Notifications</a>
-      <a class="nav-item" routerLink="/manager/statistics">Statistics</a>
+      <a class="nav-item active"><span class="nav-icon">♪</span><span>Festivals</span></a>
+      <a class="nav-item" routerLink="/manager/notifications"><span class="nav-icon">🔔</span><span>Notifications</span></a>
+      <a class="nav-item" routerLink="/manager/statistics"><span class="nav-icon">▤</span><span>Statistics</span></a>
     </nav>
-    <button class="logout-btn" type="button" (click)="logout()">Log out</button>
+    <button class="logout-btn" type="button" (click)="logout()"><span class="nav-icon">→</span><span>Log out</span></button>
   </aside>
 
   <main class="page-content">
@@ -15,6 +18,10 @@
     }
 
     @if (workspace) {
+      <header class="page-header">
+        <a class="back-link" routerLink="/manager/festivals">← Back to festivals</a>
+      </header>
+
       <section class="hero-panel">
         <div class="festival-meta">
           <h1>{{ workspace.campaign.festivalName }}</h1>
@@ -72,7 +79,6 @@
               <option [value]="status">{{ status }}</option>
             }
           </select>
-          <button class="reset-btn" type="button" (click)="resetFilters()">Restart</button>
           <a class="create-btn" [routerLink]="['/manager/campaigns', workspace.campaign.campaignId, 'ads', 'new']">Create add</a>
         </div>
 
@@ -101,8 +107,16 @@
                     <td><span class="status-dot"></span>{{ ad.status }}</td>
                     <td class="actions">
                       <a class="action-icon" title="Preview" [routerLink]="['/manager/festivals', workspace.campaign.festivalId, 'campaign', 'ads', ad.adId]">👁</a>
-                      <a class="action-icon" title="Edit ad" [routerLink]="['/manager/festivals', workspace.campaign.festivalId, 'campaign', 'ads', ad.adId, 'edit']">✎</a>
-                      <button type="button" class="action-icon disabled" title="Action coming later">⊖</button>
+                      @if (canEditAd(ad)) {
+                        <a class="action-icon" title="Edit ad" [routerLink]="['/manager/festivals', workspace.campaign.festivalId, 'campaign', 'ads', ad.adId, 'edit']">✎</a>
+                      }
+                      @if (canDeleteAd(ad)) {
+                        <button type="button" class="action-icon delete" title="Delete ad" [disabled]="processingAdId === ad.adId" (click)="delete(ad)">🗑</button>
+                      }
+                      @if (canReviewAd(ad)) {
+                        <button type="button" class="action-icon approve" title="Approve ad" [disabled]="processingAdId === ad.adId" (click)="approve(ad)">✓</button>
+                        <button type="button" class="action-icon reject" title="Reject ad" [disabled]="processingAdId === ad.adId" (click)="reject(ad)">⊖</button>
+                      }
                     </td>
                   </tr>
                 }

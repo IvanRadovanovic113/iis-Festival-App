@@ -1,11 +1,14 @@
 <div class="page-shell">
   <aside class="sidebar">
-    <div class="avatar">{{ currentUser?.username || 'User' }}</div>
+    <div class="profile-block">
+      <div class="avatar">{{ avatarLabel }}</div>
+      <div class="profile-name">{{ displayName }}</div>
+    </div>
     <nav class="nav-stack">
-      <a class="nav-item active" routerLink="/creative/campaigns">Campaigns</a>
-      <a class="nav-item">Notifications</a>
+      <a class="nav-item active" routerLink="/creative/campaigns"><span class="nav-icon">♪</span><span>Campaigns</span></a>
+      <a class="nav-item" routerLink="/creative/notifications"><span class="nav-icon">🔔</span><span>Notifications</span></a>
     </nav>
-    <button type="button" class="logout-btn" (click)="logout()">Log out</button>
+    <button type="button" class="logout-btn" (click)="logout()"><span class="nav-icon">→</span><span>Log out</span></button>
   </aside>
 
   <main class="page-content">
@@ -16,7 +19,6 @@
         <h1>{{ campaignName }}</h1>
         <p class="subtitle">{{ subtitle }}</p>
       </div>
-      <div class="header-chip">{{ currentUser?.username }}</div>
     </header>
 
     @if (errorMessage) {
@@ -25,9 +27,7 @@
 
     <section class="hero-card">
       <div>
-        <p class="hero-kicker">Content queue</p>
         <h2>Ads waiting for your content</h2>
-        <p class="hero-copy">You can change only the content field. Name, description and ad type stay locked.</p>
       </div>
       <div class="metrics">
         <div class="metric-box">
@@ -52,7 +52,6 @@
             <option [value]="status">{{ status }}</option>
           }
         </select>
-        <button class="ghost-btn" type="button" (click)="resetFilters()">Reset</button>
       </div>
 
       @if (filteredAds.length === 0) {

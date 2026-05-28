@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
@@ -18,7 +19,12 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class FestivalManagerService {
-    private static final List<Role> PHASE_ASSIGNABLE_ROLES = List.of(Role.PRODUCT_DESIGNER, Role.TECHNICAL_SUPPORT);
+    private static final List<Role> PHASE_ASSIGNABLE_ROLES = List.of(
+        Role.PRODUCT_DESIGNER,
+        Role.TECHNICAL_SUPPORT,
+        Role.FESTIVAL_MANAGER,
+        Role.FESTIVAL_DIRECTOR
+    );
 
     private final FestivalRepository festivalRepository;
     private final CampaignRepository campaignRepository;
@@ -100,6 +106,10 @@ public class FestivalManagerService {
             .contentFileName("")
             .lastChangeDate(LocalDate.now())
             .versionNumber(1)
+            .lastEditedByUser(user)
+            .lastEditedPhase(initialPhase)
+            .lastEditedRole(Role.FESTIVAL_MANAGER)
+            .lastEditedAt(LocalDateTime.now())
             .build();
 
         Ad savedAd = adRepository.save(ad);
@@ -115,6 +125,9 @@ public class FestivalManagerService {
         if (!ad.getCampaign().getFestival().getFestivalId().equals(festivalId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Ad does not belong to your festival");
         }
+        if (isPublished(ad)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Published ads can no longer be edited by the festival manager");
+        }
 
         String nextName = request.getName().trim();
         String nextDescription = request.getDescription().trim();
@@ -127,9 +140,28 @@ public class FestivalManagerService {
         ad.setDescription(nextDescription);
         ad.setLastChangeDate(LocalDate.now());
         ad.setVersionNumber(ad.getVersionNumber() + 1);
+        ad.setLastEditedByUser(user);
+        ad.setLastEditedPhase(ad.getCurrentPhase());
+        ad.setLastEditedRole(Role.FESTIVAL_MANAGER);
+        ad.setLastEditedAt(LocalDateTime.now());
         Ad savedAd = adRepository.save(ad);
         adVersionSnapshotService.captureSnapshot(savedAd);
         return AdResponse.from(savedAd);
+    }
+
+    @Transactional
+    public void deleteAd(Long festivalId, Long adId, User user) {
+        requireFestivalManager(user);
+        Ad ad = adRepository.findById(adId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ad not found"));
+        if (!ad.getCampaign().getFestival().getFestivalId().equals(festivalId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Ad does not belong to your festival");
+        }
+        if (isPublished(ad)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Published ads can no longer be deleted");
+        }
+
+        adRepository.delete(ad);
     }
 
     @Transactional
@@ -144,8 +176,19 @@ public class FestivalManagerService {
         if (phasesById.size() != request.getPhaseIds().size()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "One or more phases were not found");
         }
+        AdPhase directorApprovalPhase = requireNamedPhase("DIRECTOR APPROVAL");
+        AdPhase publishedPhase = requireNamedPhase("PUBLISHED");
+
         List<AdPhase> orderedPhases = request.getPhaseIds().stream()
             .map(phasesById::get)
+            .filter(phase -> !phase.getPhaseId().equals(directorApprovalPhase.getPhaseId()))
+            .filter(phase -> !phase.getPhaseId().equals(publishedPhase.getPhaseId()))
+            .toList();
+
+        orderedPhases = java.util.stream.Stream.concat(
+                orderedPhases.stream(),
+                List.of(directorApprovalPhase, publishedPhase).stream()
+            )
             .toList();
 
         AdType adType = AdType.builder()
@@ -189,6 +232,14 @@ public class FestivalManagerService {
         return AdPhaseResponse.from(savedPhase);
     }
 
+    private AdPhase requireNamedPhase(String phaseName) {
+        return adPhaseRepository.findByNameIgnoreCase(phaseName)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Required workflow phase \"" + phaseName + "\" is missing"
+            ));
+    }
+
     private CampaignStatsResponse buildStats(List<Ad> ads) {
         long draft = countByNormalizedPhaseName(ads, "DRAFT");
         long approvedTechnical = countByNormalizedPhaseName(ads, "APPROVED_TECHNICAL");
@@ -209,5 +260,9 @@ public class FestivalManagerService {
 
     private String normalizePhaseName(String name) {
         return name.trim().toUpperCase(Locale.ROOT).replace(' ', '_');
+    }
+
+    private boolean isPublished(Ad ad) {
+        return normalizePhaseName(ad.getCurrentPhase().getName()).equals("PUBLISHED");
     }
 }

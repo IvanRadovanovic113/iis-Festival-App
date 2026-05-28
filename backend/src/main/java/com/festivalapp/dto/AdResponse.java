@@ -20,10 +20,13 @@ public class AdResponse {
     private Integer versionNumber;
     private String status;
     private Long currentPhaseId;
+    private String currentPhaseAssignedRole;
     private String contentValue;
     private String festivalName;
     private String festivalLocation;
     private String campaignName;
+    private String rejectionReason;
+    private AdPromotionResponse promotion;
 
     public static AdResponse from(Ad ad) {
         AdResponse response = new AdResponse();
@@ -37,10 +40,13 @@ public class AdResponse {
         response.versionNumber = ad.getVersionNumber();
         response.status = ad.getCurrentPhase().getName();
         response.currentPhaseId = ad.getCurrentPhase().getPhaseId();
+        response.currentPhaseAssignedRole = ad.getCurrentPhase().getAssignedRole().name();
         response.contentValue = ad.getContentFileName();
         response.festivalName = ad.getCampaign().getFestival().getName();
         response.festivalLocation = ad.getCampaign().getFestival().getLocation();
         response.campaignName = ad.getCampaign().getName();
+        response.rejectionReason = ad.getRejectionReason();
+        response.promotion = ad.getPromotion() != null ? AdPromotionResponse.from(ad.getPromotion()) : null;
         return response;
     }
 }

@@ -6,16 +6,14 @@ import com.festivalapp.dto.StatisticsPhaseCountResponse;
 import com.festivalapp.dto.StatisticsResponse;
 import com.festivalapp.dto.StatisticsTypeCountResponse;
 import com.festivalapp.model.Ad;
-import com.festivalapp.model.AdPhase;
 import com.festivalapp.model.AdType;
 import com.festivalapp.model.Campaign;
 import com.festivalapp.model.Role;
 import com.festivalapp.model.User;
 import com.festivalapp.model.UserFestivalAssignment;
-import com.festivalapp.repository.AdPhaseRepository;
-import com.festivalapp.repository.AdRepository;
 import com.festivalapp.repository.AdTypeRepository;
 import com.festivalapp.repository.CampaignRepository;
+import com.festivalapp.repository.StatisticsQueryRepository;
 import com.festivalapp.repository.UserFestivalAssignmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,18 +24,15 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class StatisticsService {
 
     private final CampaignRepository campaignRepository;
-    private final AdRepository adRepository;
-    private final AdPhaseRepository adPhaseRepository;
     private final AdTypeRepository adTypeRepository;
     private final UserFestivalAssignmentRepository assignmentRepository;
+    private final StatisticsQueryRepository statisticsQueryRepository;
 
     private void requireStatisticsAccess(User user) {
         UserFestivalAssignment assignment = assignmentRepository.findByUser_Id(user.getId())
@@ -55,39 +50,14 @@ public class StatisticsService {
             .sorted(Comparator.comparing(Campaign::getName, String.CASE_INSENSITIVE_ORDER))
             .toList();
         List<AdType> adTypes = adTypeRepository.findAllByOrderByNameAsc();
-
-        List<Ad> filteredAds = adRepository.findAll().stream()
-            .filter(ad -> campaignId == null || ad.getCampaign().getCampaignId().equals(campaignId))
-            .filter(ad -> adTypeId == null || ad.getAdType().getAdTypeId().equals(adTypeId))
-            .filter(ad -> dateFrom == null || !ad.getLastChangeDate().isBefore(dateFrom))
-            .filter(ad -> dateTo == null || !ad.getLastChangeDate().isAfter(dateTo))
-            .toList();
-
-        Map<Long, Long> phaseCountsById = filteredAds.stream()
-            .collect(Collectors.groupingBy(ad -> ad.getCurrentPhase().getPhaseId(), Collectors.counting()));
-        List<StatisticsPhaseCountResponse> phaseCounts = adPhaseRepository.findAllByOrderByOrderIndexAscNameAsc().stream()
-            .map(phase -> new StatisticsPhaseCountResponse(
-                phase.getPhaseId(),
-                phase.getName(),
-                phase.getOrderIndex(),
-                phaseCountsById.getOrDefault(phase.getPhaseId(), 0L)
-            ))
-            .toList();
-
-        Map<Long, Long> typeCountsById = filteredAds.stream()
-            .collect(Collectors.groupingBy(ad -> ad.getAdType().getAdTypeId(), Collectors.counting()));
-        List<StatisticsTypeCountResponse> typeCounts = adTypes.stream()
-            .map(type -> new StatisticsTypeCountResponse(
-                type.getAdTypeId(),
-                type.getName(),
-                typeCountsById.getOrDefault(type.getAdTypeId(), 0L)
-            ))
-            .toList();
+        long totalAds = statisticsQueryRepository.getTotalAds(campaignId, dateFrom, dateTo, adTypeId);
+        List<StatisticsPhaseCountResponse> phaseCounts = statisticsQueryRepository.getPhaseCounts(campaignId, dateFrom, dateTo, adTypeId);
+        List<StatisticsTypeCountResponse> typeCounts = statisticsQueryRepository.getTypeCounts(campaignId, dateFrom, dateTo, adTypeId);
 
         return new StatisticsResponse(
             campaigns.stream().map(StatisticsCampaignOptionResponse::from).toList(),
             adTypes.stream().map(StatisticsAdTypeOptionResponse::from).toList(),
-            filteredAds.size(),
+            totalAds,
             phaseCounts,
             typeCounts
         );
