@@ -1,0 +1,118 @@
+<div class="dashboard-wrapper">
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="card-title">ACTIVE NEGOTIATIONS</span>
+      <div class="card-value">{{ activeNegotiationsCount }}</div>
+      <span class="card-trend trend-up">↑ 2 this week</span>
+    </div>
+
+    <div class="stat-card">
+      <span class="card-title">PUBLISHED OFFERS</span>
+      <div class="card-value">{{ publishedOffersCount }}</div>
+      <span class="card-trend text-muted">0 frozen, {{ publishedOffersCount }} open</span>
+    </div>
+
+    <div class="stat-card">
+      <span class="card-title">CONTRACTS SIGNED</span>
+      <div class="card-value">{{ contractsSignedCount }}</div>
+      <span class="card-trend trend-up">↑ 4 this month</span>
+    </div>
+
+    <div class="stat-card">
+      <span class="card-title">SUCCESS RATE</span>
+      <div class="card-value">{{ successRate }}</div>
+      <span class="card-trend text-muted">last 30 days</span>
+    </div>
+  </div>
+
+  <div class="alert-banner">
+    <span class="alert-icon">⚠️</span>
+    <p><strong>3 negotiations</strong> have exceeded their state deadline. <a href="#" class="alert-link">Review now →</a></p>
+  </div>
+
+  <div class="dashboard-main-grid">
+    
+    <div class="grid-col-left">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <h3>Active Negotiations</h3>
+            <span class="panel-subtitle">Requires your attention</span>
+          </div>
+          <button class="btn-secondary-sm">View all →</button>
+        </div>
+
+        <table class="dashboard-table">
+          <thead>
+            <tr>
+              <th>PERFORMER</th>
+              <th>OFFER</th>
+              <th>CURRENT STATE</th>
+              <th>DEADLINE</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (neg of activeNegotiations; track neg.performer) {
+              <tr>
+                <td><a href="#" class="link-performer">{{ neg.performer }}</a></td>
+                <td class="text-muted">{{ neg.offer }}</td>
+                <td><span class="state-badge">{{ neg.state }}</span></td>
+                <td>
+                  <span [class.text-danger]="neg.isOverdue" [class.text-muted]="!neg.isOverdue">
+                    {{ neg.isOverdue ? '⚠️ ' : '' }}{{ neg.deadline }}
+                  </span>
+                </td>
+                <td class="text-right">
+                  <button class="btn-action-outline">Open</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="grid-col-right">
+      
+      <div class="panel-card spacing-bottom">
+        <div class="panel-header">
+          <h3>Recent Activity</h3>
+        </div>
+        <div class="activity-list">
+          @for (act of recentActivities; track act.text) {
+            <div class="activity-item">
+              <span class="activity-dot" [ngClass]="act.dotClass"></span>
+              <div class="activity-body">
+                <p [innerHTML]="act.text"></p>
+                <span class="activity-time">{{ act.time }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-header">
+          <h3>Offers Overview</h3>
+        </div>
+        <div class="overview-list">
+          <div class="overview-row">
+            <span class="badge-status status-draft">● Draft</span>
+            <span class="overview-value">{{ draftOffersCount }} offers</span>
+          </div>
+          <div class="overview-row">
+            <span class="badge-status status-published">● Published</span>
+            <span class="overview-value">{{ publishedOffersCount }} offers</span>
+          </div>
+          <div class="overview-row">
+            <span class="badge-status status-archived">● Archived</span>
+            <span class="overview-value">{{ archivedOffersCount }} offers</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
