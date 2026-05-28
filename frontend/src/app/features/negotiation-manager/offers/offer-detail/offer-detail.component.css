@@ -1,0 +1,496 @@
+.detail-container {
+  padding: 8px 0;
+}
+
+/* Header */
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.sub-title {
+  font-size: 12px;
+  color: #777;
+}
+
+.header-row h2 {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 4px 0 0 0;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* State Tracker komponenta (Gornja traka sa Slike 3) */
+.state-tracker-card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.tracker-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tracker-item.blur {
+  opacity: 0.4; /* Izbledela stanja koja čekaju sledeće korake */
+}
+
+.tracker-item .label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #777;
+  letter-spacing: 0.5px;
+}
+
+.arrow {
+  color: #ccc;
+  font-size: 18px;
+}
+
+.template-info {
+  margin-left: auto; /* Gura informaciju o šablonu u desni ugao trake */
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: right;
+  font-size: 13px;
+}
+
+.template-info .label {
+  font-size: 10px;
+  color: #777;
+}
+
+/* Grid Raspored */
+.main-grid {
+  display: grid;
+  grid-template-columns: 2.2fr 1fr; /* Leva kolona je šira, desna uža za istoriju */
+  gap: 24px;
+}
+
+.left-column, .right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Elementi kartica i informacija */
+.card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.card h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: #111;
+}
+
+.card-header-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr; /* Trikolonski raspored metapodataka */
+  gap: 20px;
+}
+
+.info-grid label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.info-grid p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
+}
+
+.additional-box {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.additional-box label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #888;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.additional-box p {
+  margin: 0;
+  font-size: 14px;
+  color: #444;
+  line-height: 1.5;
+}
+
+/* Redovi sa izvođačima (Srednja sekcija na slici 3) */
+.performer-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.performer-row:last-of-type {
+  border-bottom: none;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  background-color: #e0e0e0;
+  color: #666;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 12px;
+}
+
+.perf-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.perf-info strong {
+  font-size: 14px;
+  color: #111;
+}
+
+.perf-info span {
+  font-size: 12px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge {
+  background: #eaeaea;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  color: #444;
+}
+
+.row-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+/* Manja dugmad za redove */
+.btn-small {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: #1a1a1a;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-secondary-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-dark-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #1a1a1a;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Info footer na dnu kartice */
+.info-footer {
+  margin-top: 12px;
+  background-color: #f7f7f7;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #555;
+  border: 1px solid #eee;
+}
+
+/* Istorija desno (Prazno stanje sa Slike 3) */
+.empty-history {
+  text-align: center;
+  padding: 40px 10px;
+  color: #888;
+  font-size: 13px;
+  font-style: italic;
+}
+
+.btn-primary {
+  background-color: #1a1a1a;
+  color: #ffffff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: #333333;
+}
+
+.btn-secondary {
+  background-color: #ffffff;
+  color: #1a1a1a;
+  border: 1px solid #dcdcdc;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  text-decoration: none; /* Skida underline ako Angular interpretira kao a tag */
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #f5f5f5;
+  border-color: #cccccc;
+}
+
+.btn-cancel {
+  background-color: #ffffff;
+  color: #d32f2f;
+  border: 1px solid #ffcdd2;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel:hover {
+  background-color: #ffeef0;
+  border-color: #ef9a9a;
+}
+
+.state-lock-message {
+  background-color: #f9f9f9;
+  border: 1px dashed #cccccc;
+  padding: 20px;
+  text-align: center;
+  color: #666666;
+  font-size: 14px;
+  border-radius: 6px;
+  margin-top: 12px;
+}
+
+.empty-performers {
+  padding: 30px;
+  text-align: center;
+  color: #888888;
+  font-style: italic;
+  font-size: 13.5px;
+}
+
+/* Modalni Prozor */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-window {
+  background-color: #ffffff;
+  border-radius: 8px;
+  width: 550px;
+  max-width: 90%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #eeeeee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #888;
+}
+
+.modal-search {
+  padding: 12px 20px;
+  background-color: #fcfcfc;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  font-size: 13.5px;
+  box-sizing: border-box;
+}
+
+.modal-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.modal-row:last-child {
+  border-bottom: none;
+}
+
+.perf-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.perf-meta strong {
+  font-size: 14px;
+  color: #111111;
+}
+
+.perf-meta .subtext {
+  font-size: 12px;
+  color: #666666;
+}
+
+.btn-select {
+  background-color: #1a1a1a;
+  color: #ffffff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-select:hover {
+  background-color: #333333;
+}
+
+.no-results {
+  text-align: center;
+  color: #888888;
+  font-size: 13.5px;
+  padding: 20px 0;
+}
+
+.modal-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  font-size: 12px;
+  color: #666666;
+  padding-top: 12px;
+  border-top: 1px solid #eeeeee;
+}
+
+.btn-page {
+  background: white;
+  border: 1px solid #cccccc;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-page:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-remove-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #ffffff;
+  color: #c62828;
+  border: 1px solid #ffcdd2;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-remove-sm:hover {
+  background: #ffebee;
+  border-color: #ef9a9a;
+}

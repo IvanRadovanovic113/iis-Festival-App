@@ -8,32 +8,29 @@
     <nav class="nav-menu">
       <span class="menu-section-title">MAIN</span>
       <a routerLink="dashboard" routerLinkActive="active" class="nav-item">
-        <i class="icon-dashboard"></i> Dashboard
-      </a>
+  <i class="icon-dashboard"></i> Dashboard
+</a>
       <a routerLink="offers" routerLinkActive="active" class="nav-item">
-        <i class="icon-offers"></i> Offers <span class="badge">12</span>
+        <i class="icon-offers"></i> Offers
       </a>
-      <a routerLink="negotiations" routerLinkActive="active" class="nav-item">
-        <i class="icon-negotiations"></i> Negotiations <span class="badge">7</span>
+      <a routerLink="./" class="nav-item disabled-link">
+        <i class="icon-negotiations"></i> Negotiations
       </a>
       <a routerLink="performers" routerLinkActive="active" class="nav-item">
         <i class="icon-performers"></i> Performers
       </a>
 
       <span class="menu-section-title" style="margin-top: 24px;">SYSTEM</span>
-      <a routerLink="templates" routerLinkActive="active" class="nav-item">
+      <a routerLink="workflow-templates" routerLinkActive="active" class="nav-item">
         <i class="icon-templates"></i> Workflow Templates
       </a>
-      <a routerLink="contracts" routerLinkActive="active" class="nav-item">
+      <a routerLink="./" class="nav-item disabled-link">
         <i class="icon-contracts"></i> Contracts
       </a>
-      <a routerLink="activity-log" routerLinkActive="active" class="nav-item">
-        <i class="icon-log"></i> Activity Log
-      </a>
-    </nav>
+      </nav>
 
     <div class="sidebar-footer">
-      <div class="user-avatar">DT</div>
+      <div class="user-avatar">{{ userInitials }}</div>
       <div class="user-info">
         <span class="user-name">{{ currentManagerName }}</span>
         <span class="user-role">Negotiation Manager</span>
@@ -46,7 +43,9 @@
       <span class="app-brand-mini">APP NAME</span>
       <div class="header-actions">
         <button class="btn-notifications">Notifications <span class="notif-count">3</span></button>
-        <button class="btn-primary-action">+ New Offer</button>
+        <button (click)="onLogout()" class="btn-logout-header">
+          Logout
+        </button>
       </div>
     </header>
 

@@ -1,0 +1,158 @@
+@if (!isLoading) {
+  <div class="detail-container">
+    <div class="header-row">
+      <div>
+        <span class="sub-title">Offers › {{ offer.location }}</span>
+        <h2>{{ offer.location }}</h2>
+      </div>
+      <div class="actions">
+        @if (isDraft()) {
+          <button class="btn-secondary" [routerLink]="['../', offer.offerId, 'edit']">Edit</button>
+          <button class="btn-primary" (click)="publish()">Publish Now</button>
+        }
+        @if (!isArchived()) {
+          <button class="btn-cancel" (click)="archive()">Archive</button>
+        }
+      </div>
+    </div>
+
+    <div class="state-tracker-card">
+      <div class="tracker-item">
+        <span class="label">OFFER STATUS</span>
+        <span class="status-badge" [ngClass]="offer.status.toLowerCase()">{{ offer.status }}</span>
+      </div>
+      <div class="arrow">→</div>
+      <div class="tracker-item blur">
+        <span class="label">ON PERFORMER INTEREST</span>
+        <span class="status-badge frozen">Frozen</span>
+      </div>
+      <div class="arrow">→</div>
+      <div class="tracker-item blur">
+        <span class="label">ON SUCCESS</span>
+        <span class="status-badge concluded">Accepted</span>
+      </div>
+      <div class="template-info">
+        <span class="label">TEMPLATE</span>
+        <strong>{{ templateName }}</strong>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <div class="left-column">
+        <div class="card">
+          <h3>Offer Details</h3>
+          <hr>
+          <div class="info-grid">
+            <div><label>DATE</label><p>{{ offer.performanceDate | date:'MMMM d, y' }}</p></div>
+            <div><label>PRICE</label><p>{{ offer.price | currency:'EUR':'symbol':'1.0-0' }}</p></div>
+            <div><label>DURATION</label><p>{{ offer.durationMinutes }} minutes</p></div>
+            <div><label>LOCATION</label><p>{{ offer.location }}</p></div>
+            <div><label>PUBLISHED</label><p>{{ offer.publishedAt ? (offer.publishedAt | date:'MMM d, y') : '—' }}</p></div>
+            <div><label>CREATED BY</label><p>{{ offer.createdByFullName }}</p></div>
+          </div>
+          <div class="additional-box">
+            <label>Additional Conditions</label>
+            <p>{{ offer.additionalRequirements || 'No specific requirements.' }}</p>
+          </div>
+        </div>
+
+        <div class="card input-card">
+          <div class="card-header-btn">
+            <h3>Interested Performers</h3>
+            @if (isPublished()) {
+              <button class="btn-small" (click)="openAddPerformerModal()">+ Add Performer</button>
+            }
+          </div>
+          
+          @if (isDraft()) {
+            <div class="state-lock-message">
+              ⚠️ You must <strong>Publish</strong> this offer first before you can register interested performers.
+            </div>
+          } @else {
+            <p class="subtitle">Select a performer to start a negotiation</p>
+            <hr>
+            
+            @if (offer.interestedPerformers.length === 0) {
+              <div class="empty-performers">
+                No interested performers registered yet. Click "+ Add Performer" to add one.
+              </div>
+            } @else {
+              @for (perf of offer.interestedPerformers; track perf.performerId) {
+                <div class="performer-row">
+                  <div class="avatar">{{ getInitials(perf.stageName) }}</div>
+                  <div class="perf-info">
+                    <strong>{{ perf.stageName }}</strong>
+                    <span>{{ perf.genre }} · {{ perf.countryOfOrigin }} <small class="badge">{{ perf.performerType }}</small></span>
+                  </div>
+                  <div class="row-actions">
+                    <button class="btn-secondary-sm" [routerLink]="['/negotiation-manager/performers', perf.performerId]">View Profile</button>
+                    <button class="btn-remove-sm" (click)="removePerformer(perf.performerId)">Remove</button>
+                    <button class="btn-dark-sm">Start Negotiation →</button>
+                  </div>
+                </div>
+              }
+              <div class="info-footer">
+                ℹ Starting a negotiation will freeze this offer until the negotiation concludes or fails.
+              </div>
+            }
+          }
+        </div>
+      </div>
+
+      <div class="right-column">
+        <div class="card">
+          <h3>Negotiation History</h3>
+          <hr>
+          <div class="empty-history">
+            No past negotiations for this offer.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showModal) {
+  <div class="modal-backdrop" (click)="closeModal()">
+    <div class="modal-window" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Add Interested Performer</h3>
+        <button class="btn-close" (click)="closeModal()">×</button>
+      </div>
+      
+      <div class="modal-search">
+        <input 
+          type="text" 
+          [(ngModel)]="searchTerm" 
+          (ngModelChange)="onSearchChange()" 
+          placeholder="Search performers by stage name..."
+          class="search-input"
+        />
+      </div>
+
+      <div class="modal-body">
+        @if (modalPerformers.length === 0) {
+          <p class="no-results">No performers found matching that name.</p>
+        } @else {
+          <div class="modal-list">
+            @for (p of modalPerformers; track p.performerId) {
+              <div class="modal-row">
+                <div class="perf-meta">
+                  <strong>{{ p.stageName }}</strong>
+                  <span class="subtext">{{ p.genre }} · {{ p.countryOfOrigin }}</span>
+                </div>
+                <button class="btn-select" (click)="selectPerformer(p.performerId)">Select</button>
+              </div>
+            }
+          </div>
+
+          <div class="modal-pagination">
+            <button [disabled]="modalPage === 0" (click)="prevModalPage()" class="btn-page">◀ Prev</button>
+            <span>Page {{ modalPage + 1 }} of {{ modalTotalPages }}</span>
+            <button [disabled]="modalPage >= modalTotalPages - 1" (click)="nextModalPage()" class="btn-page">Next ▶</button>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}

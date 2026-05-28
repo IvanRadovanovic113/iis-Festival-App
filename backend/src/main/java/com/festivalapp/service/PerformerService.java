@@ -26,12 +26,12 @@ public class PerformerService {
     private final UserFestivalAssignmentRepository assignmentRepository;
 
     private void requireNegotiationManager(Long userId) {
-       /* UserFestivalAssignment assignment = assignmentRepository.findByUser_Id(userId)
+        UserFestivalAssignment assignment = assignmentRepository.findByUser_Id(userId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Festival assignment is required"));
         
         if (assignment.getRole() != Role.NEGOTIATION_MANAGER) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only negotiation managers can manage performers");
-        }*/
+        }
     }
 
     private void validatePerformerTypeAndMembers(PerformerType type, Integer numberOfMembers) {

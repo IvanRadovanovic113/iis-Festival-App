@@ -1,0 +1,395 @@
+/* Kontejner stranice */
+.form-container {
+  padding: 8px 0;
+}
+
+/* Ponovljiv link za povratak nazad */
+.back-link {
+  display: inline-block;
+  font-size: 13px;
+  color: #666;
+  text-decoration: none;
+  margin-bottom: 8px;
+}
+
+.back-link:hover {
+  color: #1a1a1a;
+}
+
+/* Naslov sekcije */
+.page-header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0;
+  color: #111;
+}
+
+/* Blokovi / Kartice za forme */
+.form-card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 24px;
+  margin-top: 24px;
+}
+
+.form-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.form-card h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Polja za unos */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+}
+
+.input-field {
+  width: 100%;
+  max-width: 480px;
+  padding: 8px 12px;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #fff;
+  box-sizing: border-box;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #1a1a1a;
+}
+
+.input-field.error {
+  border-color: #9b1c1c;
+}
+
+/* Grid za Stanja (Nodes) */
+.states-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.state-node-card {
+  background: #f9f9f9;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  padding: 16px;
+  position: relative;
+}
+
+.btn-remove-node {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-remove-node:hover {
+  color: #c62828;
+}
+
+/* Checkbox sekcije unutar kartica stanja */
+.checkbox-row {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #444;
+  cursor: pointer;
+}
+
+/* Grane tranzicija */
+.transitions-list {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.transition-branch-card {
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  padding: 20px;
+}
+
+.branch-header {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+}
+
+.branch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+/* Selektovani uslovi iz kataloga */
+.conditions-catalog-section {
+  margin-top: 16px;
+}
+
+.conditions-catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.condition-checkbox-box {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  padding: 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.condition-checkbox-box label {
+  font-size: 12px;
+  color: #333;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.required-star {
+  color: #f57f17;
+  font-weight: bold;
+}
+
+/* Dugmad */
+.btn-primary {
+  background-color: #1a1a1a;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: #333;
+}
+
+.btn-secondary {
+  background-color: #fff;
+  color: #333;
+  border: 1px solid #ccc;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: #f5f5f5;
+}
+
+.btn-text-danger {
+  background: transparent;
+  border: none;
+  color: #c62828;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-text-danger:hover {
+  text-decoration: underline;
+}
+
+/* Footer Akcije */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+/* Greške i Prazna stanja */
+.error-banner {
+  background-color: #fde8e8;
+  color: #9b1c1c;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-top: 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.field-error-text {
+  color: #9b1c1c;
+  font-size: 11px;
+  margin-top: 4px;
+  display: block;
+}
+
+.empty-state-text {
+  text-align: center;
+  padding: 24px;
+  color: #777;
+  font-style: italic;
+  font-size: 13px;
+  background: #fdfdfd;
+  border: 1px dashed #ccc;
+  border-radius: 6px;
+}
+
+/* Stilovi za bedževe na vrhu kartica */
+.state-card-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  letter-spacing: 0.5px;
+}
+
+.badge-initial {
+  background-color: #e8f0fe;
+  color: #1a73e8;
+}
+
+.badge-final {
+  background-color: #eceff1;
+  color: #37474f;
+}
+
+.badge-intermediate {
+  background-color: #f1f3f4;
+  color: #5f6368;
+}
+
+/* Stilovi za Drag & Drop ponašanje */
+.draggable-card {
+  cursor: grab;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.draggable-card:active {
+  cursor: grabbing;
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.fixed-card {
+  background-color: #f5f5f5;
+  border-color: #e0e0e0;
+}
+
+/* Zaključana sekcija za checkbox-ove */
+.disabled-checkbox-row {
+  opacity: 0.7;
+  pointer-events: none; /* Sprečava bilo kakvu interakciju miša */
+}
+
+/* Usklađeno dugme za brisanje grane */
+.btn-remove-branch {
+  background: transparent;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+  transition: color 0.2s;
+}
+
+.btn-remove-branch:hover {
+  color: #c62828;
+}
+
+/* Raspored grana tranzicija */
+.transitions-list {
+  display: flex;
+  flex-direction: column; /* Promenjeno u kolonu radi lakše čitljivosti uslova */
+  gap: 16px;
+  margin-top: 12px;
+}
+
+/* Modal Stilovi */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-card {
+  background: #ffffff;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 440px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-card h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

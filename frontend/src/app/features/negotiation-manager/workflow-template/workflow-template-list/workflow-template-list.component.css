@@ -1,0 +1,332 @@
+/* Kontejner stranice */
+.templates-container {
+  padding: 8px 0;
+}
+
+/* Zaglavlje rute */
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.sub-title {
+  font-size: 11px;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.header-row h2 {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0;
+  color: #111;
+}
+
+/* Primarno tamno dugme (+ New Template) */
+.btn-primary {
+  background-color: #1a1a1a;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: #333;
+}
+
+/* Sekundarno/Obično dugme (za akcije unutar kartice) */
+.btn-view {
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background: #fff;
+  color: #333;
+  transition: all 0.2s;
+}
+
+.btn-view:hover {
+  background-color: #f5f5f5;
+  border-color: #adadad;
+}
+
+.btn-view.danger:hover {
+  background-color: #fff5f5;
+  color: #c53030;
+  border-color: #feb2b2;
+}
+
+/* Traka sa filterima */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e5e5e5;
+  padding-bottom: 16px;
+}
+
+.search-wrapper input {
+  width: 280px;
+  padding: 8px 12px;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #fff;
+}
+
+/* Filter Tabovi (Active / Archived) */
+.toggle-tabs {
+  display: flex;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.tab-btn {
+  padding: 8px 16px;
+  font-size: 13px;
+  background: #fff;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  background: #f9f9f9;
+}
+
+.tab-btn.active {
+  background: #f5f5f5;
+  color: #111;
+  font-weight: 600;
+}
+
+/* Glavna lista i kartice */
+.templates-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.template-card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.title-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.title-with-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.title-with-badge h3 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  color: #111;
+  cursor: pointer;
+}
+
+.title-with-badge h3:hover {
+  color: #555;
+}
+
+.version-badge {
+  font-size: 11px;
+  background: #f5f5f5;
+  color: #666;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Statusni bedževi iz tvog stila */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.status-badge.active { background-color: #e8f5e9; color: #1b5e20; }
+.status-badge.archived { background-color: #ffebee; color: #c62828; }
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Horizontalni grafički tok faza */
+.graph-flow-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  overflow-x: auto;
+  padding: 16px 0;
+}
+
+.state-node {
+  min-width: 210px;
+  background: #fbfbfb;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.node-tag {
+  padding: 4px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #e5e5e5;
+}
+.node-tag.initial { background-color: #e3f2fd; color: #0d47a1; }
+.node-tag.intermediate { background-color: #f5f5f5; color: #555; }
+.node-tag.final { background-color: #1a1a1a; color: #fff; }
+
+.node-body {
+  padding: 12px;
+}
+
+.node-body h4 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+}
+
+.node-deadline {
+  font-size: 11px;
+  color: #777;
+  margin: 0;
+}
+
+/* Uslovi unutar čvora */
+.node-conditions-list {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.condition-item {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.condition-item.required { background: #fff; border: 1px solid #e5e5e5; color: #222; font-weight: 500; }
+.condition-item.optional { background: transparent; color: #777; }
+
+.star-icon { color: #f57f17; font-weight: bold; }
+.circle-icon { color: #ccc; }
+
+.arrow-divider {
+  display: flex;
+  align-items: center;
+  color: #ccc;
+  flex-shrink: 0;
+}
+
+/* Legend & Footer */
+.card-footer-info {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f5f5f5;
+  font-size: 12px;
+  color: #777;
+  display: flex;
+  gap: 16px;
+}
+
+/* Paginacija */
+.pagination-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-top: 24px;
+  font-size: 13px;
+  color: #555;
+}
+
+.pagination-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Stanja učitavanja i prazne tabele */
+.loading-wrapper {
+  text-align: center;
+  padding: 40px;
+}
+
+.spinner {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 2px solid #ccc;
+  border-bottom-color: #1a1a1a;
+  border-radius: 50%;
+  animation: rotation 1s linear infinite;
+}
+
+@keyframes rotation {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.no-data-card {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+}
+
+/* Scrollbar za grafove */
+.graph-flow-container {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f8fafc;
+}
+.graph-flow-container::-webkit-scrollbar { height: 6px; }
+.graph-flow-container::-webkit-scrollbar-track { background: #f8fafc; }
+.graph-flow-container::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }

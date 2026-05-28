@@ -1,0 +1,197 @@
+<div class="form-container">
+  <a routerLink="/negotiation-manager/workflow-templates" class="back-link">← Back to Templates</a>
+  
+  <div class="page-header">
+    <h1>Create Workflow Template</h1>
+  </div>
+
+  <div *ngIf="errorMessage" class="error-banner">
+    {{ errorMessage }}
+  </div>
+
+  <form [formGroup]="workflowForm">
+    
+    <div class="form-card">
+      <h3>1. Template Information</h3>
+      <div class="divider" style="margin-top: 8px;"></div>
+      
+      <div class="form-group">
+        <label>Template Name *</label>
+        <input type="text" 
+               formControlName="name"
+               placeholder="e.g., Standard Band Negotiation, Solo Artist Flow..." 
+               class="input-field"
+               [ngClass]="{'error': workflowForm.get('name')?.touched && workflowForm.get('name')?.invalid}" />
+        <span *ngIf="workflowForm.get('name')?.touched && workflowForm.get('name')?.invalid" class="field-error-text">
+          Template name is required (minimum 3 characters).
+        </span>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-card-header">
+        <h3>2. Define Workflow States (Nodes)</h3>
+        <button type="button" (click)="addState()" class="btn-primary" style="padding: 6px 12px; font-size: 12px;">
+          + Add Custom State
+        </button>
+      </div>
+      <div class="divider"></div>
+
+      <div formArrayName="states" class="states-grid">
+        <div *ngFor="let stateCtrl of states.controls; let i = index; let isFirst = first; let isLast = last" 
+             [formGroupName]="i" 
+             class="state-node-card"
+             [draggable]="!isFirst && !isLast"
+             (dragstart)="onDragStart(i)"
+             (dragover)="onDragOver($event, i)"
+             (drop)="onDrop(i)"
+             [ngClass]="{'draggable-card': !isFirst && !isLast, 'fixed-card': isFirst || isLast}">
+          
+          <button *ngIf="!isFirst && !isLast" type="button" (click)="removeState(i)" class="btn-remove-node" title="Remove state">✕</button>
+
+          <div class="state-card-badge" [ngClass]="{'badge-initial': isFirst, 'badge-final': isLast, 'badge-intermediate': !isFirst && !isLast}">
+            {{ isFirst ? '✦ INITIAL STATE' : isLast ? '🏁 FINAL STATE' : 'INTERMEDIATE STATE' }}
+          </div>
+
+          <div class="form-group" style="margin-top: 12px;">
+            <label>State Name *</label>
+            <input type="text" formControlName="name" class="input-field" placeholder="e.g., Finalizing Offer" />
+          </div>
+
+          <div class="form-group" style="margin-bottom: 4px;">
+            <label>Default Deadline (Days) *</label>
+            <input type="number" formControlName="defaultDeadlineDays" class="input-field" style="width: 100px;" />
+          </div>
+
+          </div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-card-header">
+        <h3>3. Connect Transitions & Rules (Edges)</h3>
+        <button type="button" (click)="addTransition()" class="btn-primary" style="padding: 6px 12px; font-size: 12px;">
+          + Add Connection Branch
+        </button>
+      </div>
+      <div class="divider"></div>
+
+      <div *ngIf="transitions.length === 0" class="empty-state-text">
+        No transition branches defined yet. Click the button above to map your graph flows.
+      </div>
+
+      <div formArrayName="transitions" class="transitions-list">
+        <div *ngFor="let transCtrl of transitions.controls; let i = index" [formGroupName]="i" class="transition-branch-card">
+          
+          <div class="branch-header">
+            <span>Branch Connection #{{ i + 1 }}</span>
+            <button type="button" (click)="removeTransition(i)" class="btn-remove-branch" title="Remove branch">✕</button>
+          </div>
+
+          <div class="branch-grid">
+            <div class="form-group">
+              <label>Transition Label (Button Text) *</label>
+              <input type="text" formControlName="label" placeholder="e.g., Approve terms" class="input-field" />
+            </div>
+
+            <div class="form-group">
+              <label>From State (Source) *</label>
+              <select formControlName="sourceStateName" class="input-field" style="height: 35px; cursor: pointer;">
+                <option value="">-- Choose State --</option>
+                <option *ngFor="let s of states.value" [value]="s.name">{{ s.name }}</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>To State (Target) *</label>
+              <select formControlName="targetStateName" class="input-field" style="height: 35px; cursor: pointer;">
+                <option value="">-- Choose State --</option>
+                <option *ngFor="let s of states.value" [value]="s.name">{{ s.name }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="conditions-catalog-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <label style="font-size: 12px; font-weight: 600; color: #555;">Required Catalog Conditions to pass this state:</label>
+              <button type="button" (click)="openNewConditionModal(i)" class="btn-secondary" style="padding: 4px 8px; font-size: 11px;">
+                + New Condition
+              </button>
+            </div>
+            
+            <div class="conditions-catalog-grid">
+              <div *ngFor="let cond of catalogConditions" class="condition-checkbox-box">
+                <input type="checkbox" 
+                       [id]="'trans-' + i + '-cond-' + cond.id"
+                       [checked]="isConditionChecked(i, cond.id)"
+                       (change)="onConditionToggle(i, cond.id, $event)" />
+                <label [for]="'trans-' + i + '-cond-' + cond.id">
+                  {{ cond.label }} <span *ngIf="cond.necessary" class="required-star" title="Necessary filter">★</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" routerLink="/negotiation-manager/workflow-templates" class="btn-secondary">Cancel</button>
+      <button type="button" (click)="onSubmit()" [disabled]="isSubmitting" class="btn-primary">
+        {{ isSubmitting ? 'Saving Graph...' : 'Save Template' }}
+      </button>
+    </div>
+
+  </form>
+</div>
+
+<div class="modal-overlay" *ngIf="isModalOpen">
+  <div class="modal-card">
+    <h3>Add New Catalog Condition</h3>
+    <div class="divider" style="margin: 12px 0 20px 0;"></div>
+
+    <div class="form-group">
+      <label>Condition Unique Key *</label>
+      <input type="text" 
+             [(ngModel)]="newCondition.conditionKey" 
+             placeholder="e.g., COND_TECHNICAL_RIDER" 
+             class="input-field" 
+             style="max-width: 100%; font-family: monospace;" />
+      <small style="display:block; color: #777; font-size: 11px; margin-top: 4px;">
+        Must be unique in database (e.g., COND_MY_RULE).
+      </small>
+    </div>
+
+    <div class="form-group">
+      <label>Condition Display Label *</label>
+      <input type="text" [(ngModel)]="newCondition.label" placeholder="e.g., Technical rider approved" class="input-field" style="max-width: 100%;" />
+    </div>
+
+    <div class="form-group">
+      <label>Data Type</label>
+      <select [(ngModel)]="newCondition.dataType" class="input-field" style="max-width: 100%; height: 35px;">
+        <option value="BOOLEAN">BOOLEAN (True / False)</option>
+        <option value="NUMBER">NUMBER (Numeric checking)</option>
+        <option value="TEXT">TEXT</option>
+      </select>
+    </div>
+
+    <div class="form-group" style="margin-top: 16px;">
+      <label class="checkbox-label">
+        <input type="checkbox" [(ngModel)]="newCondition.necessary" />
+        Mark as strictly necessary (★ Filter)
+      </label>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" (click)="closeModal()" class="btn-secondary">Cancel</button>
+      <button type="button" 
+              (click)="saveCustomCondition()" 
+              [disabled]="!newCondition.label.trim() || !newCondition.conditionKey.trim() || newCondition.conditionKey === 'COND_'" 
+              class="btn-primary">
+        Save Condition
+      </button>
+    </div>
+  </div>
+</div>

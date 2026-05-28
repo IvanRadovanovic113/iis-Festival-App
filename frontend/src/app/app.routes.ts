@@ -287,13 +287,22 @@ export const routes: Routes = [
     data: { festivalRoles: ['PRODUCT_DESIGNER', 'TECHNICAL_SUPPORT'], audience: 'creative' }
   },
   { path: 'creative/ads', redirectTo: 'creative/campaigns', pathMatch: 'full' },
-  {
+{
     path: 'negotiation-manager',
     component: NegotiationManagerLayoutComponent,
     canActivate: [authGuard],
     data: { festivalRoles: ['NEGOTIATION_MANAGER'] },
     children: [
-      { path: '', redirectTo: 'performers', pathMatch: 'full' },
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      
+      // Dashboard Component
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./features/negotiation-manager/dashboard/dashboard.component').then(m => m.DashboardComponent)
+      },
+      
+      // Performers Modul
       {
         path: 'performers',
         loadComponent: () =>
@@ -313,6 +322,49 @@ export const routes: Routes = [
         path: 'performers/:id/edit',
         loadComponent: () =>
           import('./features/negotiation-manager/performers/performer-form/performer-form.component').then(m => m.PerformerFormComponent)
+      },
+
+      // Offers Modul
+      {
+        path: 'offers',
+        loadComponent: () =>
+          import('./features/negotiation-manager/offers/offer-list/offer-list.component').then(m => m.OfferListComponent)
+      },
+      {
+        path: 'offers/new',
+        loadComponent: () =>
+          import('./features/negotiation-manager/offers/offer-form/offer-form.component').then(m => m.OfferFormComponent)
+      },
+      {
+        path: 'offers/:offerId',
+        loadComponent: () =>
+          import('./features/negotiation-manager/offers/offer-detail/offer-detail.component').then(m => m.OfferDetailComponent)
+      },
+      {
+        path: 'offers/:offerId/edit',
+        loadComponent: () =>
+          import('./features/negotiation-manager/offers/offer-form/offer-form.component').then(m => m.OfferFormComponent)
+      },
+
+      // Workflow template Modul
+
+      {
+        path: 'workflow-templates',
+        loadComponent: () =>
+          import('./features/negotiation-manager/workflow-template/workflow-template-list/workflow-template-list.component')
+            .then(m => m.WorkflowTemplateListComponent)
+      },
+      {
+        path: 'workflow-templates/new',
+        loadComponent: () =>
+          import('./features/negotiation-manager/workflow-template/workflow-template-form/workflow-template-form.component')
+            .then(m => m.WorkflowTemplateFormComponent)
+      },
+      {
+        path: 'workflow-templates/:id',
+        loadComponent: () =>
+          import('./features/negotiation-manager/workflow-template/workflow-template-detail/workflow-template-detail.component')
+            .then(m => m.WorkflowTemplateDetailComponent)
       }
     ]
   },
