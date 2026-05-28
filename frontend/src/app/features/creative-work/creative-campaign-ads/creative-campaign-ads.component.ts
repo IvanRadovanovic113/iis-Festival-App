@@ -38,6 +38,19 @@ export class CreativeCampaignAdsComponent implements OnInit {
     return role === 'PRODUCT_DESIGNER' ? 'Product designer' : 'Technical support';
   }
 
+  get displayName(): string {
+    return this.currentUser?.username || 'User';
+  }
+
+  get avatarLabel(): string {
+    const name = this.displayName.trim();
+    const parts = name.split(/[._-]+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  }
+
   get subtitle(): string {
     return this.festivalLocation ? `${this.festivalName} · ${this.festivalLocation}` : this.festivalName;
   }

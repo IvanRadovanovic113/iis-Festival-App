@@ -25,6 +25,10 @@ export class AdTypeFormComponent implements OnInit {
   saving = false;
   readonly contentTypes = ['Video', 'Text', 'Audio', 'Image', 'Interactive'];
   readonly currentUser = this.authService.getCurrentUser();
+  readonly enforcedFinalPhases = [
+    { name: 'DIRECTOR APPROVAL', assignedRole: 'Festival Director' },
+    { name: 'PUBLISHED', assignedRole: 'Festival Manager' }
+  ];
 
   form = this.fb.group({
     name: ['', Validators.required],
@@ -32,6 +36,19 @@ export class AdTypeFormComponent implements OnInit {
     contentType: ['', Validators.required],
     phaseIds: [[] as number[]]
   });
+
+  get displayName(): string {
+    return this.currentUser?.username || 'User';
+  }
+
+  get avatarLabel(): string {
+    const name = this.displayName.trim();
+    const parts = name.split(/[._-]+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  }
 
   ngOnInit(): void {
     this.restoreDraftFromQuery();
@@ -70,6 +87,30 @@ export class AdTypeFormComponent implements OnInit {
     return this.selectedPhaseIds
       .map(phaseId => this.phases.find(phase => phase.phaseId === phaseId))
       .filter((phase): phase is AdPhase => !!phase);
+  }
+
+  get selectablePhases(): AdPhase[] {
+    return this.phases.filter(phase => !this.isEnforcedTerminalPhase(phase));
+  }
+
+  get workflowPreviewPhases(): Array<{ name: string; assignedRole: string; locked: boolean }> {
+    return [
+      ...this.selectedPhases.map(phase => ({
+        name: phase.name,
+        assignedRole: phase.assignedRole,
+        locked: false
+      })),
+      ...this.enforcedFinalPhases.map(phase => ({
+        name: phase.name,
+        assignedRole: phase.assignedRole,
+        locked: true
+      }))
+    ];
+  }
+
+  isEnforcedTerminalPhase(phase: AdPhase): boolean {
+    const normalized = phase.name.trim().toUpperCase();
+    return normalized === 'DIRECTOR APPROVAL' || normalized === 'PUBLISHED';
   }
 
   togglePhase(phaseId: number, forceSelected?: boolean): void {

@@ -1,10 +1,15 @@
 <div class="form-page">
   <aside class="sidebar">
-    <div class="avatar">{{ currentUser?.username || 'User' }}</div>
-    <div class="nav-card active">Festivals</div>
-    <div class="nav-card">Notifications</div>
-    <div class="nav-card">Statistics</div>
-    <button class="logout-btn" type="button" (click)="logout()">Log out</button>
+    <div class="profile-block">
+      <div class="avatar">{{ avatarLabel }}</div>
+      <div class="profile-name">{{ displayName }}</div>
+    </div>
+    <nav class="nav-stack">
+      <a class="nav-card active" routerLink="/manager/festivals"><span class="nav-icon">♪</span><span>Festivals</span></a>
+      <a class="nav-card"><span class="nav-icon">🔔</span><span>Notifications</span></a>
+      <a class="nav-card" routerLink="/manager/statistics"><span class="nav-icon">▤</span><span>Statistics</span></a>
+    </nav>
+    <button class="logout-btn" type="button" (click)="logout()"><span class="nav-icon">→</span><span>Log out</span></button>
   </aside>
 
   <main class="content">
@@ -33,7 +38,7 @@
           <div class="field">
             <span>Phases *</span>
             <div class="phase-picker">
-              @for (phase of phases; track phase.phaseId) {
+              @for (phase of selectablePhases; track phase.phaseId) {
                 <button
                   type="button"
                   class="phase-chip"
@@ -43,22 +48,27 @@
                 </button>
               }
             </div>
-            @if (selectedPhases.length > 0) {
+            @if (workflowPreviewPhases.length > 0) {
               <div class="selected-phases">
-                @for (phase of selectedPhases; track phase.phaseId; let i = $index) {
-                  <div class="selected-phase-card">
+                @for (phase of workflowPreviewPhases; track phase.name; let i = $index) {
+                  <div class="selected-phase-card" [class.locked]="phase.locked">
                     <div>
                       <strong>{{ i + 1 }}. {{ phase.name }}</strong>
                       <p>{{ phase.assignedRole }}</p>
                     </div>
                     <div class="selected-phase-actions">
-                      <button type="button" class="order-btn remove" (click)="togglePhase(phase.phaseId)">✕</button>
+                      @if (phase.locked) {
+                        <span class="locked-badge">Required</span>
+                      } @else {
+                        <button type="button" class="order-btn remove" (click)="togglePhase(selectedPhases[i].phaseId)">✕</button>
+                      }
                     </div>
                   </div>
                 }
               </div>
             }
             <button type="button" class="secondary-btn" (click)="openNewPhase()">New phase</button>
+            <small class="hint-text">Director approval and publish are always appended as the final two phases.</small>
           </div>
 
           <label class="field">

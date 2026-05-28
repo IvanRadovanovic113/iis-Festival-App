@@ -71,6 +71,9 @@ public class DataInitializer implements ApplicationRunner {
         migrateKupciTierConstraint();
         migrateAssignmentRoleConstraint();
         migrateUsersRoleConstraint();
+        migrateAdContentColumns();
+        normalizeWorkflowPhaseAssignments();
+        createStatisticsFunctions();
         migrateStageResourcesStageForeignKey();
         migrateEventReservationReviewNoteColumn();
         createAdminUser();
@@ -203,17 +206,16 @@ public class DataInitializer implements ApplicationRunner {
         assignmentRepository.save(technicalSupportAssignment);
         log.info("Technical support user ready: technical.support / support123");
 
-        AdPhase draft = ensurePhase("DRAFT", "Added basic info", 1, false, Role.PRODUCT_DESIGNER);
-        AdPhase approvedTechnical = ensurePhase("APPROVED TECHNICAL", "Technical review completed", 2, true, Role.TECHNICAL_SUPPORT);
-        AdPhase visuallyPrepared = ensurePhase("VISUALLY PREPARED", "Creative assets visually prepared", 3, false, Role.PRODUCT_DESIGNER);
-        AdPhase approved = ensurePhase("APPROVED", "Final approval completed", 4, true, Role.TECHNICAL_SUPPORT);
-        AdPhase rejected = ensurePhase("REJECTED", "Rejected after review", 5, true, Role.TECHNICAL_SUPPORT);
-        AdPhase published = ensurePhase("PUBLISHED", "Published to the selected channel", 6, false, Role.PRODUCT_DESIGNER);
+        AdPhase managerReview = ensurePhase("MANAGER REVIEW", "Festival manager reviews the ad brief and workflow handoff.", 1, false, Role.FESTIVAL_MANAGER);
+        AdPhase designContent = ensurePhase("DESIGN CONTENT", "Product designer prepares text and visual content.", 2, true, Role.PRODUCT_DESIGNER);
+        AdPhase technicalContent = ensurePhase("TECHNICAL CONTENT", "Technical support prepares audio content.", 2, true, Role.TECHNICAL_SUPPORT);
+        AdPhase directorApproval = ensurePhase("DIRECTOR APPROVAL", "Festival director performs the final approval.", 3, true, Role.FESTIVAL_DIRECTOR);
+        AdPhase published = ensurePhase("PUBLISHED", "Published to the selected campaign channel.", 4, false, Role.FESTIVAL_MANAGER);
 
-        ensureAdType("Animated", "Animated campaign assets for digital channels", "Video", draft, approvedTechnical, visuallyPrepared, approved, rejected, published);
-        ensureAdType("Image", "Image-based campaign visuals and posters", "Image", draft, visuallyPrepared, approved, rejected, published);
-        ensureAdType("Text", "Text-based copy for campaign communication", "Text", draft, approvedTechnical, approved, rejected, published);
-        ensureAdType("Audio", "Audio spots and supporting sound assets", "Audio", draft, approvedTechnical, approved, rejected, published);
+        ensureAdType("Animated", "Animated campaign assets for digital channels", "Video", managerReview, designContent, directorApproval, published);
+        ensureAdType("Image", "Image-based campaign visuals and posters", "Image", managerReview, designContent, directorApproval, published);
+        ensureAdType("Text", "Text-based copy for campaign communication", "Text", managerReview, designContent, directorApproval, published);
+        ensureAdType("Audio", "Audio spots and supporting sound assets", "Audio", managerReview, technicalContent, directorApproval, published);
 
         Campaign demoCampaign = campaignRepository.findByFestival_FestivalId(demoFestival.getFestivalId())
             .orElseGet(() -> campaignRepository.save(Campaign.builder()
@@ -238,9 +240,10 @@ public class DataInitializer implements ApplicationRunner {
             .findFirst()
             .orElseThrow();
 
-        ensureAd(demoCampaign, textType, draft, "Text EXIT 2026", "Seeded text ad for product designer testing.", "Initial text content");
-        ensureAd(demoCampaign, imageType, visuallyPrepared, "Poster EXIT 2026", "Seeded image ad for product designer testing.", "poster-exit-2026.png");
-        ensureAd(demoCampaign, audioType, approvedTechnical, "Audio EXIT 2026", "Seeded audio ad for technical support testing.", "audio-exit-2026.mp3");
+        ensureAd(demoCampaign, textType, managerReview, festivalManager, "Text EXIT 2026", "Seeded text ad waiting for manager review.", "Initial text content");
+        ensureAd(demoCampaign, textType, designContent, productDesigner, "Text Promo EXIT 2026", "Seeded text ad for product designer testing.", "Draft campaign copy");
+        ensureAd(demoCampaign, imageType, directorApproval, productDesigner, "Poster EXIT 2026", "Seeded image ad waiting for director approval.", "poster-exit-2026.png");
+        ensureAd(demoCampaign, audioType, technicalContent, technicalSupport, "Audio EXIT 2026", "Seeded audio ad for technical support testing.", "audio-exit-2026.mp3");
     }
 
     private void seedEventOrganizationRequests() {
@@ -461,50 +464,48 @@ public class DataInitializer implements ApplicationRunner {
     }
 
     private AdPhase ensurePhase(String name, String description, int orderIndex, boolean emailNotification, Role assignedRole) {
-        return adPhaseRepository.findAll().stream()
-            .filter(phase -> phase.getName().equalsIgnoreCase(name))
+        AdPhase phase = adPhaseRepository.findAll().stream()
+            .filter(item -> item.getName().equalsIgnoreCase(name))
             .findFirst()
-            .orElseGet(() -> adPhaseRepository.save(AdPhase.builder()
-                .name(name)
-                .description(description)
-                .orderIndex(orderIndex)
-                .emailNotification(emailNotification)
-                .assignedRole(assignedRole)
-                .build()));
+            .orElseGet(() -> AdPhase.builder().name(name).build());
+
+        phase.setDescription(description);
+        phase.setOrderIndex(orderIndex);
+        phase.setEmailNotification(emailNotification);
+        phase.setAssignedRole(assignedRole);
+        return adPhaseRepository.save(phase);
     }
 
     private void ensureAdType(String name, String description, String contentType, AdPhase... phases) {
-        boolean exists = adTypeRepository.findAll().stream()
-            .anyMatch(adType -> adType.getName().equalsIgnoreCase(name));
-        if (exists) {
-            return;
-        }
-        adTypeRepository.save(AdType.builder()
-            .name(name)
-            .description(description)
-            .contentType(contentType)
-            .phases(java.util.Arrays.stream(phases).toList())
-            .build());
+        AdType adType = adTypeRepository.findAll().stream()
+            .filter(item -> item.getName().equalsIgnoreCase(name))
+            .findFirst()
+            .orElseGet(() -> AdType.builder().name(name).build());
+        adType.setDescription(description);
+        adType.setContentType(contentType);
+        adType.setPhases(java.util.Arrays.stream(phases).toList());
+        adTypeRepository.save(adType);
     }
 
-    private void ensureAd(Campaign campaign, AdType adType, AdPhase currentPhase, String name, String description, String contentValue) {
-        boolean exists = adRepository.findAll().stream()
-            .anyMatch(ad -> ad.getCampaign().getCampaignId().equals(campaign.getCampaignId()) && ad.getName().equalsIgnoreCase(name));
-        if (exists) {
-            return;
-        }
+    private void ensureAd(Campaign campaign, AdType adType, AdPhase currentPhase, User lastEditedByUser, String name, String description, String contentValue) {
+        Ad ad = adRepository.findAll().stream()
+            .filter(item -> item.getCampaign().getCampaignId().equals(campaign.getCampaignId()) && item.getName().equalsIgnoreCase(name))
+            .findFirst()
+            .orElseGet(() -> Ad.builder().name(name).versionNumber(1).build());
 
-        Ad ad = adRepository.save(Ad.builder()
-            .campaign(campaign)
-            .adType(adType)
-            .currentPhase(currentPhase)
-            .name(name)
-            .description(description)
-            .contentFileName(contentValue)
-            .lastChangeDate(LocalDate.now())
-            .versionNumber(1)
-            .build());
-        adVersionSnapshotService.captureSnapshot(ad);
+        ad.setCampaign(campaign);
+        ad.setAdType(adType);
+        ad.setCurrentPhase(currentPhase);
+        ad.setName(name);
+        ad.setDescription(description);
+        ad.setContentFileName(contentValue);
+        ad.setLastChangeDate(LocalDate.now());
+        ad.setLastEditedByUser(lastEditedByUser);
+        ad.setLastEditedPhase(currentPhase);
+        ad.setLastEditedRole(currentPhase.getAssignedRole());
+        ad.setLastEditedAt(java.time.LocalDateTime.now());
+        Ad savedAd = adRepository.save(ad);
+        adVersionSnapshotService.captureSnapshot(savedAd);
     }
 
     // ─── DB migracije ────────────────────────────────────────────────────────
@@ -565,6 +566,26 @@ public class DataInitializer implements ApplicationRunner {
         log.info("user_festival_assignments_role_check constraint updated with all roles");
     }
 
+    private void migrateAdContentColumns() {
+        jdbcTemplate.execute("ALTER TABLE ads ALTER COLUMN content_file_name TYPE TEXT");
+        jdbcTemplate.execute("ALTER TABLE ad_versions ALTER COLUMN content_value TYPE TEXT");
+        log.info("Ad content columns migrated to TEXT");
+    }
+
+    private void normalizeWorkflowPhaseAssignments() {
+        jdbcTemplate.update("""
+            UPDATE ad_phases
+            SET assigned_role = 'FESTIVAL_DIRECTOR'
+            WHERE lower(name) LIKE '%direktor%' OR lower(name) LIKE '%director%'
+            """);
+        jdbcTemplate.update("""
+            UPDATE ad_phases
+            SET assigned_role = 'FESTIVAL_MANAGER'
+            WHERE lower(name) LIKE '%menager%' OR lower(name) LIKE '%manager%'
+            """);
+        log.info("Workflow phase assignments normalized by phase name");
+    }
+
     // ─── Tier konfiguracija ──────────────────────────────────────────────────
 
     private void seedTierConfig() {
@@ -584,6 +605,132 @@ public class DataInitializer implements ApplicationRunner {
         createSoldCountTrigger();
         createUkupnoKupovinesTrigger();
         log.info("DB triggers created/updated");
+    }
+
+    private void createStatisticsFunctions() {
+        jdbcTemplate.execute("""
+            CREATE OR REPLACE FUNCTION fn_filtered_ads_for_statistics(
+                p_campaign_id BIGINT DEFAULT NULL,
+                p_date_from DATE DEFAULT NULL,
+                p_date_to DATE DEFAULT NULL,
+                p_ad_type_id BIGINT DEFAULT NULL
+            )
+            RETURNS TABLE (
+                ad_id BIGINT,
+                phase_id BIGINT,
+                ad_type_id BIGINT
+            )
+            AS $$
+            DECLARE
+                sql_query TEXT;
+            BEGIN
+                sql_query := '
+                    SELECT a.ad_id, a.phase_id, a.ad_type_id
+                    FROM ads a
+                    WHERE 1 = 1
+                ';
+
+                IF p_campaign_id IS NOT NULL THEN
+                    sql_query := sql_query || format(' AND a.campaign_id = %s', p_campaign_id);
+                END IF;
+
+                IF p_date_from IS NOT NULL THEN
+                    sql_query := sql_query || format(' AND a.last_change_date >= %L', p_date_from);
+                END IF;
+
+                IF p_date_to IS NOT NULL THEN
+                    sql_query := sql_query || format(' AND a.last_change_date <= %L', p_date_to);
+                END IF;
+
+                IF p_ad_type_id IS NOT NULL THEN
+                    sql_query := sql_query || format(' AND a.ad_type_id = %s', p_ad_type_id);
+                END IF;
+
+                RETURN QUERY EXECUTE sql_query;
+            END;
+            $$ LANGUAGE plpgsql;
+            """);
+
+        jdbcTemplate.execute("""
+            CREATE OR REPLACE FUNCTION fn_statistics_total_ads(
+                p_campaign_id BIGINT DEFAULT NULL,
+                p_date_from DATE DEFAULT NULL,
+                p_date_to DATE DEFAULT NULL,
+                p_ad_type_id BIGINT DEFAULT NULL
+            )
+            RETURNS BIGINT
+            AS $$
+            DECLARE
+                total_ads BIGINT;
+            BEGIN
+                SELECT COUNT(*)
+                INTO total_ads
+                FROM fn_filtered_ads_for_statistics(p_campaign_id, p_date_from, p_date_to, p_ad_type_id);
+
+                RETURN total_ads;
+            END;
+            $$ LANGUAGE plpgsql;
+            """);
+
+        jdbcTemplate.execute("""
+            CREATE OR REPLACE FUNCTION fn_statistics_phase_counts(
+                p_campaign_id BIGINT DEFAULT NULL,
+                p_date_from DATE DEFAULT NULL,
+                p_date_to DATE DEFAULT NULL,
+                p_ad_type_id BIGINT DEFAULT NULL
+            )
+            RETURNS TABLE (
+                phase_id BIGINT,
+                name TEXT,
+                order_index INTEGER,
+                total_count BIGINT
+            )
+            AS $$
+            BEGIN
+                RETURN QUERY
+                SELECT
+                    p.phase_id,
+                    p.name::TEXT,
+                    p.order_index,
+                    COALESCE(COUNT(fa.ad_id), 0)::BIGINT AS total_count
+                FROM ad_phases p
+                LEFT JOIN fn_filtered_ads_for_statistics(p_campaign_id, p_date_from, p_date_to, p_ad_type_id) fa
+                    ON fa.phase_id = p.phase_id
+                GROUP BY p.phase_id, p.name, p.order_index
+                ORDER BY p.order_index, p.name;
+            END;
+            $$ LANGUAGE plpgsql;
+            """);
+
+        jdbcTemplate.execute("""
+            CREATE OR REPLACE FUNCTION fn_statistics_type_counts(
+                p_campaign_id BIGINT DEFAULT NULL,
+                p_date_from DATE DEFAULT NULL,
+                p_date_to DATE DEFAULT NULL,
+                p_ad_type_id BIGINT DEFAULT NULL
+            )
+            RETURNS TABLE (
+                ad_type_id BIGINT,
+                name TEXT,
+                total_count BIGINT
+            )
+            AS $$
+            BEGIN
+                RETURN QUERY
+                SELECT
+                    t.ad_type_id,
+                    t.name::TEXT,
+                    COALESCE(COUNT(fa.ad_id), 0)::BIGINT AS total_count
+                FROM ad_types t
+                LEFT JOIN fn_filtered_ads_for_statistics(p_campaign_id, p_date_from, p_date_to, p_ad_type_id) fa
+                    ON fa.ad_type_id = t.ad_type_id
+                GROUP BY t.ad_type_id, t.name
+                ORDER BY t.name;
+            END;
+            $$ LANGUAGE plpgsql;
+            """);
+
+        log.info("Statistics PL/pgSQL functions created/updated");
     }
 
     /**

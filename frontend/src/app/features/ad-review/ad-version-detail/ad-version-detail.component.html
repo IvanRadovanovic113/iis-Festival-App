@@ -1,6 +1,9 @@
 <div class="page-shell">
   <aside class="sidebar">
-    <div class="avatar">{{ currentUser?.username || 'User' }}</div>
+    <div class="profile-block">
+      <div class="avatar">{{ avatarLabel }}</div>
+      <div class="profile-name">{{ displayName }}</div>
+    </div>
     <div class="nav-card active">Festivals</div>
     <div class="nav-card">Notifications</div>
     <div class="nav-card">Statistics</div>
@@ -51,6 +54,12 @@
         <div class="content-preview" [class.text-preview]="version.contentType === 'Text'">
           @if (version.contentType === 'Text') {
             <p>{{ version.contentValue || 'No text content was saved for this version.' }}</p>
+          } @else if (isImageContent(version.contentValue)) {
+            <img class="media-preview image-preview" [src]="version.contentValue" alt="Version image preview" />
+          } @else if (isAudioContent(version.contentValue)) {
+            <audio class="media-preview" controls [src]="version.contentValue"></audio>
+          } @else if (isVideoContent(version.contentValue)) {
+            <video class="media-preview video-preview" controls [src]="version.contentValue"></video>
           } @else {
             <div>
               <strong>{{ version.contentType }} snapshot</strong>

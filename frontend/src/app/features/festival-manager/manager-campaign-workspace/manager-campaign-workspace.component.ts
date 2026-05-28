@@ -24,6 +24,7 @@ export class ManagerCampaignWorkspaceComponent implements OnInit {
   search = '';
   selectedType = '';
   selectedStatus = '';
+  processingAdId: number | null = null;
   readonly currentUser = this.authService.getCurrentUser();
 
   ngOnInit(): void {
@@ -65,6 +66,85 @@ export class ManagerCampaignWorkspaceComponent implements OnInit {
     this.selectedType = '';
     this.selectedStatus = '';
     this.applyFilters();
+  }
+
+  get displayName(): string {
+    return this.currentUser?.username || 'User';
+  }
+
+  get avatarLabel(): string {
+    const name = this.displayName.trim();
+    const parts = name.split(/[._-]+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  }
+
+  get currentRole(): string {
+    return this.currentUser?.assignment?.festivalRole ?? '';
+  }
+
+  canReviewAd(ad: Ad): boolean {
+    return ad.currentPhaseAssignedRole === this.currentRole;
+  }
+
+  canEditAd(ad: Ad): boolean {
+    return ad.status.toUpperCase() !== 'PUBLISHED';
+  }
+
+  canDeleteAd(ad: Ad): boolean {
+    return ad.status.toUpperCase() !== 'PUBLISHED';
+  }
+
+  approve(ad: Ad): void {
+    if (!this.workspace) return;
+    this.processingAdId = ad.adId;
+    this.campaignService.approveManagerAd(this.workspace.campaign.festivalId, ad.adId).subscribe({
+      next: () => {
+        this.processingAdId = null;
+        this.load();
+      },
+      error: err => {
+        this.processingAdId = null;
+        this.errorMessage = err?.error?.message ?? 'Error approving ad.';
+      }
+    });
+  }
+
+  reject(ad: Ad): void {
+    if (!this.workspace) return;
+    const reason = globalThis.prompt(`Why is "${ad.name}" rejected?`);
+    if (!reason || !reason.trim()) return;
+    this.processingAdId = ad.adId;
+    this.campaignService.rejectManagerAd(this.workspace.campaign.festivalId, ad.adId, reason.trim()).subscribe({
+      next: () => {
+        this.processingAdId = null;
+        this.load();
+      },
+      error: err => {
+        this.processingAdId = null;
+        this.errorMessage = err?.error?.message ?? 'Error rejecting ad.';
+      }
+    });
+  }
+
+  delete(ad: Ad): void {
+    if (!this.workspace) return;
+    const confirmed = globalThis.confirm(`Delete "${ad.name}"? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    this.processingAdId = ad.adId;
+    this.campaignService.deleteManagerAd(this.workspace.campaign.festivalId, ad.adId).subscribe({
+      next: () => {
+        this.processingAdId = null;
+        this.load();
+      },
+      error: err => {
+        this.processingAdId = null;
+        this.errorMessage = err?.error?.message ?? 'Error deleting ad.';
+      }
+    });
   }
 
   logout(): void {

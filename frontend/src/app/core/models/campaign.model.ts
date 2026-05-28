@@ -59,10 +59,21 @@ export interface Ad {
   versionNumber: number;
   status: string;
   currentPhaseId: number;
+  currentPhaseAssignedRole: string;
   contentValue: string;
   festivalName: string;
   festivalLocation: string;
   campaignName: string;
+  rejectionReason: string | null;
+  promotion: AdPromotion | null;
+}
+
+export interface AdPromotion {
+  promotionId: number;
+  channel: string;
+  startDate: string;
+  endDate: string;
+  pricePerDay: number;
 }
 
 export interface CampaignWorkspace {
@@ -141,6 +152,21 @@ export interface StatisticsResponse {
   typeCounts: StatisticsTypeCount[];
 }
 
+export interface WorkflowNotification {
+  notificationId: number;
+  adId: number;
+  festivalId: number;
+  campaignId: number;
+  adName: string;
+  campaignName: string;
+  festivalName: string;
+  type: 'PHASE_ASSIGNED' | 'AD_APPROVED' | 'AD_REJECTED' | 'PROMOTION_ENDING_SOON';
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+}
+
 export interface AdPhase {
   phaseId: number;
   name: string;
@@ -166,6 +192,13 @@ export interface AdRequest {
 
 export interface CreativeAdUpdateRequest {
   contentValue: string;
+}
+
+export interface AdPromotionRequest {
+  channel: string;
+  startDate: string;
+  endDate: string;
+  pricePerDay: number;
 }
 
 export interface ManagerAdUpdateRequest {

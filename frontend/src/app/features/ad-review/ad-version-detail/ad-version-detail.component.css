@@ -15,6 +15,13 @@
   gap: 1rem;
 }
 
+.profile-block {
+  display: grid;
+  justify-items: center;
+  gap: 0.55rem;
+  text-align: center;
+}
+
 .avatar {
   width: 68px;
   height: 68px;
@@ -22,12 +29,17 @@
   background: white;
   display: grid;
   place-items: center;
-  padding: 0.4rem;
-  font-size: 0.72rem;
+  font-size: 1rem;
   font-weight: 700;
-  line-height: 1.1;
-  text-align: center;
-  word-break: break-word;
+  letter-spacing: 0.06em;
+}
+
+.profile-name {
+  max-width: 100%;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .nav-card,
@@ -125,6 +137,24 @@
 .content-preview p {
   margin: 0;
   white-space: pre-wrap;
+}
+
+.media-preview {
+  width: 100%;
+  max-width: 100%;
+}
+
+.image-preview {
+  max-height: 420px;
+  object-fit: contain;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.video-preview {
+  max-height: 420px;
+  border-radius: 18px;
+  background: #000;
 }
 
 .error-banner {

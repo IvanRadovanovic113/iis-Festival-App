@@ -2,10 +2,16 @@ package com.festivalapp.controller;
 
 import com.festivalapp.dto.CampaignRequest;
 import com.festivalapp.dto.CampaignManagerOptionResponse;
+import com.festivalapp.dto.AdPromotionRequest;
 import com.festivalapp.dto.CampaignResponse;
 import com.festivalapp.dto.CampaignWorkspaceResponse;
 import com.festivalapp.dto.FestivalCampaignOverviewResponse;
+import com.festivalapp.dto.AdRejectionRequest;
+import com.festivalapp.dto.AdResponse;
+import com.festivalapp.model.Role;
 import com.festivalapp.model.User;
+import com.festivalapp.service.AdWorkflowService;
+import com.festivalapp.service.AdPromotionService;
 import com.festivalapp.service.CampaignService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +28,8 @@ import java.util.List;
 public class CampaignController {
 
     private final CampaignService campaignService;
+    private final AdWorkflowService adWorkflowService;
+    private final AdPromotionService adPromotionService;
 
     @GetMapping("/festivals")
     public ResponseEntity<List<FestivalCampaignOverviewResponse>> getFestivalOverviews(@AuthenticationPrincipal User user) {
@@ -50,5 +58,34 @@ public class CampaignController {
         @AuthenticationPrincipal User user
     ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(campaignService.createCampaign(festivalId, request, user));
+    }
+
+    @PutMapping("/festivals/{festivalId}/ads/{adId}/approve")
+    public ResponseEntity<AdResponse> approveAd(
+        @PathVariable Long festivalId,
+        @PathVariable Long adId,
+        @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(adWorkflowService.approve(festivalId, adId, Role.FESTIVAL_DIRECTOR, user));
+    }
+
+    @PutMapping("/festivals/{festivalId}/ads/{adId}/reject")
+    public ResponseEntity<AdResponse> rejectAd(
+        @PathVariable Long festivalId,
+        @PathVariable Long adId,
+        @Valid @RequestBody AdRejectionRequest request,
+        @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(adWorkflowService.reject(festivalId, adId, request.getReason(), Role.FESTIVAL_DIRECTOR, user));
+    }
+
+    @PutMapping("/festivals/{festivalId}/ads/{adId}/promotion")
+    public ResponseEntity<AdResponse> savePromotion(
+        @PathVariable Long festivalId,
+        @PathVariable Long adId,
+        @Valid @RequestBody AdPromotionRequest request,
+        @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(adPromotionService.savePromotion(festivalId, adId, request, user));
     }
 }

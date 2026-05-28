@@ -27,8 +27,10 @@ export class AdPhaseFormComponent implements OnInit {
   draftSelectedPhaseIds: number[] = [];
   readonly currentUser = this.authService.getCurrentUser();
   readonly assignableRoles = [
+    { value: 'FESTIVAL_MANAGER', label: 'Festival Manager' },
     { value: 'PRODUCT_DESIGNER', label: 'Product Designer' },
-    { value: 'TECHNICAL_SUPPORT', label: 'Technical Support' }
+    { value: 'TECHNICAL_SUPPORT', label: 'Technical Support' },
+    { value: 'FESTIVAL_DIRECTOR', label: 'Festival Director' }
   ];
 
   form = this.fb.group({
@@ -37,8 +39,21 @@ export class AdPhaseFormComponent implements OnInit {
     description: ['', Validators.required],
     orderIndex: [1, [Validators.required, Validators.min(1)]],
     emailNotification: [true, Validators.required],
-    assignedRole: ['PRODUCT_DESIGNER', Validators.required]
+    assignedRole: ['FESTIVAL_MANAGER', Validators.required]
   });
+
+  get displayName(): string {
+    return this.currentUser?.username || 'User';
+  }
+
+  get avatarLabel(): string {
+    const name = this.displayName.trim();
+    const parts = name.split(/[._-]+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  }
 
   ngOnInit(): void {
     this.draftTypeName = this.route.snapshot.queryParamMap.get('draftTypeName') ?? '';
@@ -83,7 +98,7 @@ export class AdPhaseFormComponent implements OnInit {
       phaseId: null,
       name: this.form.value.name?.trim() || 'New phase',
       description: this.form.value.description?.trim() || 'Phase description will appear here.',
-      assignedRole: this.getAssignedRoleLabel(this.form.value.assignedRole ?? 'PRODUCT_DESIGNER'),
+      assignedRole: this.getAssignedRoleLabel(this.form.value.assignedRole ?? 'FESTIVAL_MANAGER'),
       isDraft: true
     });
     return items;

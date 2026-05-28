@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { CampaignService } from '../../../core/services/campaign.service';
 import { Ad } from '../../../core/models/campaign.model';
@@ -16,6 +16,7 @@ import { Ad } from '../../../core/models/campaign.model';
 export class CreativeAdEditorComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly campaignService = inject(CampaignService);
 
@@ -23,6 +24,7 @@ export class CreativeAdEditorComponent implements OnInit {
   errorMessage = '';
   saving = false;
   selectedFileName = '';
+  previewUrl = '';
   readonly currentUser = this.authService.getCurrentUser();
 
   form = this.fb.group({
@@ -36,6 +38,19 @@ export class CreativeAdEditorComponent implements OnInit {
   get roleLabel(): string {
     const role = this.currentUser?.assignment?.festivalRole;
     return role === 'PRODUCT_DESIGNER' ? 'Product designer' : 'Technical support';
+  }
+
+  get displayName(): string {
+    return this.currentUser?.username || 'User';
+  }
+
+  get avatarLabel(): string {
+    const name = this.displayName.trim();
+    const parts = name.split(/[._-]+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
   }
 
   get expectsTextContent(): boolean {
@@ -57,6 +72,22 @@ export class CreativeAdEditorComponent implements OnInit {
 
   get usesFileUpload(): boolean {
     return !!this.fileAccept;
+  }
+
+  get hasPreview(): boolean {
+    return !!this.previewUrl;
+  }
+
+  get isImagePreview(): boolean {
+    return this.previewUrl.startsWith('data:image/');
+  }
+
+  get isAudioPreview(): boolean {
+    return this.previewUrl.startsWith('data:audio/');
+  }
+
+  get isVideoPreview(): boolean {
+    return this.previewUrl.startsWith('data:video/');
   }
 
   get contentLabel(): string {
@@ -99,6 +130,7 @@ export class CreativeAdEditorComponent implements OnInit {
       next: ad => {
         this.ad = ad;
         this.selectedFileName = ad.contentValue ?? '';
+        this.previewUrl = this.resolvePreviewUrl(ad.contentValue ?? '');
         this.form.patchValue({
           contentValue: ad.contentValue ?? ''
         });
@@ -111,28 +143,45 @@ export class CreativeAdEditorComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) {
-      this.selectedFileName = '';
-      this.form.patchValue({ contentValue: '' });
+      this.clearSelectedContent();
       return;
     }
 
     if (!this.isAcceptedFileType(file)) {
       this.errorMessage = `Selected file does not match required content type: ${this.ad?.contentType}.`;
       input.value = '';
-      this.selectedFileName = '';
-      this.form.patchValue({ contentValue: '' });
+      this.clearSelectedContent();
       return;
     }
 
-    this.errorMessage = '';
-    this.selectedFileName = file.name;
-    this.form.patchValue({ contentValue: file.name });
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.errorMessage = '';
+      this.selectedFileName = file.name;
+      this.previewUrl = typeof reader.result === 'string' ? reader.result : '';
+      this.form.patchValue({ contentValue: this.previewUrl });
+    };
+    reader.onerror = () => {
+      this.errorMessage = 'Error reading selected file.';
+      this.clearSelectedContent();
+    };
+    reader.readAsDataURL(file);
   }
 
   private isAcceptedFileType(file: File): boolean {
     if (!this.fileAccept) return false;
     const majorType = this.fileAccept.replace('/*', '');
     return file.type.startsWith(`${majorType}/`);
+  }
+
+  private resolvePreviewUrl(contentValue: string): string {
+    return contentValue.startsWith('data:') ? contentValue : '';
+  }
+
+  clearSelectedContent(): void {
+    this.selectedFileName = '';
+    this.previewUrl = '';
+    this.form.patchValue({ contentValue: '' });
   }
 
   save(): void {
@@ -149,10 +198,14 @@ export class CreativeAdEditorComponent implements OnInit {
       next: updatedAd => {
         this.ad = updatedAd;
         this.selectedFileName = this.ad.contentValue ?? '';
+        this.previewUrl = this.resolvePreviewUrl(this.ad.contentValue ?? '');
         this.form.patchValue({
           contentValue: this.ad.contentValue ?? ''
         });
         this.saving = false;
+        void this.router.navigate(['/creative/campaigns', this.route.snapshot.paramMap.get('campaignId')], {
+          queryParams: { saved: '1' }
+        });
       },
       error: err => {
         this.errorMessage = err?.error?.message ?? 'Error saving ad.';

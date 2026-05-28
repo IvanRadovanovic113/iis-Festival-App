@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "ads")
@@ -24,7 +25,7 @@ public class Ad {
     @Column(nullable = false, length = 2000)
     private String description;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String contentFileName;
 
     @Column(nullable = false)
@@ -44,4 +45,25 @@ public class Ad {
     @ManyToOne
     @JoinColumn(name = "phase_id", nullable = false)
     private AdPhase currentPhase;
+
+    @ManyToOne
+    @JoinColumn(name = "last_edited_by_user_id")
+    private User lastEditedByUser;
+
+    @ManyToOne
+    @JoinColumn(name = "last_edited_phase_id")
+    private AdPhase lastEditedPhase;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "last_edited_role")
+    private Role lastEditedRole;
+
+    @Column(name = "last_edited_at")
+    private LocalDateTime lastEditedAt;
+
+    @Column(name = "rejection_reason", length = 2000)
+    private String rejectionReason;
+
+    @OneToOne(mappedBy = "ad", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private AdPromotion promotion;
 }
