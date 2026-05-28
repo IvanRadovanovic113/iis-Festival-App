@@ -1,7 +1,6 @@
 package com.festivalapp.service.eventorganization;
 
 import com.festivalapp.dto.eventorganization.EventReservationResponse;
-import com.festivalapp.dto.eventorganization.EventReservationReviewRequest;
 import com.festivalapp.dto.eventorganization.EventReservationScheduleRequest;
 import com.festivalapp.dto.eventorganization.TimetableSlotResponse;
 import com.festivalapp.model.Festival;
@@ -49,13 +48,12 @@ public class EventReservationService {
         return requests.stream().map(EventReservationResponse::from).toList();
     }
 
-    public EventReservationResponse approveReservationRequest(Long requestId, EventReservationReviewRequest reviewRequest, User user) {
+    public EventReservationResponse approveReservationRequest(Long requestId, User user) {
         Festival festival = accessService.requireEventOrganizerFestival(user);
         EventReservationRequest reservationRequest = accessService.requireReservationRequest(requestId, festival);
         validateReservationTime(reservationRequest.getStartTime(), reservationRequest.getEndTime());
         validateStageAvailability(reservationRequest);
         reservationRequest.setStatus(EventReservationStatus.APPROVED);
-        reservationRequest.setReviewNote(reviewRequest.getReviewNote());
         reservationRequest.setReviewedAt(LocalDateTime.now());
         return EventReservationResponse.from(reservationRequestRepository.save(reservationRequest));
     }
@@ -84,16 +82,14 @@ public class EventReservationService {
         validateStageAvailability(reservationRequest);
 
         reservationRequest.setStatus(EventReservationStatus.APPROVED);
-        reservationRequest.setReviewNote(scheduleRequest.getReviewNote());
         reservationRequest.setReviewedAt(LocalDateTime.now());
         return EventReservationResponse.from(reservationRequestRepository.save(reservationRequest));
     }
 
-    public EventReservationResponse rejectReservationRequest(Long requestId, EventReservationReviewRequest reviewRequest, User user) {
+    public EventReservationResponse rejectReservationRequest(Long requestId, User user) {
         Festival festival = accessService.requireEventOrganizerFestival(user);
         EventReservationRequest reservationRequest = accessService.requireReservationRequest(requestId, festival);
         reservationRequest.setStatus(EventReservationStatus.REJECTED);
-        reservationRequest.setReviewNote(reviewRequest.getReviewNote());
         reservationRequest.setReviewedAt(LocalDateTime.now());
         return EventReservationResponse.from(reservationRequestRepository.save(reservationRequest));
     }

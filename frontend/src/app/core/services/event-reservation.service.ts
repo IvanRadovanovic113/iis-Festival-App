@@ -3,7 +3,6 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   EventReservationRequest,
-  EventReservationReviewRequest,
   EventReservationScheduleRequest,
   EventReservationStatus,
   TimetableSlot
@@ -19,16 +18,16 @@ export class EventReservationService {
     return this.http.get<EventReservationRequest[]>(`${this.API}/requests`, { params });
   }
 
-  approveReservationRequest(requestId: number, request: EventReservationReviewRequest): Observable<EventReservationRequest> {
-    return this.http.put<EventReservationRequest>(`${this.API}/requests/${requestId}/approve`, request);
+  approveReservationRequest(requestId: number): Observable<EventReservationRequest> {
+    return this.http.put<EventReservationRequest>(`${this.API}/requests/${requestId}/approve`, null);
   }
 
   scheduleReservationRequest(requestId: number, request: EventReservationScheduleRequest): Observable<EventReservationRequest> {
     return this.http.put<EventReservationRequest>(`${this.API}/requests/${requestId}/schedule`, request);
   }
 
-  rejectReservationRequest(requestId: number, request: EventReservationReviewRequest): Observable<EventReservationRequest> {
-    return this.http.put<EventReservationRequest>(`${this.API}/requests/${requestId}/reject`, request);
+  rejectReservationRequest(requestId: number): Observable<EventReservationRequest> {
+    return this.http.put<EventReservationRequest>(`${this.API}/requests/${requestId}/reject`, null);
   }
 
   getTimetable(stageId: number, date: string): Observable<TimetableSlot[]> {

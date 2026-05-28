@@ -1,7 +1,6 @@
 package com.festivalapp.controller.eventorganization;
 
 import com.festivalapp.dto.eventorganization.EventReservationResponse;
-import com.festivalapp.dto.eventorganization.EventReservationReviewRequest;
 import com.festivalapp.dto.eventorganization.EventReservationScheduleRequest;
 import com.festivalapp.dto.eventorganization.TimetableSlotResponse;
 import com.festivalapp.model.User;
@@ -40,9 +39,8 @@ public class EventReservationController {
     @PutMapping("/requests/{requestId}/approve")
     public ResponseEntity<EventReservationResponse> approveReservationRequest(
             @PathVariable Long requestId,
-            @RequestBody EventReservationReviewRequest request,
             @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(eventReservationService.approveReservationRequest(requestId, request, user));
+        return ResponseEntity.ok(eventReservationService.approveReservationRequest(requestId, user));
     }
 
     @PutMapping("/requests/{requestId}/schedule")
@@ -56,9 +54,8 @@ public class EventReservationController {
     @PutMapping("/requests/{requestId}/reject")
     public ResponseEntity<EventReservationResponse> rejectReservationRequest(
             @PathVariable Long requestId,
-            @RequestBody EventReservationReviewRequest request,
             @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(eventReservationService.rejectReservationRequest(requestId, request, user));
+        return ResponseEntity.ok(eventReservationService.rejectReservationRequest(requestId, user));
     }
 
     @GetMapping("/stages/{stageId}/timetable")

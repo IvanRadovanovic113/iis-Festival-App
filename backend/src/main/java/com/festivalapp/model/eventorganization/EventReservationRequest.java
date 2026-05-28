@@ -49,9 +49,6 @@ public class EventReservationRequest {
     @Column(length = 1000)
     private String notes;
 
-    @Column(length = 1000)
-    private String reviewNote;
-
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

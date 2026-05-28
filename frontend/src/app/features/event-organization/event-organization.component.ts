@@ -92,10 +92,6 @@ export class EventOrganizationComponent implements OnInit {
   timetableWeekOffset = 0;
   timetableHours = ['14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
 
-  reviewForm = this.fb.group({
-    reviewNote: ['']
-  });
-
   requestResourceForm = this.fb.group({
     resourceId: [null as number | null, Validators.required],
     quantity: [1, [Validators.required, Validators.min(1)]]
@@ -306,7 +302,6 @@ export class EventOrganizationComponent implements OnInit {
 
   selectReservationRequest(request: EventReservationRequest): void {
     this.selectedReservationRequest = request;
-    this.reviewForm.reset({ reviewNote: request.reviewNote ?? '' });
     this.requestResourceForm.reset({ resourceId: this.resources[0]?.id ?? null, quantity: 1 });
     this.loadSelectedRequestResources();
     this.clearMessages();
@@ -315,8 +310,7 @@ export class EventOrganizationComponent implements OnInit {
   approveSelectedRequest(): void {
     if (!this.selectedReservationRequest) return;
 
-    const reviewNote = this.reviewForm.getRawValue().reviewNote || null;
-    this.eventReservationService.approveReservationRequest(this.selectedReservationRequest.id, { reviewNote }).subscribe({
+    this.eventReservationService.approveReservationRequest(this.selectedReservationRequest.id).subscribe({
       next: request => {
         this.successMessage = 'Reservation request approved.';
         this.reloadReservationRequests(request.id);
@@ -331,8 +325,7 @@ export class EventOrganizationComponent implements OnInit {
   rejectSelectedRequest(): void {
     if (!this.selectedReservationRequest) return;
 
-    const reviewNote = this.reviewForm.getRawValue().reviewNote || null;
-    this.eventReservationService.rejectReservationRequest(this.selectedReservationRequest.id, { reviewNote }).subscribe({
+    this.eventReservationService.rejectReservationRequest(this.selectedReservationRequest.id).subscribe({
       next: request => {
         this.successMessage = 'Reservation request rejected.';
         this.reloadReservationRequests(request.id);
@@ -569,8 +562,7 @@ export class EventOrganizationComponent implements OnInit {
     }
 
     this.eventReservationService.scheduleReservationRequest(this.selectedReservationRequest.id, {
-      startTime: this.selectedScheduleStart,
-      reviewNote: 'Scheduled from reservation timetable'
+      startTime: this.selectedScheduleStart
     }).subscribe({
       next: request => {
         this.confirmedReservation = request;

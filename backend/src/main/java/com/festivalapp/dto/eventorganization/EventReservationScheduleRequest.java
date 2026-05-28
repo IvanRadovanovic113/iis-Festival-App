@@ -11,6 +11,4 @@ import java.time.LocalTime;
 public class EventReservationScheduleRequest {
     @NotNull
     private LocalTime startTime;
-
-    private String reviewNote;
 }

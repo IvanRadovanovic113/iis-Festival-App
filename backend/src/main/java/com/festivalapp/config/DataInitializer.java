@@ -72,6 +72,7 @@ public class DataInitializer implements ApplicationRunner {
         migrateAssignmentRoleConstraint();
         migrateUsersRoleConstraint();
         migrateStageResourcesStageForeignKey();
+        migrateEventReservationReviewNoteColumn();
         createAdminUser();
         seedEventOrganizationRequests();
         assignUnassignedEventResources();
@@ -540,6 +541,12 @@ public class DataInitializer implements ApplicationRunner {
         jdbcTemplate.execute(
             "ALTER TABLE stage_resources DROP CONSTRAINT IF EXISTS fk2u66vfasyd73286d218p2cp3k");
         log.info("Legacy stage_resources foreign key to bine removed");
+    }
+
+    private void migrateEventReservationReviewNoteColumn() {
+        jdbcTemplate.execute(
+            "ALTER TABLE event_reservation_requests DROP COLUMN IF EXISTS review_note");
+        log.info("Legacy event reservation review_note column removed");
     }
 
     /**
