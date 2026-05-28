@@ -13,6 +13,7 @@ public interface StageResourceRepository extends JpaRepository<StageResource, Lo
     Optional<StageResource> findByStage_StageIdAndResource_Id(Long stageId, Long resourceId);
     boolean existsByStage_StageIdAndResource_Id(Long stageId, Long resourceId);
     boolean existsByStage_StageIdAndResource_NameIgnoreCase(Long stageId, String resourceName);
+    boolean existsByResource_Id(Long resourceId);
     @Query("""
         select count(stageResource) > 0
         from StageResource stageResource

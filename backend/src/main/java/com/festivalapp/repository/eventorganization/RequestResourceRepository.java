@@ -20,6 +20,8 @@ public interface RequestResourceRepository extends JpaRepository<RequestResource
 
     void deleteByReservationRequest_IdAndResource_Id(Long reservationRequestId, Long resourceId);
 
+    void deleteByResource_Id(Long resourceId);
+
     @Query("""
         select coalesce(sum(requestResource.quantity), 0)
         from RequestResource requestResource

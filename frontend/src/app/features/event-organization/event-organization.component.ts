@@ -85,6 +85,7 @@ export class EventOrganizationComponent implements OnInit {
   modalMode: ResourceModalMode | null = null;
   editingStageResource: StageResource | null = null;
   deletingStageResource: StageResource | null = null;
+  resourceModalError = '';
 
   inventorySearch = '';
   inventoryStageFilter = 'All';
@@ -397,6 +398,8 @@ export class EventOrganizationComponent implements OnInit {
   openAddResource(): void {
     this.modalMode = 'add';
     this.editingStageResource = null;
+    this.resourceModalError = '';
+    this.clearMessages();
     this.resourceForm.reset({
       name: '',
       type: 'Equipment',
@@ -411,6 +414,8 @@ export class EventOrganizationComponent implements OnInit {
     const resource = this.resources.find(item => item.id === stageResource.resourceId);
     this.modalMode = 'edit';
     this.editingStageResource = stageResource;
+    this.resourceModalError = '';
+    this.clearMessages();
     this.resourceForm.reset({
       name: stageResource.resourceName,
       type: stageResource.resourceType,
@@ -424,6 +429,7 @@ export class EventOrganizationComponent implements OnInit {
   closeResourceModal(): void {
     this.modalMode = null;
     this.editingStageResource = null;
+    this.resourceModalError = '';
     this.resourceForm.reset({
       name: '',
       type: 'Equipment',
@@ -445,9 +451,10 @@ export class EventOrganizationComponent implements OnInit {
     const quantity = Number(value.quantity);
     const resourceName = value.name!;
     if (this.resourceNameExistsOnStage(resourceName, stageId, this.editingStageResource?.resourceId)) {
-      this.errorMessage = 'A resource with this name already exists on this stage.';
+      this.resourceModalError = 'A resource with this name already exists on this stage.';
       return;
     }
+    this.resourceModalError = '';
 
     const resourceRequest = {
       name: resourceName,
@@ -496,7 +503,7 @@ export class EventOrganizationComponent implements OnInit {
         this.closeResourceModal();
         this.reloadResourcesAndAssignments();
       },
-      error: err => this.errorMessage = err.error?.message || 'Unable to save resource.'
+      error: err => this.resourceModalError = err.error?.message || 'Unable to save resource.'
     });
   }
 
@@ -520,16 +527,13 @@ export class EventOrganizationComponent implements OnInit {
   deleteStageResource(): void {
     if (!this.deletingStageResource) return;
 
-    this.stageResourceService.removeResourceFromStage(
-      this.deletingStageResource.stageId,
-      this.deletingStageResource.resourceId
-    ).subscribe({
+    this.eventResourceService.deleteResource(this.deletingStageResource.resourceId).subscribe({
       next: () => {
-        this.successMessage = 'Resource removed from stage.';
+        this.successMessage = 'Resource deleted.';
         this.closeDeleteModal();
-        this.refreshStageData();
+        this.reloadResourcesAndAssignments();
       },
-      error: () => this.errorMessage = 'Unable to delete resource from stage.'
+      error: () => this.errorMessage = 'Unable to delete resource.'
     });
   }
 

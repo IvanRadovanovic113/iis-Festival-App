@@ -6,6 +6,7 @@ import com.festivalapp.model.Festival;
 import com.festivalapp.model.User;
 import com.festivalapp.model.eventorganization.EventResource;
 import com.festivalapp.repository.eventorganization.EventResourceRepository;
+import com.festivalapp.repository.eventorganization.RequestResourceRepository;
 import com.festivalapp.repository.eventorganization.StageResourceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,7 @@ public class EventResourceService {
 
     private final EventResourceRepository eventResourceRepository;
     private final StageResourceRepository stageResourceRepository;
+    private final RequestResourceRepository requestResourceRepository;
     private final EventOrganizationAccessService accessService;
 
     public List<EventResourceResponse> getResources(User user) {
@@ -65,6 +67,7 @@ public class EventResourceService {
     public void deleteResource(Long resourceId, User user) {
         Festival festival = accessService.requireEventOrganizerFestival(user);
         accessService.requireResource(resourceId, festival);
+        requestResourceRepository.deleteByResource_Id(resourceId);
         stageResourceRepository.deleteByResource_Id(resourceId);
         eventResourceRepository.deleteById(resourceId);
     }
