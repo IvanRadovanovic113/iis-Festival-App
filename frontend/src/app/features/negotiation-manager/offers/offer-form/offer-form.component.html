@@ -1,0 +1,79 @@
+<form [formGroup]="offerForm" class="offer-form-container">
+  <div class="header-row">
+    <div>
+      <span class="sub-title">Offers › New Offer</span>
+      <h2>{{ isEditMode ? 'Edit Offer' : 'Create Offer' }}</h2>
+    </div>
+    <div class="actions-top">
+      <button type="button" class="btn-cancel" routerLink="..">Cancel</button>
+      <button type="button" class="btn-secondary" [disabled]="offerForm.invalid" (click)="onSubmit(false)">Save as Draft</button>
+      <button type="button" class="btn-dark" [disabled]="offerForm.invalid" (click)="onSubmit(true)">Save & Publish</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Offer Details</h3>
+    <hr>
+    
+    <div class="form-group full">
+      <label>Location / Stage Name *</label>
+      <input type="text" formControlName="location" placeholder="e.g. Main Stage — EXIT Festival 2026">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Performance Date *</label>
+        <input type="date" formControlName="dateOnly">
+      </div>
+      <div class="form-group">
+        <label>Performance Time *</label>
+        <input type="time" formControlName="timeOnly">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Price (€) *</label>
+        <input type="number" formControlName="price" placeholder="8500">
+      </div>
+      <div class="form-group">
+        <label>Duration (minutes) *</label>
+        <input type="number" formControlName="durationMinutes">
+      </div>
+    </div>
+
+    <div class="form-group full">
+      <label>Additional Conditions</label>
+      <textarea formControlName="additionalRequirements" rows="4" placeholder="e.g. Rider requirements, technical specs..."></textarea>
+    </div>
+  </div>
+
+  <div class="card workflow-card">
+    <h3>Workflow Template *</h3>
+    <p class="subtitle">Defines the negotiation states and conditions for this offer</p>
+    <hr>
+
+    <div class="form-group full">
+      <label>Select Template</label>
+      <select formControlName="workflowTemplateId">
+        <option value="">— Select a workflow template —</option>
+        @for (tmpl of templates; track tmpl.id) {
+          <option [value]="tmpl.id">{{ tmpl.name }}</option>
+        }
+      </select>
+    </div>
+
+    @if (selectedTemplateSteps.length > 0) {
+      <div class="preview-box">
+        <span class="preview-title">TEMPLATE PREVIEW</span>
+        <div class="steps-flow">
+          @for (step of selectedTemplateSteps; track step; let last = $last) {
+            <div class="step-badge">{{ step }}</div>
+            @if (!last) { <div class="step-arrow">→</div> }
+          }
+        </div>
+        <div class="preview-detail">{{ selectedTemplateDetail }}</div>
+      </div>
+    }
+  </div>
+</form>
