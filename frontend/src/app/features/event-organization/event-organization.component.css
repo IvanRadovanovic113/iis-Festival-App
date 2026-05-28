@@ -1,5 +1,6 @@
 :host {
   display: block;
+  zoom: 0.9;
 }
 
 .event-shell {

@@ -4,7 +4,10 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { forkJoin, of, switchMap } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { BinaService } from '../../core/services/bina.service';
-import { EventOrganizationService } from '../../core/services/event-organization.service';
+import { EventReservationService } from '../../core/services/event-reservation.service';
+import { EventResourceService } from '../../core/services/event-resource.service';
+import { RequestResourceService } from '../../core/services/request-resource.service';
+import { StageResourceService } from '../../core/services/stage-resource.service';
 import { Stage } from '../../core/models/bina.model';
 import {
   EventReservationRequest,
@@ -45,7 +48,10 @@ interface TimetableDay {
 export class EventOrganizationComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly stageService = inject(BinaService);
-  private readonly eventOrganizationService = inject(EventOrganizationService);
+  private readonly eventReservationService = inject(EventReservationService);
+  private readonly eventResourceService = inject(EventResourceService);
+  private readonly requestResourceService = inject(RequestResourceService);
+  private readonly stageResourceService = inject(StageResourceService);
   private readonly fb = inject(FormBuilder);
 
   currentUser: User | null = null;
@@ -211,8 +217,8 @@ export class EventOrganizationComponent implements OnInit {
     this.clearMessages();
     forkJoin({
       stages: this.stageService.getAll(),
-      resources: this.eventOrganizationService.getResources(),
-      requests: this.eventOrganizationService.getReservationRequests()
+      resources: this.eventResourceService.getResources(),
+      requests: this.eventReservationService.getReservationRequests()
     }).subscribe({
       next: ({ stages, resources, requests }) => {
         this.stages = stages;
@@ -232,7 +238,7 @@ export class EventOrganizationComponent implements OnInit {
 
   refreshStageData(): void {
     const allAssignments$ = this.stages.length
-      ? forkJoin(this.stages.map(stage => this.eventOrganizationService.getStageResources(stage.stageId)))
+      ? forkJoin(this.stages.map(stage => this.stageResourceService.getStageResources(stage.stageId)))
       : of([] as StageResource[][]);
 
     allAssignments$.subscribe({
@@ -303,7 +309,7 @@ export class EventOrganizationComponent implements OnInit {
     if (!this.selectedReservationRequest) return;
 
     const reviewNote = this.reviewForm.getRawValue().reviewNote || null;
-    this.eventOrganizationService.approveReservationRequest(this.selectedReservationRequest.id, { reviewNote }).subscribe({
+    this.eventReservationService.approveReservationRequest(this.selectedReservationRequest.id, { reviewNote }).subscribe({
       next: request => {
         this.successMessage = 'Reservation request approved.';
         this.reloadReservationRequests(request.id);
@@ -319,7 +325,7 @@ export class EventOrganizationComponent implements OnInit {
     if (!this.selectedReservationRequest) return;
 
     const reviewNote = this.reviewForm.getRawValue().reviewNote || null;
-    this.eventOrganizationService.rejectReservationRequest(this.selectedReservationRequest.id, { reviewNote }).subscribe({
+    this.eventReservationService.rejectReservationRequest(this.selectedReservationRequest.id, { reviewNote }).subscribe({
       next: request => {
         this.successMessage = 'Reservation request rejected.';
         this.reloadReservationRequests(request.id);
@@ -336,7 +342,7 @@ export class EventOrganizationComponent implements OnInit {
     }
 
     const value = this.requestResourceForm.getRawValue();
-    this.eventOrganizationService.addResourceToRequest(this.selectedReservationRequest.id, {
+    this.requestResourceService.addResourceToRequest(this.selectedReservationRequest.id, {
       resourceId: Number(value.resourceId),
       quantity: Number(value.quantity)
     }).subscribe({
@@ -352,7 +358,7 @@ export class EventOrganizationComponent implements OnInit {
   confirmRequestResource(resource: RequestResource): void {
     if (!this.selectedReservationRequest) return;
 
-    this.eventOrganizationService.confirmRequestResource(this.selectedReservationRequest.id, resource.resourceId).subscribe({
+    this.requestResourceService.confirmRequestResource(this.selectedReservationRequest.id, resource.resourceId).subscribe({
       next: () => {
         this.successMessage = 'Resource availability confirmed.';
         this.loadSelectedRequestResources();
@@ -367,7 +373,7 @@ export class EventOrganizationComponent implements OnInit {
   removeRequestResource(resource: RequestResource): void {
     if (!this.selectedReservationRequest) return;
 
-    this.eventOrganizationService.removeResourceFromRequest(this.selectedReservationRequest.id, resource.resourceId).subscribe({
+    this.requestResourceService.removeResourceFromRequest(this.selectedReservationRequest.id, resource.resourceId).subscribe({
       next: () => {
         this.successMessage = 'Resource removed from request.';
         this.loadSelectedRequestResources();
@@ -439,9 +445,9 @@ export class EventOrganizationComponent implements OnInit {
     };
 
     const operation = this.editingStageResource
-      ? this.eventOrganizationService.updateResource(this.editingStageResource.resourceId, resourceRequest).pipe(
+      ? this.eventResourceService.updateResource(this.editingStageResource.resourceId, resourceRequest).pipe(
           switchMap(() => {
-            const updateAssignment = this.eventOrganizationService.updateStageResource(
+            const updateAssignment = this.stageResourceService.updateStageResource(
               this.editingStageResource!.stageId,
               this.editingStageResource!.resourceId,
               { resourceId: this.editingStageResource!.resourceId, quantity }
@@ -452,19 +458,19 @@ export class EventOrganizationComponent implements OnInit {
             }
 
             return updateAssignment.pipe(
-              switchMap(() => this.eventOrganizationService.removeResourceFromStage(
+              switchMap(() => this.stageResourceService.removeResourceFromStage(
                 this.editingStageResource!.stageId,
                 this.editingStageResource!.resourceId
               )),
-              switchMap(() => this.eventOrganizationService.assignResourceToStage(stageId, {
+              switchMap(() => this.stageResourceService.assignResourceToStage(stageId, {
                 resourceId: this.editingStageResource!.resourceId,
                 quantity
               }))
             );
           })
         )
-      : this.eventOrganizationService.createResource(resourceRequest).pipe(
-          switchMap(resource => this.eventOrganizationService.assignResourceToStage(stageId, {
+      : this.eventResourceService.createResource(resourceRequest).pipe(
+          switchMap(resource => this.stageResourceService.assignResourceToStage(stageId, {
             resourceId: resource.id,
             quantity
           }))
@@ -492,7 +498,7 @@ export class EventOrganizationComponent implements OnInit {
   deleteStageResource(): void {
     if (!this.deletingStageResource) return;
 
-    this.eventOrganizationService.removeResourceFromStage(
+    this.stageResourceService.removeResourceFromStage(
       this.deletingStageResource.stageId,
       this.deletingStageResource.resourceId
     ).subscribe({
@@ -536,7 +542,7 @@ export class EventOrganizationComponent implements OnInit {
       return;
     }
 
-    this.eventOrganizationService.scheduleReservationRequest(this.selectedReservationRequest.id, {
+    this.eventReservationService.scheduleReservationRequest(this.selectedReservationRequest.id, {
       startTime: this.selectedScheduleStart,
       reviewNote: 'Scheduled from reservation timetable'
     }).subscribe({
@@ -611,7 +617,7 @@ export class EventOrganizationComponent implements OnInit {
   }
 
   private reloadResourcesAndAssignments(): void {
-    this.eventOrganizationService.getResources().subscribe({
+    this.eventResourceService.getResources().subscribe({
       next: resources => {
         this.resources = resources;
         this.refreshStageData();
@@ -621,7 +627,7 @@ export class EventOrganizationComponent implements OnInit {
   }
 
   private reloadReservationRequests(selectedRequestId?: number): void {
-    this.eventOrganizationService.getReservationRequests().subscribe({
+    this.eventReservationService.getReservationRequests().subscribe({
       next: requests => {
         this.reservationRequests = requests;
         this.selectedReservationRequest = requests.find(request => request.id === selectedRequestId)
@@ -640,7 +646,7 @@ export class EventOrganizationComponent implements OnInit {
       return;
     }
 
-    this.eventOrganizationService.getRequestResources(this.selectedReservationRequest.id).subscribe({
+    this.requestResourceService.getRequestResources(this.selectedReservationRequest.id).subscribe({
       next: resources => this.selectedRequestResources = resources,
       error: () => this.errorMessage = 'Unable to load request resources.'
     });
@@ -652,7 +658,7 @@ export class EventOrganizationComponent implements OnInit {
       return;
     }
 
-    forkJoin(this.reservationRequests.map(request => this.eventOrganizationService.getRequestResources(request.id))).subscribe({
+    forkJoin(this.reservationRequests.map(request => this.requestResourceService.getRequestResources(request.id))).subscribe({
       next: resourceGroups => {
         this.requestResourceCounts = {};
         resourceGroups.forEach((resources, index) => {
@@ -667,7 +673,7 @@ export class EventOrganizationComponent implements OnInit {
     if (!this.selectedStageId) return;
 
     const days = this.timetableDays;
-    forkJoin(days.map(day => this.eventOrganizationService.getTimetable(this.selectedStageId!, day.key))).subscribe({
+    forkJoin(days.map(day => this.eventReservationService.getTimetable(this.selectedStageId!, day.key))).subscribe({
       next: slotGroups => {
         this.timetableSlots = {};
         slotGroups.forEach((slots, index) => {
