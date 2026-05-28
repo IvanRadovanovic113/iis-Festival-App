@@ -6,6 +6,7 @@ import { OfferService } from '../../../../core/services/offer.service';
 import { PerformerService } from '../../../../core/services/performer.service';
 import { OfferDetailResponse, OfferStatus } from '../../../../core/models/offer.model';
 import { PerformerResponse } from '../../../../core/models/performer.model';
+import { WorkflowTemplateService } from '../../../../core/services/workflow-template.service';
 
 @Component({
   selector: 'app-offer-detail',
@@ -16,6 +17,7 @@ import { PerformerResponse } from '../../../../core/models/performer.model';
 })
 export class OfferDetailComponent implements OnInit {
   offer!: OfferDetailResponse;
+  templateName: string = 'Loading...';
   isLoading = true;
 
   // Modal stanja
@@ -29,6 +31,7 @@ export class OfferDetailComponent implements OnInit {
     private route: ActivatedRoute,
     private offerService: OfferService,
     private performerService: PerformerService,
+    private workflowService: WorkflowTemplateService,
     private router: Router
   ) {}
 
@@ -42,7 +45,17 @@ export class OfferDetailComponent implements OnInit {
       next: (data) => {
         this.offer = data;
         this.isLoading = false;
+        this.loadTemplateName(data.workflowTemplateId);
       }
+    });
+  }
+
+  loadTemplateName(templateId: number): void {
+    this.workflowService.getTemplateById(templateId).subscribe({
+      next: (template) => {
+        this.templateName = template.name;
+      },
+      error: () => this.templateName = 'Unknown Template'
     });
   }
 
