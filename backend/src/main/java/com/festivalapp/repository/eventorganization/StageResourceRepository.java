@@ -15,6 +15,12 @@ public interface StageResourceRepository extends JpaRepository<StageResource, Lo
     boolean existsByStage_StageIdAndResource_NameIgnoreCase(Long stageId, String resourceName);
     boolean existsByResource_Id(Long resourceId);
     @Query("""
+        select coalesce(sum(stageResource.quantity), 0)
+        from StageResource stageResource
+        where stageResource.resource.id = :resourceId
+    """)
+    Long sumQuantityByResourceId(@Param("resourceId") Long resourceId);
+    @Query("""
         select count(stageResource) > 0
         from StageResource stageResource
         where lower(stageResource.resource.name) = lower(:resourceName)

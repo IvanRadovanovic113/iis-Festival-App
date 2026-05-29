@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { forkJoin, of, switchMap } from 'rxjs';
+import { Observable, forkJoin, of, switchMap } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { BinaService } from '../../core/services/bina.service';
 import { EventReservationService } from '../../core/services/event-reservation.service';
@@ -442,7 +442,9 @@ export class EventOrganizationComponent implements OnInit {
     const value = this.resourceForm.getRawValue();
     const stageId = Number(value.stageId);
     const quantity = Number(value.quantity);
-    const resourceName = value.name!;
+    const resourceName = value.name!.trim();
+    const resourceType = value.type!;
+    const shareable = Boolean(value.shareable);
     if (this.resourceNameExistsOnStage(resourceName, stageId, this.editingStageResource?.resourceId)) {
       this.resourceModalError = 'A resource with this name already exists on this stage.';
       return;
@@ -451,43 +453,16 @@ export class EventOrganizationComponent implements OnInit {
 
     const resourceRequest = {
       name: resourceName,
-      type: value.type!,
+      type: resourceType,
       description: value.note || null,
       totalQuantity: quantity,
-      shareable: Boolean(value.shareable)
+      shareable
     };
 
+    const matchingResource = this.findMatchingResource(resourceName, resourceType, shareable, this.editingStageResource?.resourceId);
     const operation = this.editingStageResource
-      ? this.eventResourceService.updateResource(this.editingStageResource.resourceId, resourceRequest).pipe(
-          switchMap(() => {
-            const updateAssignment = this.stageResourceService.updateStageResource(
-              this.editingStageResource!.stageId,
-              this.editingStageResource!.resourceId,
-              { resourceId: this.editingStageResource!.resourceId, quantity }
-            );
-
-            if (stageId === this.editingStageResource!.stageId) {
-              return updateAssignment;
-            }
-
-            return updateAssignment.pipe(
-              switchMap(() => this.stageResourceService.removeResourceFromStage(
-                this.editingStageResource!.stageId,
-                this.editingStageResource!.resourceId
-              )),
-              switchMap(() => this.stageResourceService.assignResourceToStage(stageId, {
-                resourceId: this.editingStageResource!.resourceId,
-                quantity
-              }))
-            );
-          })
-        )
-      : this.eventResourceService.createResource(resourceRequest).pipe(
-          switchMap(resource => this.stageResourceService.assignResourceToStage(stageId, {
-            resourceId: resource.id,
-            quantity
-          }))
-        );
+      ? this.saveEditedResource(stageId, quantity, resourceRequest, matchingResource)
+      : this.saveNewResource(stageId, quantity, resourceRequest, matchingResource);
 
     operation.subscribe({
       next: () => {
@@ -509,6 +484,79 @@ export class EventOrganizationComponent implements OnInit {
     );
   }
 
+  private saveNewResource(
+    stageId: number,
+    quantity: number,
+    resourceRequest: { name: string; type: string; description: string | null; totalQuantity: number; shareable: boolean },
+    matchingResource: EventResource | null
+  ): Observable<StageResource> {
+    const resource$ = matchingResource
+      ? of(matchingResource)
+      : this.eventResourceService.createResource(resourceRequest);
+
+    return resource$.pipe(
+      switchMap(resource => this.stageResourceService.assignResourceToStage(stageId, {
+        resourceId: resource.id,
+        quantity
+      }))
+    );
+  }
+
+  private saveEditedResource(
+    stageId: number,
+    quantity: number,
+    resourceRequest: { name: string; type: string; description: string | null; totalQuantity: number; shareable: boolean },
+    matchingResource: EventResource | null
+  ): Observable<StageResource> {
+    const currentAssignment = this.editingStageResource!;
+    const targetResourceId = matchingResource?.id ?? currentAssignment.resourceId;
+
+    if (targetResourceId !== currentAssignment.resourceId) {
+      return this.stageResourceService.removeResourceFromStage(currentAssignment.stageId, currentAssignment.resourceId).pipe(
+        switchMap(() => this.stageResourceService.assignResourceToStage(stageId, {
+          resourceId: targetResourceId,
+          quantity
+        }))
+      );
+    }
+
+    return this.eventResourceService.updateResource(currentAssignment.resourceId, resourceRequest).pipe(
+      switchMap(() => {
+        const updateAssignment = this.stageResourceService.updateStageResource(
+          currentAssignment.stageId,
+          currentAssignment.resourceId,
+          { resourceId: currentAssignment.resourceId, quantity }
+        );
+
+        if (stageId === currentAssignment.stageId) {
+          return updateAssignment;
+        }
+
+        return updateAssignment.pipe(
+          switchMap(() => this.stageResourceService.removeResourceFromStage(
+            currentAssignment.stageId,
+            currentAssignment.resourceId
+          )),
+          switchMap(() => this.stageResourceService.assignResourceToStage(stageId, {
+            resourceId: currentAssignment.resourceId,
+            quantity
+          }))
+        );
+      })
+    );
+  }
+
+  private findMatchingResource(name: string, type: string, shareable: boolean, ignoredResourceId?: number): EventResource | null {
+    const normalizedName = name.trim().toLowerCase();
+    const normalizedType = type.trim().toLowerCase();
+    return this.resources.find(resource =>
+      resource.id !== ignoredResourceId
+      && resource.name.trim().toLowerCase() === normalizedName
+      && resource.type.trim().toLowerCase() === normalizedType
+      && resource.shareable === shareable
+    ) ?? null;
+  }
+
   confirmDelete(stageResource: StageResource): void {
     this.deletingStageResource = stageResource;
   }
@@ -520,13 +568,16 @@ export class EventOrganizationComponent implements OnInit {
   deleteStageResource(): void {
     if (!this.deletingStageResource) return;
 
-    this.eventResourceService.deleteResource(this.deletingStageResource.resourceId).subscribe({
+    this.stageResourceService.removeResourceFromStage(
+      this.deletingStageResource.stageId,
+      this.deletingStageResource.resourceId
+    ).subscribe({
       next: () => {
-        this.successMessage = 'Resource deleted.';
+        this.successMessage = 'Resource removed from stage.';
         this.closeDeleteModal();
         this.reloadResourcesAndAssignments();
       },
-      error: () => this.errorMessage = 'Unable to delete resource.'
+      error: () => this.errorMessage = 'Unable to remove resource from stage.'
     });
   }
 
