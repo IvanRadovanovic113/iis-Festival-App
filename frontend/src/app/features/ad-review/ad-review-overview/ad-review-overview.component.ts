@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -13,7 +13,7 @@ import { AdPhase, AdReview } from '../../../core/models/campaign.model';
   templateUrl: './ad-review-overview.component.html',
   styleUrls: ['./ad-review-overview.component.css']
 })
-export class AdReviewOverviewComponent implements OnInit {
+export class AdReviewOverviewComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
@@ -22,6 +22,8 @@ export class AdReviewOverviewComponent implements OnInit {
   review: AdReview | null = null;
   errorMessage = '';
   successMessage = '';
+  mediaPreviewUrl = '';
+  private protectedPreviewObjectUrl: string | null = null;
   readonly currentUser = this.authService.getCurrentUser();
   savingPromotion = false;
   showPromotionForm = false;
@@ -47,7 +49,9 @@ export class AdReviewOverviewComponent implements OnInit {
     const adId = Number(this.route.snapshot.paramMap.get('adId'));
     this.campaignService.getAdReview(festivalId, adId).subscribe({
       next: review => {
+        this.revokeProtectedPreviewUrl();
         this.review = review;
+        this.loadProtectedPreview(review.ad.contentUrl, review.ad.contentValue);
         this.patchPromotionForm();
         const shouldOpenPublish = this.route.snapshot.queryParamMap.get('publish') === '1';
         const shouldOpenProlong = this.route.snapshot.queryParamMap.get('prolong') === '1';
@@ -60,6 +64,10 @@ export class AdReviewOverviewComponent implements OnInit {
       },
       error: () => this.errorMessage = 'Error loading ad history.'
     });
+  }
+
+  ngOnDestroy(): void {
+    this.revokeProtectedPreviewUrl();
   }
 
   get audience(): 'manager' | 'director' {
@@ -97,16 +105,16 @@ export class AdReviewOverviewComponent implements OnInit {
     return this.review?.ad.currentPhaseId === phase.phaseId;
   }
 
-  isImageContent(contentValue: string | undefined): boolean {
-    return !!contentValue && contentValue.startsWith('data:image/');
+  isImageContent(): boolean {
+    return this.review?.ad.contentMimeType?.startsWith('image/') ?? !!this.review?.ad.contentValue?.startsWith('data:image/');
   }
 
-  isAudioContent(contentValue: string | undefined): boolean {
-    return !!contentValue && contentValue.startsWith('data:audio/');
+  isAudioContent(): boolean {
+    return this.review?.ad.contentMimeType?.startsWith('audio/') ?? !!this.review?.ad.contentValue?.startsWith('data:audio/');
   }
 
-  isVideoContent(contentValue: string | undefined): boolean {
-    return !!contentValue && contentValue.startsWith('data:video/');
+  isVideoContent(): boolean {
+    return this.review?.ad.contentMimeType?.startsWith('video/') ?? !!this.review?.ad.contentValue?.startsWith('data:video/');
   }
 
   get canManagePromotion(): boolean {
@@ -160,6 +168,7 @@ export class AdReviewOverviewComponent implements OnInit {
       next: ad => {
         if (!this.review) return;
         this.review = { ...this.review, ad };
+        this.loadProtectedPreview(ad.contentUrl, ad.contentValue);
         this.patchPromotionForm();
         this.savingPromotion = false;
         this.showPromotionForm = false;
@@ -187,6 +196,25 @@ export class AdReviewOverviewComponent implements OnInit {
 
   logout(): void {
     this.authService.logout();
+  }
+
+  private loadProtectedPreview(contentUrl: string | null, contentValue: string | null): void {
+    this.revokeProtectedPreviewUrl();
+    if (contentUrl) {
+      this.campaignService.getProtectedMediaUrl(contentUrl).subscribe({
+        next: objectUrl => {
+          this.protectedPreviewObjectUrl = objectUrl;
+          this.mediaPreviewUrl = objectUrl;
+        },
+        error: () => {
+          this.mediaPreviewUrl = '';
+          this.errorMessage = 'Error loading content preview.';
+        }
+      });
+      return;
+    }
+
+    this.mediaPreviewUrl = contentValue?.startsWith('data:') ? contentValue : '';
   }
 
   private patchPromotionForm(): void {
@@ -217,5 +245,12 @@ export class AdReviewOverviewComponent implements OnInit {
 
   private toDateInputValue(date: Date): string {
     return date.toISOString().slice(0, 10);
+  }
+
+  private revokeProtectedPreviewUrl(): void {
+    if (this.protectedPreviewObjectUrl) {
+      URL.revokeObjectURL(this.protectedPreviewObjectUrl);
+      this.protectedPreviewObjectUrl = null;
+    }
   }
 }

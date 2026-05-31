@@ -23,3 +23,6 @@ Thumbs.db
 # Environment
 .env
 *.env.local
+
+# Uploaded media
+backend/uploads/

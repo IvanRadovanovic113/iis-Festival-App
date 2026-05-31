@@ -2,7 +2,6 @@ package com.festivalapp.service;
 
 import com.festivalapp.dto.CreativeCampaignResponse;
 import com.festivalapp.dto.AdResponse;
-import com.festivalapp.dto.CreativeAdUpdateRequest;
 import com.festivalapp.model.Ad;
 import com.festivalapp.model.AdPhase;
 import com.festivalapp.model.Campaign;
@@ -18,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,6 +35,7 @@ public class CreativeWorkService {
     private final AdVersionSnapshotService adVersionSnapshotService;
     private final NotificationService notificationService;
     private final WorkflowMailService workflowMailService;
+    private final FileStorageService fileStorageService;
 
     private UserFestivalAssignment requireCreativeAssignment(User user) {
         UserFestivalAssignment assignment = assignmentRepository.findByUser_Id(user.getId())
@@ -71,12 +72,15 @@ public class CreativeWorkService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Campaign not found"));
         Ad ad = adRepository.findById(adId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ad not found"));
+        if (!ad.getCampaign().getCampaignId().equals(campaign.getCampaignId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Ad does not belong to the selected campaign");
+        }
         ensureAdAccess(ad, assignment.getRole());
         return AdResponse.from(ad);
     }
 
     @Transactional
-    public AdResponse updateAd(Long campaignId, Long adId, CreativeAdUpdateRequest request, User user) {
+    public AdResponse updateAd(Long campaignId, Long adId, String contentText, MultipartFile file, boolean clearExisting, User user) {
         UserFestivalAssignment assignment = requireCreativeAssignment(user);
         Campaign campaign = campaignRepository.findById(campaignId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Campaign not found"));
@@ -84,14 +88,14 @@ public class CreativeWorkService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ad not found"));
         ensureAdAccess(ad, assignment.getRole());
 
-        String nextContentValue = request.getContentValue().trim();
-
-        boolean changed = !ad.getContentFileName().equals(nextContentValue);
-        if (!changed) {
-            return AdResponse.from(ad);
+        boolean changed;
+        if (usesFileStorage(ad)) {
+            changed = updateBinaryContent(ad, file, clearExisting);
+        } else {
+            changed = updateTextContent(ad, contentText);
         }
+        if (!changed) return AdResponse.from(ad);
 
-        ad.setContentFileName(nextContentValue);
         ad.setLastChangeDate(LocalDate.now());
         ad.setVersionNumber(ad.getVersionNumber() + 1);
         ad.setLastEditedByUser(user);
@@ -106,6 +110,60 @@ public class CreativeWorkService {
         adVersionSnapshotService.captureSnapshot(savedAd);
         notifyNextRole(savedAd, previousPhase, nextPhase);
         return AdResponse.from(savedAd);
+    }
+
+    private boolean updateTextContent(Ad ad, String contentText) {
+        String nextContentValue = contentText == null ? "" : contentText.trim();
+        if (nextContentValue.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Text content is required");
+        }
+        String currentContent = ad.getContentText() != null ? ad.getContentText() : ad.getContentFileName();
+        if (nextContentValue.equals(currentContent)) {
+            return false;
+        }
+        ad.setContentText(nextContentValue);
+        ad.setContentFileName(nextContentValue);
+        ad.setContentStoragePath(null);
+        ad.setContentOriginalFileName(null);
+        ad.setContentMimeType(null);
+        ad.setContentSize(null);
+        return true;
+    }
+
+    private boolean updateBinaryContent(Ad ad, MultipartFile file, boolean clearExisting) {
+        if (file == null || file.isEmpty()) {
+            if (clearExisting) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Upload a new file before saving");
+            }
+            return false;
+        }
+
+        validateBinaryContentType(ad, file);
+        FileStorageService.StoredFile storedFile = fileStorageService.saveAdContent(ad.getAdId(), file);
+        ad.setContentText(null);
+        ad.setContentFileName(storedFile.getOriginalFileName());
+        ad.setContentStoragePath(storedFile.getStoragePath());
+        ad.setContentOriginalFileName(storedFile.getOriginalFileName());
+        ad.setContentMimeType(storedFile.getMimeType());
+        ad.setContentSize(storedFile.getSize());
+        return true;
+    }
+
+    private void validateBinaryContentType(Ad ad, MultipartFile file) {
+        String expectedPrefix = switch (ad.getAdType().getContentType()) {
+            case "Image" -> "image/";
+            case "Audio" -> "audio/";
+            case "Video" -> "video/";
+            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This ad type does not use file upload");
+        };
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith(expectedPrefix)) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Uploaded file does not match required content type: " + ad.getAdType().getContentType()
+            );
+        }
     }
 
     private AdPhase resolveNextPhase(Ad ad) {
@@ -177,5 +235,9 @@ public class CreativeWorkService {
         if (!isAllowedContentType(role, ad.getAdType().getContentType())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This ad content type is not assigned to your role");
         }
+    }
+
+    private boolean usesFileStorage(Ad ad) {
+        return Set.of("Image", "Audio", "Video").contains(ad.getAdType().getContentType());
     }
 }

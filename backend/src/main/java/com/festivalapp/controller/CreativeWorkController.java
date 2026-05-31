@@ -2,14 +2,14 @@ package com.festivalapp.controller;
 
 import com.festivalapp.dto.AdResponse;
 import com.festivalapp.dto.CreativeCampaignResponse;
-import com.festivalapp.dto.CreativeAdUpdateRequest;
 import com.festivalapp.model.User;
 import com.festivalapp.service.CreativeWorkService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -39,13 +39,15 @@ public class CreativeWorkController {
         return ResponseEntity.ok(creativeWorkService.getAd(campaignId, adId, user));
     }
 
-    @PutMapping("/campaigns/{campaignId}/ads/{adId}")
+    @PutMapping(value = "/campaigns/{campaignId}/ads/{adId}", consumes = "multipart/form-data")
     public ResponseEntity<AdResponse> updateAd(
         @PathVariable Long campaignId,
         @PathVariable Long adId,
-        @Valid @RequestBody CreativeAdUpdateRequest request,
+        @RequestParam(value = "contentText", required = false) String contentText,
+        @RequestParam(value = "file", required = false) MultipartFile file,
+        @RequestParam(value = "clearExisting", defaultValue = "false") boolean clearExisting,
         @AuthenticationPrincipal User user
     ) {
-        return ResponseEntity.ok(creativeWorkService.updateAd(campaignId, adId, request, user));
+        return ResponseEntity.ok(creativeWorkService.updateAd(campaignId, adId, contentText, file, clearExisting, user));
     }
 }

@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import {
   Ad,
   AdPromotionRequest,
@@ -130,8 +131,24 @@ export class CampaignService {
     return this.http.get<Ad>(`${this.CREATIVE_API}/campaigns/${campaignId}/ads/${adId}`);
   }
 
+  getProtectedMediaUrl(contentUrl: string): Observable<string> {
+    return this.http.get(contentUrl, { responseType: 'blob' }).pipe(
+      map(blob => URL.createObjectURL(blob))
+    );
+  }
+
   updateCreativeAd(campaignId: number, adId: number, request: CreativeAdUpdateRequest) {
-    return this.http.put<Ad>(`${this.CREATIVE_API}/campaigns/${campaignId}/ads/${adId}`, request);
+    const formData = new FormData();
+    if (request.contentText !== undefined) {
+      formData.append('contentText', request.contentText);
+    }
+    if (request.file) {
+      formData.append('file', request.file);
+    }
+    if (request.clearExisting !== undefined) {
+      formData.append('clearExisting', String(request.clearExisting));
+    }
+    return this.http.put<Ad>(`${this.CREATIVE_API}/campaigns/${campaignId}/ads/${adId}`, formData);
   }
 
   getAdReview(festivalId: number, adId: number) {

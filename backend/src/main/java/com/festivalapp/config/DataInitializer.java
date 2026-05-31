@@ -39,10 +39,14 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 @Component
 @RequiredArgsConstructor
@@ -67,6 +71,7 @@ public class DataInitializer implements ApplicationRunner {
     private final StageResourceRepository stageResourceRepository;
 
     @Override
+    @Transactional
     public void run(ApplicationArguments args) {
         migrateKupciTierConstraint();
         migrateAssignmentRoleConstraint();
@@ -244,6 +249,8 @@ public class DataInitializer implements ApplicationRunner {
         ensureAd(demoCampaign, textType, designContent, productDesigner, "Text Promo EXIT 2026", "Seeded text ad for product designer testing.", "Draft campaign copy");
         ensureAd(demoCampaign, imageType, directorApproval, productDesigner, "Poster EXIT 2026", "Seeded image ad waiting for director approval.", "poster-exit-2026.png");
         ensureAd(demoCampaign, audioType, technicalContent, technicalSupport, "Audio EXIT 2026", "Seeded audio ad for technical support testing.", "audio-exit-2026.mp3");
+
+        seedExpandedCampaignAds(festivalManager, festivalDirector, productDesigner, technicalSupport);
     }
 
     private void seedEventOrganizationRequests() {
@@ -483,7 +490,7 @@ public class DataInitializer implements ApplicationRunner {
             .orElseGet(() -> AdType.builder().name(name).build());
         adType.setDescription(description);
         adType.setContentType(contentType);
-        adType.setPhases(java.util.Arrays.stream(phases).toList());
+        adType.setPhases(new ArrayList<>(java.util.Arrays.asList(phases)));
         adTypeRepository.save(adType);
     }
 
@@ -506,6 +513,124 @@ public class DataInitializer implements ApplicationRunner {
         ad.setLastEditedAt(java.time.LocalDateTime.now());
         Ad savedAd = adRepository.save(ad);
         adVersionSnapshotService.captureSnapshot(savedAd);
+    }
+
+    private void seedExpandedCampaignAds(
+        User defaultFestivalManager,
+        User festivalDirector,
+        User productDesigner,
+        User technicalSupport
+    ) {
+        final int targetTotalAds = 100;
+        long currentAds = adRepository.count();
+        if (currentAds >= targetTotalAds) {
+            log.info("Expanded campaign ad seed skipped because {} ads already exist", currentAds);
+            return;
+        }
+
+        List<Campaign> campaigns = campaignRepository.findAll().stream()
+            .sorted(Comparator.comparing(Campaign::getCampaignId))
+            .toList();
+        if (campaigns.isEmpty()) {
+            return;
+        }
+
+        List<AdType> adTypes = adTypeRepository.findAllByOrderByNameAsc();
+        if (adTypes.isEmpty()) {
+            return;
+        }
+
+        List<SeedTemplate> templates = buildSeedTemplates(adTypes);
+        if (templates.isEmpty()) {
+            return;
+        }
+
+        int remainingAds = (int) (targetTotalAds - currentAds);
+        int templateIndex = 0;
+        int cycle = 1;
+
+        while (remainingAds > 0) {
+            for (Campaign campaign : campaigns) {
+                if (remainingAds <= 0) {
+                    break;
+                }
+
+                SeedTemplate template = templates.get(templateIndex % templates.size());
+                User editor = resolveEditorForPhase(
+                    template.phase(),
+                    campaign.getManagerUser() != null ? campaign.getManagerUser() : defaultFestivalManager,
+                    festivalDirector,
+                    productDesigner,
+                    technicalSupport
+                );
+
+                String name = "%s %s %02d".formatted(
+                    template.adType().getName(),
+                    normalizeForSeedName(template.phase().getName()),
+                    cycle
+                );
+                String description = "Seeded %s ad in phase %s for richer dashboard statistics.".formatted(
+                    template.adType().getName().toLowerCase(Locale.ROOT),
+                    template.phase().getName()
+                );
+                String contentValue = buildSeedContentValue(template.adType(), campaign, cycle);
+
+                ensureAd(campaign, template.adType(), template.phase(), editor, name, description, contentValue);
+
+                remainingAds--;
+                templateIndex++;
+            }
+            cycle++;
+        }
+
+        log.info("Expanded campaign ads seeded up to approximately {} total ads", targetTotalAds);
+    }
+
+    private List<SeedTemplate> buildSeedTemplates(List<AdType> adTypes) {
+        List<SeedTemplate> templates = new ArrayList<>();
+        for (AdType adType : adTypes) {
+            List<AdPhase> phases = adType.getPhases();
+            for (AdPhase phase : phases) {
+                templates.add(new SeedTemplate(adType, phase));
+            }
+        }
+        return templates;
+    }
+
+    private User resolveEditorForPhase(
+        AdPhase phase,
+        User festivalManager,
+        User festivalDirector,
+        User productDesigner,
+        User technicalSupport
+    ) {
+        return switch (phase.getAssignedRole()) {
+            case FESTIVAL_MANAGER -> festivalManager;
+            case FESTIVAL_DIRECTOR -> festivalDirector;
+            case PRODUCT_DESIGNER -> productDesigner;
+            case TECHNICAL_SUPPORT -> technicalSupport;
+            default -> festivalManager;
+        };
+    }
+
+    private String buildSeedContentValue(AdType adType, Campaign campaign, int cycle) {
+        String campaignSlug = normalizeForSeedName(campaign.getName()).toLowerCase(Locale.ROOT);
+        return switch (adType.getContentType()) {
+            case "Text" -> "Seeded copy %02d for %s".formatted(cycle, campaignSlug);
+            case "Image" -> "seeded-%s-image-%02d.png".formatted(campaignSlug, cycle);
+            case "Audio" -> "seeded-%s-audio-%02d.mp3".formatted(campaignSlug, cycle);
+            case "Video" -> "seeded-%s-video-%02d.mp4".formatted(campaignSlug, cycle);
+            default -> "seeded-content-%02d".formatted(cycle);
+        };
+    }
+
+    private String normalizeForSeedName(String value) {
+        return value.toUpperCase(Locale.ROOT)
+            .replaceAll("[^A-Z0-9]+", "_")
+            .replaceAll("^_+|_+$", "");
+    }
+
+    private record SeedTemplate(AdType adType, AdPhase phase) {
     }
 
     // ─── DB migracije ────────────────────────────────────────────────────────
