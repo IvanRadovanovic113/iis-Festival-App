@@ -25,7 +25,11 @@ public class AdVersionSnapshotService {
             .versionNumber(ad.getVersionNumber())
             .name(ad.getName())
             .description(ad.getDescription())
-            .contentValue(ad.getContentFileName())
+            .contentValue(ad.getContentText() != null ? ad.getContentText() : ad.getContentFileName())
+            .contentStoragePath(ad.getContentStoragePath())
+            .contentOriginalFileName(ad.getContentOriginalFileName())
+            .contentMimeType(ad.getContentMimeType())
+            .contentSize(ad.getContentSize())
             .changedAt(ad.getLastChangeDate())
             .phaseName(ad.getCurrentPhase().getName())
             .build());

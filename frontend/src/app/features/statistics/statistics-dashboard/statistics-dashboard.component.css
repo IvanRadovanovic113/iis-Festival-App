@@ -96,6 +96,23 @@
   gap: 1.25rem;
 }
 
+.pdf-export-root {
+  position: fixed;
+  left: -200vw;
+  top: 0;
+  width: 1120px;
+  pointer-events: none;
+}
+
+.pdf-export-sheet {
+  background: #f8f6ef;
+  color: #1e1c18;
+  padding: 40px;
+  display: grid;
+  gap: 1.25rem;
+  box-sizing: border-box;
+}
+
 .page-header,
 .filters-card,
 .stats-grid,
@@ -113,6 +130,28 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.pdf-header {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(31, 27, 23, 0.08);
+  border-radius: 28px;
+  box-shadow: 0 24px 60px rgba(45, 39, 31, 0.08);
+  padding: 1.5rem 1.75rem;
+}
+
+.pdf-title {
+  margin: 0;
+  font-size: 2rem;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  word-spacing: 0.22em;
+}
+
+.pdf-subtitle {
+  margin: 0.7rem 0 0;
+  color: #6f6559;
+  font-size: 0.96rem;
 }
 
 .eyebrow {
@@ -138,6 +177,44 @@ p {
 
 .filters-card {
   padding: 1.25rem 1.5rem;
+}
+
+.pdf-summary-card,
+.pdf-filter-text {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(31, 27, 23, 0.08);
+  border-radius: 28px;
+  box-shadow: 0 24px 60px rgba(45, 39, 31, 0.08);
+}
+
+.pdf-summary-card {
+  padding: 1.25rem 1.5rem;
+}
+
+.pdf-summary-text {
+  margin: 0;
+  line-height: 1.8;
+  color: #4e473d;
+}
+
+.pdf-filter-text {
+  padding: 1rem 1.5rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.pdf-filter-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 1rem;
+  align-items: baseline;
+}
+
+.pdf-filter-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.76rem;
+  color: #7a7064;
 }
 
 .filters-grid {
@@ -243,39 +320,41 @@ input {
   padding: 1.4rem;
 }
 
+.pdf-charts-section {
+  align-items: start;
+}
+
 .bar-chart {
   position: relative;
-  min-height: 320px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
-  gap: 0.9rem;
+  gap: 0.35rem;
   align-items: end;
   flex: 1;
-  padding: 0.75rem 0 0;
+  padding: 0;
 }
 
 .bar-chart-shell {
   display: flex;
-  gap: 0.85rem;
+  gap: 0.55rem;
   align-items: stretch;
   margin-top: 1rem;
 }
 
 .y-axis {
   width: 34px;
-  min-height: 320px;
+  height: 284px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-end;
-  padding-bottom: 2.2rem;
+  padding-top: 44px;
   color: #7a7064;
   font-size: 0.75rem;
 }
 
 .grid-lines {
   position: absolute;
-  inset: 0 0 2.2rem 0;
+  inset: 44px 0 0 0;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -290,10 +369,12 @@ input {
 
 .bar-column {
   display: grid;
-  gap: 0.5rem;
+  grid-template-rows: 44px 240px;
+  gap: 0;
   justify-items: center;
   align-self: end;
   z-index: 1;
+  min-width: 0;
 }
 
 .bar-track {
@@ -303,7 +384,7 @@ input {
   background: transparent;
   display: flex;
   align-items: flex-end;
-  padding: 0 0.4rem;
+  padding: 0 0.7rem;
   border-bottom: 2px solid #d2c7b7;
 }
 
@@ -315,13 +396,9 @@ input {
 
 .bar-value {
   font-weight: 700;
-}
-
-.bar-label {
-  text-align: center;
-  font-size: 0.82rem;
-  color: #665d53;
-  line-height: 1.3;
+  font-size: 0.95rem;
+  align-self: end;
+  padding-bottom: 0.5rem;
 }
 
 .legend-grid {
@@ -409,5 +486,14 @@ input {
 
   .filter-actions {
     flex-direction: column;
+  }
+
+  .bar-chart-shell {
+    gap: 0.45rem;
+  }
+
+  .y-axis {
+    width: 28px;
+    height: 284px;
   }
 }

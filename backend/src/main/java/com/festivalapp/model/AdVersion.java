@@ -36,6 +36,18 @@ public class AdVersion {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String contentValue;
 
+    @Column(name = "content_storage_path", columnDefinition = "TEXT")
+    private String contentStoragePath;
+
+    @Column(name = "content_original_file_name")
+    private String contentOriginalFileName;
+
+    @Column(name = "content_mime_type")
+    private String contentMimeType;
+
+    @Column(name = "content_size")
+    private Long contentSize;
+
     @Column(nullable = false)
     private LocalDate changedAt;
 
