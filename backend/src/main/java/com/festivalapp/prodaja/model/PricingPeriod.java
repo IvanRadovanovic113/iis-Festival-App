@@ -31,6 +31,9 @@ public class PricingPeriod {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal minPrice;
 
+    @Column(precision = 10, scale = 2)
+    private BigDecimal currentPrice;
+
     @Builder.Default
     @Column(nullable = false)
     private Boolean dynamicPricingActive = false;

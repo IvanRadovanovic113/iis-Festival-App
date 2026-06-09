@@ -1,13 +1,14 @@
 package com.festivalapp.prodaja.service;
 
-import com.festivalapp.model.Festival;
 import com.festivalapp.model.Role;
 import com.festivalapp.model.User;
 import com.festivalapp.model.UserFestivalAssignment;
 import com.festivalapp.prodaja.dto.PricingPeriodRequest;
 import com.festivalapp.prodaja.dto.PricingPeriodResponse;
+import com.festivalapp.prodaja.model.OcekivanaProdaja;
 import com.festivalapp.prodaja.model.PricingPeriod;
 import com.festivalapp.prodaja.model.TicketType;
+import com.festivalapp.prodaja.repository.OcekivanaProdajaRepository;
 import com.festivalapp.prodaja.repository.PricingPeriodRepository;
 import com.festivalapp.prodaja.repository.TicketTypeRepository;
 import com.festivalapp.repository.UserFestivalAssignmentRepository;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -26,6 +28,8 @@ public class PricingPeriodService {
     private final PricingPeriodRepository pricingPeriodRepository;
     private final TicketTypeRepository ticketTypeRepository;
     private final UserFestivalAssignmentRepository assignmentRepository;
+    private final OcekivanaProdajaRepository ocekivanaProdajaRepository;
+    private final CenovnaIstorijaService cenovnaIstorijaService;
 
     private TicketType requireAccess(Long ticketTypeId, User user) {
         UserFestivalAssignment assignment = assignmentRepository.findByUser_Id(user.getId())
@@ -44,7 +48,11 @@ public class PricingPeriodService {
     public List<PricingPeriodResponse> getAll(Long ticketTypeId, User user) {
         requireAccess(ticketTypeId, user);
         return pricingPeriodRepository.findByTicketType_TicketTypeIdOrderByStartDateAsc(ticketTypeId)
-            .stream().map(PricingPeriodResponse::from).toList();
+            .stream().map(p -> {
+                OcekivanaProdaja op = ocekivanaProdajaRepository
+                    .findByPricingPeriod_PricingPeriodId(p.getPricingPeriodId()).orElse(null);
+                return PricingPeriodResponse.from(p, op);
+            }).toList();
     }
 
     @Transactional
@@ -58,10 +66,11 @@ public class PricingPeriodService {
             .endDate(request.getEndDate())
             .basePrice(request.getBasePrice())
             .minPrice(request.getMinPrice())
+            .currentPrice(request.getBasePrice())
             .dynamicPricingActive(request.getDynamicPricingActive())
             .build();
 
-        return PricingPeriodResponse.from(pricingPeriodRepository.save(period));
+        return PricingPeriodResponse.from(pricingPeriodRepository.save(period), null);
     }
 
     @Transactional
@@ -74,13 +83,30 @@ public class PricingPeriodService {
         }
         validateRequest(request, ticketTypeId, tt, periodId);
 
+        BigDecimal staraCurrentPrice = period.getCurrentPrice();
+        boolean basePricePromenjen = period.getBasePrice().compareTo(request.getBasePrice()) != 0;
+
         period.setStartDate(request.getStartDate());
         period.setEndDate(request.getEndDate());
         period.setBasePrice(request.getBasePrice());
         period.setMinPrice(request.getMinPrice());
         period.setDynamicPricingActive(request.getDynamicPricingActive());
 
-        return PricingPeriodResponse.from(pricingPeriodRepository.save(period));
+        if (basePricePromenjen) {
+            // Ručna promena basePrice resetuje currentPrice
+            period.setCurrentPrice(request.getBasePrice());
+        }
+
+        PricingPeriod saved = pricingPeriodRepository.save(period);
+
+        if (basePricePromenjen && staraCurrentPrice != null) {
+            cenovnaIstorijaService.logPromenu(tt, saved, staraCurrentPrice, request.getBasePrice(),
+                "Ručna promena cene (reset na novu basePrice)", true);
+        }
+
+        OcekivanaProdaja op = ocekivanaProdajaRepository
+            .findByPricingPeriod_PricingPeriodId(periodId).orElse(null);
+        return PricingPeriodResponse.from(saved, op);
     }
 
     @Transactional

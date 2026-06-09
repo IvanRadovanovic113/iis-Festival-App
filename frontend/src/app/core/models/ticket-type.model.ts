@@ -12,6 +12,7 @@ export interface TicketType {
   segments: SegmentInfo[];
   festivalId: number;
   festivalName: string;
+  currentPrice?: number | null;
 }
 
 export interface TicketTypeRequest {

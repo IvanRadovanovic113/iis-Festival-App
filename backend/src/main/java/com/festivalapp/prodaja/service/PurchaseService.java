@@ -125,10 +125,10 @@ public class PurchaseService {
                 "Not enough tickets available. Requested: " + quantity + ", available: " + available);
         }
 
-        // 3. Aktivna cena
+        // 3. Aktivna cena — currentPrice ako postoji (dynamic pricing), inače basePrice
         BigDecimal pricePerTicket = pricingPeriodRepository
             .findActiveForTicketType(ticketType.getTicketTypeId(), today)
-            .map(p -> p.getBasePrice())
+            .map(p -> p.getCurrentPrice() != null ? p.getCurrentPrice() : p.getBasePrice())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "No active pricing period for this ticket type"));
 

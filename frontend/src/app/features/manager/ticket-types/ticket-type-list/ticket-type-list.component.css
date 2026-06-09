@@ -140,6 +140,9 @@
 }
 
 .btn-link:hover { text-decoration: underline; }
+.btn-link-history { color: #6a1b9a; }
+.current-price { font-weight: 600; color: #212121; }
+.muted { color: #bdbdbd; }
 
 .btn-danger-sm {
   padding: 0.3rem 0.7rem;

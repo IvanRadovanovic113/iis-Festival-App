@@ -5,8 +5,10 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TicketTypeService } from '../../../../core/services/ticket-type.service';
 import { PricingPeriodService } from '../../../../core/services/pricing-period.service';
+import { OcekivanaProdajaService } from '../../../../core/services/ocekivana-prodaja.service';
 import { TicketType } from '../../../../core/models/ticket-type.model';
 import { PricingPeriod, PricingPeriodRequest } from '../../../../core/models/pricing-period.model';
+import { OcekivanaProdajaRequest } from '../../../../core/models/ocekivana-prodaja.model';
 
 @Component({
   selector: 'app-pricing-periods',
@@ -19,6 +21,7 @@ export class PricingPeriodsComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private ticketTypeService = inject(TicketTypeService);
   private pricingPeriodService = inject(PricingPeriodService);
+  private ocekivanaService = inject(OcekivanaProdajaService);
   private fb = inject(FormBuilder);
   private destroyRef = inject(DestroyRef);
 
@@ -31,12 +34,28 @@ export class PricingPeriodsComponent implements OnInit {
   submitting = false;
   togglingPricing = false;
 
+  // DP config per period: periodId → expanded state
+  dpExpandedPeriodId: number | null = null;
+  dpSubmitting = false;
+  dpError = '';
+
   form = this.fb.group({
     startDate: ['', Validators.required],
     endDate: ['', Validators.required],
     basePrice: [null as number | null, [Validators.required, Validators.min(0.01)]],
     minPrice: [null as number | null, [Validators.required, Validators.min(0.01)]],
     dynamicPricingActive: [false]
+  });
+
+  dpForm = this.fb.group({
+    brojKarata: [null as number | null, [Validators.required, Validators.min(1)]],
+    brojSati: [null as number | null, [Validators.required, Validators.min(1)]],
+    agresivnost: [null as number | null, [Validators.required, Validators.min(0.01), Validators.max(1)]],
+    intervalMinuti: [null as number | null, [Validators.required, Validators.min(1)]],
+    scarcityPragNizak: [null as number | null, [Validators.required, Validators.min(1), Validators.max(99)]],
+    scarcityPragVisok: [null as number | null, [Validators.required, Validators.min(1), Validators.max(99)]],
+    scarcityMultiplikatorNizak: [null as number | null, [Validators.required, Validators.min(1)]],
+    scarcityMultiplikatorVisok: [null as number | null, [Validators.required, Validators.min(1)]]
   });
 
   get hasDynamicPeriodWarning(): boolean {
@@ -157,5 +176,67 @@ export class PricingPeriodsComponent implements OnInit {
         this.togglingPricing = false;
       }
     });
+  }
+
+  toggleDpConfig(period: PricingPeriod): void {
+    if (this.dpExpandedPeriodId === period.pricingPeriodId) {
+      this.dpExpandedPeriodId = null;
+      return;
+    }
+    this.dpExpandedPeriodId = period.pricingPeriodId;
+    this.dpError = '';
+    const op = period.ocekivanaProdaja;
+    this.dpForm.patchValue({
+      brojKarata: op?.brojKarata ?? null,
+      brojSati: op?.brojSati ?? null,
+      agresivnost: op?.agresivnost ?? null,
+      intervalMinuti: op?.intervalMinuti ?? null,
+      scarcityPragNizak: op?.scarcityPragNizak ?? null,
+      scarcityPragVisok: op?.scarcityPragVisok ?? null,
+      scarcityMultiplikatorNizak: op?.scarcityMultiplikatorNizak ?? null,
+      scarcityMultiplikatorVisok: op?.scarcityMultiplikatorVisok ?? null
+    });
+  }
+
+  saveDpConfig(period: PricingPeriod): void {
+    if (this.dpForm.invalid) {
+      this.dpForm.markAllAsTouched();
+      return;
+    }
+    this.dpSubmitting = true;
+    this.dpError = '';
+
+    const request: OcekivanaProdajaRequest = {
+      brojKarata: this.dpForm.value.brojKarata!,
+      brojSati: this.dpForm.value.brojSati!,
+      agresivnost: this.dpForm.value.agresivnost!,
+      intervalMinuti: this.dpForm.value.intervalMinuti!,
+      scarcityPragNizak: this.dpForm.value.scarcityPragNizak!,
+      scarcityPragVisok: this.dpForm.value.scarcityPragVisok!,
+      scarcityMultiplikatorNizak: this.dpForm.value.scarcityMultiplikatorNizak!,
+      scarcityMultiplikatorVisok: this.dpForm.value.scarcityMultiplikatorVisok!
+    };
+
+    this.ocekivanaService.upsert(period.pricingPeriodId, request).subscribe({
+      next: saved => {
+        this.periods = this.periods.map(p =>
+          p.pricingPeriodId === period.pricingPeriodId
+            ? { ...p, ocekivanaProdaja: saved }
+            : p
+        );
+        this.dpExpandedPeriodId = null;
+        this.dpSubmitting = false;
+      },
+      error: err => {
+        this.dpError = err.error?.message || 'Error saving configuration.';
+        this.dpSubmitting = false;
+      }
+    });
+  }
+
+  cancelDpConfig(): void {
+    this.dpExpandedPeriodId = null;
+    this.dpForm.reset();
+    this.dpError = '';
   }
 }
