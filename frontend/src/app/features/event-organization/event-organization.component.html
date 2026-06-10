@@ -28,6 +28,16 @@
     </section>
   }
 
+  @if (activeTab === 'tasks') {
+    <section class="sub-nav">
+      @for (filter of ['All', 'OPEN', 'RESOLVED', 'REJECTED']; track filter) {
+        <button type="button" [class.active]="activeTaskFilter === filter" (click)="setTaskFilter($any(filter))">
+          {{ filter === 'All' ? 'All' : filter === 'OPEN' ? 'Open' : filter === 'RESOLVED' ? 'Resolved' : 'Rejected' }}
+        </button>
+      }
+    </section>
+  }
+
   <main class="content">
     @if (errorMessage) {
       <div class="alert error">{{ errorMessage }}</div>
@@ -37,374 +47,103 @@
     }
 
     @if (activeTab === 'requests') {
-      <section class="page-heading">
-        <h1>Reservation requests</h1>
-        <p>{{ requestsSubtitle }}</p>
-      </section>
-
-      <div class="request-search">
-        <span class="search-icon" aria-hidden="true"></span>
-        <input type="search" placeholder="Search by performer, stage..." [value]="requestSearch" (input)="updateRequestSearch($event)" />
-      </div>
-
-      <section class="requests-table" aria-label="Reservation requests">
-        <div class="requests-row requests-head">
-          <span>Performer</span>
-          <span>Stage</span>
-          <span>Date</span>
-          <span>Duration</span>
-          <span>Resources</span>
-          <span>Status</span>
-          <span>Time</span>
-        </div>
-        @for (request of filteredReservationRequests; track request.id) {
-          <div class="requests-row">
-            <strong>{{ request.performerName }}</strong>
-            <span>{{ request.stageName }}</span>
-            <span>{{ formatRequestDate(request.performanceDate) }}</span>
-            <span>{{ requestDurationMinutes(request) }} min</span>
-            <span>{{ requestResourceCounts[request.id] || 0 }} res.</span>
-            <span>
-              <i class="status-pill" [class.pending]="request.status === 'PENDING'" [class.approved]="request.status === 'APPROVED' && !isPastRequest(request)" [class.past]="isPastRequest(request)">
-                {{ requestStatusLabel(request) }}
-              </i>
-            </span>
-            <span>
-              @if (request.status === 'PENDING' && activeRequestFilter !== 'PAST') {
-                <button type="button" class="view-button" (click)="viewReservationRequest(request)">View</button>
-              } @else {
-                <span class="time-pill" [class.past-time]="isPastRequest(request)">
-                  {{ request.startTime.slice(0, 5) }} - {{ request.endTime.slice(0, 5) }}
-                </span>
-              }
-            </span>
-          </div>
-        } @empty {
-          <p class="empty-table">No reservation requests match the selected filter.</p>
-        }
-      </section>
+      <app-event-organization-requests-tab
+        [requestsSubtitle]="requestsSubtitle"
+        [requestSearch]="requestSearch"
+        [activeRequestFilter]="activeRequestFilter"
+        [reservationRequests]="filteredReservationRequests"
+        [requestResourceCounts]="requestResourceCounts"
+        (requestSearchChange)="requestSearch = $event"
+        (viewReservation)="viewReservationRequest($event)"
+      />
     }
 
-    @if (activeTab === 'resources' && activeResourceTab === 'manage') {
-      <section class="page-heading row-heading">
-        <div>
-          <h1>Stage resources</h1>
-          <p>Manage equipment and personnel assigned to each stage</p>
-        </div>
-        <button type="button" class="primary-button" (click)="openAddResource()">+ Add Resource</button>
-      </section>
-
-      <div class="stage-tabs" aria-label="Stages">
-        @for (stage of stages; track stage.stageId) {
-          <button type="button" [class.active]="selectedStageId === stage.stageId" (click)="selectStage(stage.stageId)">
-            {{ stage.name }}
-          </button>
-        }
-      </div>
-
-      <section class="resource-grid">
-        @for (stageResource of stageResources; track stageResource.id) {
-          <article class="resource-card">
-            <div class="resource-card-main">
-              <div>
-                <h2>{{ stageResource.resourceName }}</h2>
-                <p>{{ stageResource.quantity }} {{ stageResource.resourceType === 'Personnel' ? 'people' : stageResource.quantity === 1 ? 'set' : 'units' }}</p>
-              </div>
-              <span class="pill" [class.personnel]="stageResource.resourceType === 'Personnel'" [class.fx]="stageResource.resourceType === 'Special FX'">
-                {{ stageResource.resourceType }}
-              </span>
-            </div>
-            <div class="card-actions">
-              <button type="button" class="outline-button" (click)="openEditResource(stageResource)">Edit</button>
-              <button type="button" class="outline-button danger" (click)="confirmDelete(stageResource)">Delete</button>
-            </div>
-          </article>
-        } @empty {
-          <section class="empty-card">
-            <h2>No resources on this stage</h2>
-            <p>Add the first resource for {{ selectedStage?.name || 'a stage' }}.</p>
-          </section>
-        }
-      </section>
-    }
-
-    @if (activeTab === 'resources' && activeResourceTab === 'inventory') {
-      <section class="page-heading">
-        <h1>Resource inventory</h1>
-        <p>Overview of all resources available in the system across all stages</p>
-      </section>
-
-      <section class="metric-grid">
-        <article class="metric pink">
-          <strong>{{ resources.length }}</strong>
-          <span>Total resource types</span>
-        </article>
-        <article class="metric green">
-          <strong>{{ totalUnits }}</strong>
-          <span>Total units</span>
-        </article>
-        <article class="metric orange">
-          <strong>{{ sharedResourceCount }}</strong>
-          <span>Shared resources</span>
-        </article>
-        <article class="metric purple">
-          <strong>{{ stages.length }}</strong>
-          <span>Stages</span>
-        </article>
-      </section>
-
-      <section class="inventory-filters">
-        <input type="search" placeholder="Search resources..." [value]="inventorySearch" (input)="updateInventorySearch($event)" />
-        <label>
-          <span>Filter by stage:</span>
-          <select [value]="inventoryStageFilter" (change)="updateInventoryStageFilter($event)">
-            <option value="All">All</option>
-            @for (stage of stages; track stage.stageId) {
-              <option [value]="stage.name">{{ stage.name }}</option>
-            }
-          </select>
-        </label>
-      </section>
-
-      <section class="inventory-table" aria-label="Resource inventory table">
-        <div class="inventory-row inventory-head">
-          <span>Resource name</span>
-          <span>Type</span>
-          <span>Total</span>
-          <span>Shared</span>
-          <span>Stages</span>
-        </div>
-        @for (row of inventoryRows; track row.resource.id) {
-          <div class="inventory-row">
-            <span>{{ row.resource.name }}</span>
-            <span>{{ row.resource.type }}</span>
-            <span>{{ row.resource.totalQuantity }}</span>
-            <span [class.yes]="row.shared" [class.no]="!row.shared">{{ row.shared ? 'Yes' : 'No' }}</span>
-            <span>{{ row.stageNames.length ? row.stageNames.join(', ') : '-' }}</span>
-          </div>
-        } @empty {
-          <p class="empty-table">No resources match the selected filters.</p>
-        }
-      </section>
+    @if (activeTab === 'resources') {
+      <app-event-organization-resources-tab
+        [activeResourceTab]="activeResourceTab"
+        [stages]="stages"
+        [selectedStageId]="selectedStageId"
+        [selectedStage]="selectedStage"
+        [stageResources]="stageResources"
+        [resources]="resources"
+        [inventoryRows]="inventoryRows"
+        [inventorySearch]="inventorySearch"
+        [inventoryStageFilter]="inventoryStageFilter"
+        [totalUnits]="totalUnits"
+        [sharedResourceCount]="sharedResourceCount"
+        (stageSelected)="selectStage($event)"
+        (addResourceRequested)="openAddResource()"
+        (editResourceRequested)="openEditResource($event)"
+        (deleteResourceRequested)="confirmDelete($event)"
+        (inventorySearchChange)="inventorySearch = $event"
+        (inventoryStageFilterChange)="inventoryStageFilter = $event"
+      />
     }
 
     @if (activeTab === 'timetable') {
-      <section class="page-heading timetable-heading">
-        <h1>{{ reservationMode ? 'Schedule reservation' : 'Stage timetable' }}</h1>
-        @if (!reservationMode) {
-          <div class="week-filter" aria-label="Week filter">
-            <button type="button" aria-label="Previous week" (click)="previousWeek()">&lt;</button>
-            <span>{{ timetableWeekLabel }}</span>
-            <button type="button" aria-label="Next week" (click)="nextWeek()">&gt;</button>
-          </div>
-        }
-      </section>
-
-      @if (reservationMode && selectedReservationRequest) {
-        <section class="reservation-banner">
-          <span>Reserving for:</span>
-          <strong>{{ selectedReservationRequest.performerName }} - {{ selectedReservationRequest.stageName }} - {{ reservationDateLabel }} - {{ requestDurationMinutes(selectedReservationRequest) }} min - {{ requestResourceCounts[selectedReservationRequest.id] || 0 }} resources</strong>
-        </section>
-      }
-
-      <div class="stage-tabs timetable-stage-tabs" aria-label="Timetable stages">
-        @for (stage of stages; track stage.stageId) {
-          <button type="button" [class.active]="selectedStageId === stage.stageId" [disabled]="reservationMode && stage.stageId !== selectedReservationRequest?.stageId" (click)="selectStage(stage.stageId)">
-            {{ stage.name }}
-          </button>
-        }
-      </div>
-
-      @if (reservationMode && selectedReservationRequest) {
-        <section class="reservation-scheduler" aria-label="Reservation timetable">
-          <div class="reservation-time-header">
-            <span>Time</span>
-            @for (hour of timetableHours; track hour) {
-              <span>{{ hour }}</span>
-            }
-          </div>
-          <div class="reservation-time-row">
-            @for (hour of timetableHours; track hour) {
-              <button type="button"
-                [class.occupied]="getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status === 'OCCUPIED'"
-                [class.available]="getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status !== 'OCCUPIED' && isScheduleSlotAvailable(hour)"
-                [class.selected]="isScheduleSlotSelected(hour)"
-                [class.unavailable]="getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status !== 'OCCUPIED' && !isScheduleSlotAvailable(hour)"
-                [disabled]="getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status === 'OCCUPIED' || !isScheduleSlotAvailable(hour)"
-                (click)="selectScheduleStart(hour)">
-                @if (getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status === 'OCCUPIED') {
-                  {{ getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.performerName }}
-                } @else if (isScheduleSlotSelected(hour) && selectedScheduleEnd) {
-                  {{ selectedReservationRequest.performerName }}
-                } @else if (isScheduleSlotAvailable(hour)) {
-                  Free
-                } @else {
-                  Unavailable
-                }
-              </button>
-            }
-          </div>
-        </section>
-
-        <section class="legend reservation-legend" aria-label="Timetable legend">
-          <strong>Legend:</strong>
-          <span><i class="legend-box occupied"></i>Occupied</span>
-          <span><i class="legend-box suggestion"></i>Selectable slot</span>
-          <span><i class="legend-box free"></i>Selected</span>
-        </section>
-
-        <button type="button" class="primary-button reserve-button" [disabled]="!canReserveSelectedSlot" (click)="reserveSelectedSlot()">
-          Reserve
-        </button>
-      } @else {
-        <section class="weekly-timetable" aria-label="Weekly stage timetable">
-          <div class="time-grid timetable-header">
-            <div class="day-heading">Day</div>
-            @for (hour of timetableHours; track hour) {
-              <div>{{ hour }}</div>
-            }
-          </div>
-
-          @for (day of timetableDays; track day.key) {
-            <div class="time-grid timetable-row">
-              <div class="day-cell">
-                <strong>{{ day.dayName }}</strong>
-                <span>{{ day.dateLabel }}</span>
-              </div>
-              @for (hour of timetableHours; track hour) {
-                <div class="free-slot" [class.occupied-slot]="getTimetableSlot(day.key, hour)?.status === 'OCCUPIED'">
-                  {{ getTimetableSlot(day.key, hour)?.status === 'OCCUPIED' ? getTimetableSlot(day.key, hour)?.performerName : 'Free' }}
-                </div>
-              }
-            </div>
-          }
-        </section>
-
-        <section class="legend" aria-label="Timetable legend">
-          <strong>Legend:</strong>
-          <span><i class="legend-box occupied"></i>Occupied</span>
-          <span><i class="legend-box free"></i>Free slot</span>
-        </section>
-      }
+      <app-event-organization-timetable-tab
+        [reservationMode]="reservationMode"
+        [selectedReservationRequest]="selectedReservationRequest"
+        [reservationDateLabel]="reservationDateLabel"
+        [requestResourceCounts]="requestResourceCounts"
+        [stages]="stages"
+        [selectedStageId]="selectedStageId"
+        [timetableHours]="timetableHours"
+        [timetableWeekLabel]="timetableWeekLabel"
+        [timetableDays]="timetableDays"
+        [timetableSlots]="timetableSlots"
+        [selectedScheduleStart]="selectedScheduleStart"
+        [selectedScheduleEnd]="selectedScheduleEnd"
+        [canReserveSelectedSlot]="canReserveSelectedSlot"
+        (previousWeekRequested)="previousWeek()"
+        (nextWeekRequested)="nextWeek()"
+        (stageSelected)="selectStage($event)"
+        (scheduleStartSelected)="selectScheduleStart($event)"
+        (reserveSelectedSlotRequested)="reserveSelectedSlot()"
+      />
     }
 
-    @if (activeTab === 'tasks' || activeTab === 'analytics') {
-      <section class="placeholder-page">
-        <h1>{{ activeTab | titlecase }}</h1>
-        <p>This area is outside the current resource management scope.</p>
-      </section>
+    @if (activeTab === 'tasks') {
+      <app-event-organization-tasks-tab
+        [tasks]="filteredTasks"
+        [activeTaskFilter]="activeTaskFilter"
+        (resolveTask)="resolveTask($event)"
+        (rejectTask)="rejectTask($event)"
+      />
+    }
+
+    @if (activeTab === 'analytics') {
+      <app-event-organization-placeholder-tab [activeTab]="activeTab" />
     }
   </main>
 
   @if (modalMode) {
-    <div class="modal-backdrop" role="presentation">
-      <form class="resource-modal" [formGroup]="resourceForm" (ngSubmit)="saveResource()">
-        <header>
-          <h2>{{ modalMode === 'edit' ? 'Edit resource' : 'Add resource' }}</h2>
-          <button type="button" class="close-button" aria-label="Close" (click)="closeResourceModal()">x</button>
-        </header>
-
-        <div class="modal-body">
-          <label class="full">
-            <span>Resource name *</span>
-            <input type="text" formControlName="name" placeholder="e.g. Smoke machine, LED display..." />
-          </label>
-
-          <label>
-            <span>Resource type *</span>
-            <select formControlName="type">
-              <option>Equipment</option>
-              <option>Personnel</option>
-              <option>Special FX</option>
-            </select>
-          </label>
-
-          <label>
-            <span>Quantity *</span>
-            <input type="number" min="1" formControlName="quantity" />
-          </label>
-
-          <label class="full">
-            <span>Stage *</span>
-            <select formControlName="stageId">
-              @for (stage of stages; track stage.stageId) {
-                <option [ngValue]="stage.stageId">{{ stage.name }}</option>
-              }
-            </select>
-          </label>
-
-          <label class="share-row full">
-            <input type="checkbox" formControlName="shareable" />
-            <span>Resource is shareable between different stages</span>
-          </label>
-
-          <label class="full">
-            <span>Note (optional)</span>
-            <input type="text" formControlName="note" placeholder="Additional resource information" />
-          </label>
-
-          @if (resourceModalError) {
-            <p class="modal-error full">{{ resourceModalError }}</p>
-          }
-        </div>
-
-        <footer>
-          <button type="button" class="cancel-button" (click)="closeResourceModal()">Cancel</button>
-          <button type="submit" class="primary-button">{{ modalMode === 'edit' ? 'Save changes' : 'Add resource' }}</button>
-        </footer>
-      </form>
-    </div>
+    <app-event-organization-resource-modal
+      [modalMode]="modalMode"
+      [resourceForm]="resourceForm"
+      [stages]="stages"
+      [resourceModalError]="resourceModalError"
+      (closeRequested)="closeResourceModal()"
+      (saveRequested)="saveResource()"
+    />
   }
 
   @if (confirmedReservation) {
-    <div class="modal-backdrop" role="presentation">
-      <section class="confirmation-modal">
-        <header>
-          <h2>Reservation confirmed</h2>
-          <button type="button" class="close-button" aria-label="Close" (click)="closeConfirmation()">x</button>
-        </header>
-        <dl>
-          <div>
-            <dt>Performer:</dt>
-            <dd>{{ confirmedReservation.performerName }}</dd>
-          </div>
-          <div>
-            <dt>Stage:</dt>
-            <dd>{{ confirmedReservation.stageName }}</dd>
-          </div>
-          <div>
-            <dt>Time slot:</dt>
-            <dd>{{ confirmedReservation.startTime.slice(0, 5) }} - {{ confirmedReservation.endTime.slice(0, 5) }} · {{ formatRequestDate(confirmedReservation.performanceDate) }}</dd>
-          </div>
-          <div>
-            <dt>Resources:</dt>
-            <dd>{{ requestResourceCounts[confirmedReservation.id] || 0 }} resources attached</dd>
-          </div>
-        </dl>
-        <button type="button" class="primary-button" (click)="closeConfirmation()">Done</button>
-      </section>
-    </div>
+    <app-event-organization-confirmation-modal
+      [reservation]="confirmedReservation"
+      [requestResourceCounts]="requestResourceCounts"
+      [tasks]="confirmedReservationTasks"
+      (closeRequested)="closeConfirmation()"
+      (viewTasksRequested)="viewConfirmedReservationTasks()"
+    />
   }
 
   @if (deletingStageResource) {
-    <div class="modal-backdrop" role="presentation">
-      <section class="delete-modal">
-        <header>
-          <h2>Delete resource</h2>
-          <button type="button" class="close-button" aria-label="Close" (click)="closeDeleteModal()">x</button>
-        </header>
-        <div class="delete-body">
-          <div class="warning-box">
-            <strong>Are you sure you want to delete this resource?</strong>
-            <p>"{{ deletingStageResource.resourceName }}" from {{ stageNameById(deletingStageResource.stageId) }} will be permanently removed.</p>
-          </div>
-          <p class="info-box">Deleting this resource will remove it from requests.</p>
-        </div>
-        <footer>
-          <button type="button" class="cancel-button" (click)="closeDeleteModal()">Cancel</button>
-          <button type="button" class="delete-button" (click)="deleteStageResource()">Delete Resource</button>
-        </footer>
-      </section>
-    </div>
+    <app-event-organization-delete-resource-modal
+      [stageResource]="deletingStageResource"
+      [stages]="stages"
+      (closeRequested)="closeDeleteModal()"
+      (deleteRequested)="deleteStageResource()"
+    />
   }
 </div>

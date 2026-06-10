@@ -1,0 +1,46 @@
+<section class="page-heading">
+  <h1>Reservation requests</h1>
+  <p>{{ requestsSubtitle }}</p>
+</section>
+
+<div class="request-search">
+  <span class="search-icon" aria-hidden="true"></span>
+  <input type="search" placeholder="Search by performer, stage..." [value]="requestSearch" (input)="updateRequestSearch($event)" />
+</div>
+
+<section class="requests-table" aria-label="Reservation requests">
+  <div class="requests-row requests-head">
+    <span>Performer</span>
+    <span>Stage</span>
+    <span>Date</span>
+    <span>Duration</span>
+    <span>Resources</span>
+    <span>Status</span>
+    <span>Time</span>
+  </div>
+  @for (request of reservationRequests; track request.id) {
+    <div class="requests-row">
+      <strong>{{ request.performerName }}</strong>
+      <span>{{ request.stageName }}</span>
+      <span>{{ formatRequestDate(request.performanceDate) }}</span>
+      <span>{{ requestDurationMinutes(request) }} min</span>
+      <span>{{ requestResourceCounts[request.id] || 0 }} res.</span>
+      <span>
+        <i class="status-pill" [class.pending]="request.status === 'PENDING'" [class.approved]="request.status === 'APPROVED' && !isPastRequest(request)" [class.past]="isPastRequest(request)">
+          {{ requestStatusLabel(request) }}
+        </i>
+      </span>
+      <span>
+        @if (request.status === 'PENDING' && activeRequestFilter !== 'PAST') {
+          <button type="button" class="view-button" (click)="viewReservation.emit(request)">View</button>
+        } @else {
+          <span class="time-pill" [class.past-time]="isPastRequest(request)">
+            {{ request.startTime.slice(0, 5) }} - {{ request.endTime.slice(0, 5) }}
+          </span>
+        }
+      </span>
+    </div>
+  } @empty {
+    <p class="empty-table">No reservation requests match the selected filter.</p>
+  }
+</section>

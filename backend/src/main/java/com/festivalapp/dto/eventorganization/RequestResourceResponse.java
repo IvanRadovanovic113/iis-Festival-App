@@ -14,14 +14,15 @@ public record RequestResourceResponse(
     RequestResourceStatus status
 ) {
     public static RequestResourceResponse from(RequestResource requestResource) {
+        boolean customRequest = requestResource.getResource() == null;
         return new RequestResourceResponse(
             requestResource.getId(),
             requestResource.getReservationRequest().getId(),
-            requestResource.getResource().getId(),
-            requestResource.getResource().getName(),
-            requestResource.getResource().getType(),
+            customRequest ? null : requestResource.getResource().getId(),
+            customRequest ? requestResource.getRequestedName() : requestResource.getResource().getName(),
+            customRequest ? requestResource.getRequestedType() : requestResource.getResource().getType(),
             requestResource.getQuantity(),
-            requestResource.getResource().getTotalQuantity(),
+            customRequest ? null : requestResource.getResource().getTotalQuantity(),
             requestResource.getStatus()
         );
     }

@@ -1,0 +1,19 @@
+<div class="modal-backdrop" role="presentation">
+  <section class="delete-modal">
+    <header>
+      <h2>Delete resource</h2>
+      <button type="button" class="close-button" aria-label="Close" (click)="closeRequested.emit()">x</button>
+    </header>
+    <div class="delete-body">
+      <div class="warning-box">
+        <strong>Are you sure you want to delete this resource?</strong>
+        <p>"{{ stageResource.resourceName }}" from {{ stageNameById(stageResource.stageId) }} will be permanently removed.</p>
+      </div>
+      <p class="info-box">Deleting this resource will remove it from requests.</p>
+    </div>
+    <footer>
+      <button type="button" class="cancel-button" (click)="closeRequested.emit()">Cancel</button>
+      <button type="button" class="delete-button" (click)="deleteRequested.emit()">Delete Resource</button>
+    </footer>
+  </section>
+</div>

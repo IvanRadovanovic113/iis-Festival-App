@@ -2,6 +2,7 @@ package com.festivalapp.repository.eventorganization;
 
 import com.festivalapp.model.eventorganization.RequestResource;
 import com.festivalapp.model.eventorganization.RequestResourceStatus;
+import com.festivalapp.model.Festival;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,11 +13,23 @@ import java.util.List;
 import java.util.Optional;
 
 public interface RequestResourceRepository extends JpaRepository<RequestResource, Long> {
-    List<RequestResource> findByReservationRequest_IdOrderByResource_NameAsc(Long reservationRequestId);
+    @Query("""
+        select requestResource
+        from RequestResource requestResource
+        where requestResource.reservationRequest.id = :reservationRequestId
+        order by lower(coalesce(requestResource.resource.name, requestResource.requestedName)) asc
+    """)
+    List<RequestResource> findByReservationRequest_IdOrderByResource_NameAsc(@Param("reservationRequestId") Long reservationRequestId);
+
+    List<RequestResource> findByReservationRequest_Festival(Festival festival);
 
     Optional<RequestResource> findByReservationRequest_IdAndResource_Id(Long reservationRequestId, Long resourceId);
 
+    Optional<RequestResource> findByIdAndReservationRequest_Id(Long id, Long reservationRequestId);
+
     boolean existsByReservationRequest_IdAndResource_Id(Long reservationRequestId, Long resourceId);
+
+    boolean existsByReservationRequest_IdAndRequestedNameIgnoreCase(Long reservationRequestId, String requestedName);
 
     void deleteByReservationRequest_IdAndResource_Id(Long reservationRequestId, Long resourceId);
 

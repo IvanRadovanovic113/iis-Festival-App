@@ -1,0 +1,113 @@
+<section class="page-heading tasks-heading">
+  <h1>Tasks</h1>
+  <p>{{ tasksSubtitle }}</p>
+</section>
+
+<section class="task-list" aria-label="Event organization tasks">
+  @for (task of tasks; track task.id) {
+    <article class="task-card" [class.non-existing-card]="task.type === 'NON_EXISTING'">
+      <span class="task-type" [class.non-existing]="task.type === 'NON_EXISTING'">{{ taskTypeLabel(task) }}</span>
+
+      <div class="task-main">
+        <h2>{{ task.title }}</h2>
+        <p>{{ task.performerName }} - {{ task.stageName }}</p>
+        <span>Deadline: {{ formatTaskDate(task.deadline) }}</span>
+
+        @if (task.status === 'REJECTED' && task.rejectionReason) {
+          <div class="rejection-reason">Reason: {{ task.rejectionReason }}</div>
+        }
+      </div>
+
+      <div class="task-status-column">
+        <span class="task-status" [class.resolved]="task.status === 'RESOLVED'" [class.rejected]="task.status === 'REJECTED'">
+          {{ task.status === 'OPEN' ? 'Open' : task.status === 'RESOLVED' ? 'Resolved' : 'Rejected' }}
+        </span>
+
+        @if (task.status === 'OPEN') {
+          <button type="button" class="resolve-button" (click)="openResolveModal(task)">Mark as resolved</button>
+          <button type="button" class="reject-button" (click)="openRejectModal(task)">Reject</button>
+        } @else if (task.status === 'RESOLVED') {
+          <div class="task-meta success-meta">
+            <strong>Resolved by: {{ task.actor || 'EventOrg' }}</strong>
+            <span>Resolved: {{ formatChangedDate(task.changedAt || undefined) }}</span>
+          </div>
+        } @else {
+          <div class="task-meta rejected-meta">
+            <strong>Rejected by: {{ task.actor || 'EventOrg' }}</strong>
+          </div>
+        }
+      </div>
+    </article>
+  } @empty {
+    <section class="empty-card">
+      <h2>No tasks in this view</h2>
+      <p>Unavailable requested resources will appear here after a reservation is confirmed.</p>
+    </section>
+  }
+</section>
+
+@if (taskToResolve) {
+  <div class="modal-backdrop" role="presentation">
+    <form class="task-modal resolve-modal" [formGroup]="resolveForm" (ngSubmit)="submitResolve()">
+      <header>
+        <div>
+          <h2>Resolve task</h2>
+          <p>This task will be moved to "Resolved"</p>
+        </div>
+        <button type="button" class="close-button" aria-label="Close" (click)="closeResolveModal()">x</button>
+      </header>
+
+      <div class="task-modal-body">
+        <section class="task-summary">
+          <strong>{{ taskToResolve.title }}</strong>
+          <span>{{ taskToResolve.performerName }} - {{ taskToResolve.stageName }} - Deadline: {{ formatTaskDate(taskToResolve.deadline) }}</span>
+        </section>
+
+        <label>
+          <span>Resolution note (optional)</span>
+          <input type="text" formControlName="note" placeholder="e.g. Resource procured and delivered" />
+        </label>
+      </div>
+
+      <footer>
+        <button type="button" class="cancel-button" (click)="closeResolveModal()">Cancel</button>
+        <button type="submit" class="primary-button resolve-submit">Resolve</button>
+      </footer>
+    </form>
+  </div>
+}
+
+@if (taskToReject) {
+  <div class="modal-backdrop" role="presentation">
+    <form class="task-modal reject-modal" [formGroup]="rejectForm" (ngSubmit)="submitReject()">
+      <header>
+        <div>
+          <h2>Reject task</h2>
+          <p>This task will be moved to "Rejected"</p>
+        </div>
+        <button type="button" class="close-button" aria-label="Close" (click)="closeRejectModal()">x</button>
+      </header>
+
+      <div class="task-modal-body">
+        <section class="task-summary reject-summary">
+          <strong>{{ taskToReject.title }}</strong>
+          <span>{{ taskToReject.performerName }} - {{ taskToReject.stageName }} - Deadline: {{ formatTaskDate(taskToReject.deadline) }}</span>
+        </section>
+
+        <label>
+          <span>Rejection reason *</span>
+          <input type="text" formControlName="reason" placeholder="e.g. Budget exceeded, not feasible in time..." />
+        </label>
+
+        @if (rejectForm.controls.reason.touched && rejectForm.controls.reason.invalid) {
+          <p class="required-note">* Required</p>
+        }
+      </div>
+
+      <footer>
+        <button type="button" class="cancel-button" (click)="closeRejectModal()">Cancel</button>
+        <button type="submit" class="primary-button reject-submit">Confirm rejection</button>
+      </footer>
+    </form>
+  </div>
+}

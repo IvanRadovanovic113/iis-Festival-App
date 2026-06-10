@@ -19,15 +19,15 @@ export class RequestResourceService {
     return this.http.post<RequestResource>(`${this.API}/${requestId}/resources`, request);
   }
 
-  updateRequestResource(requestId: number, resourceId: number, request: RequestResourceRequest): Observable<RequestResource> {
-    return this.http.put<RequestResource>(`${this.API}/${requestId}/resources/${resourceId}`, request);
+  updateRequestResource(requestId: number, requestResourceId: number, request: RequestResourceRequest): Observable<RequestResource> {
+    return this.http.put<RequestResource>(`${this.API}/${requestId}/resources/items/${requestResourceId}`, request);
   }
 
-  confirmRequestResource(requestId: number, resourceId: number): Observable<RequestResource> {
-    return this.http.put<RequestResource>(`${this.API}/${requestId}/resources/${resourceId}/confirm`, {});
+  confirmRequestResource(requestId: number, requestResourceId: number): Observable<RequestResource> {
+    return this.http.put<RequestResource>(`${this.API}/${requestId}/resources/items/${requestResourceId}/confirm`, {});
   }
 
-  removeResourceFromRequest(requestId: number, resourceId: number): Observable<void> {
-    return this.http.delete<void>(`${this.API}/${requestId}/resources/${resourceId}`);
+  removeResourceFromRequest(requestId: number, requestResourceId: number): Observable<void> {
+    return this.http.delete<void>(`${this.API}/${requestId}/resources/items/${requestResourceId}`);
   }
 }
