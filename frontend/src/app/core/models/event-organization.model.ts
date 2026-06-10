@@ -57,16 +57,18 @@ export type RequestResourceStatus = 'REQUESTED' | 'CONFIRMED' | 'UNAVAILABLE';
 export interface RequestResource {
   id: number;
   reservationRequestId: number;
-  resourceId: number;
+  resourceId: number | null;
   resourceName: string;
   resourceType: string;
   quantity: number;
-  totalQuantity: number;
+  totalQuantity: number | null;
   status: RequestResourceStatus;
 }
 
 export interface RequestResourceRequest {
-  resourceId: number;
+  resourceId: number | null;
+  requestedName?: string | null;
+  requestedType?: string | null;
   quantity: number;
 }
 
@@ -76,4 +78,32 @@ export interface TimetableSlot {
   endTime: string;
   status: string;
   performerName: string | null;
+}
+
+export type EventOrganizationTaskStatus = 'OPEN' | 'RESOLVED' | 'REJECTED';
+export type EventOrganizationTaskType = 'PROCUREMENT' | 'NON_EXISTING';
+
+export interface EventOrganizationTask {
+  id: number;
+  reservationRequestId: number;
+  requestResourceId: number;
+  resourceId: number | null;
+  title: string;
+  performerName: string;
+  stageName: string;
+  deadline: string;
+  type: EventOrganizationTaskType;
+  status: EventOrganizationTaskStatus;
+  resolutionNote: string | null;
+  rejectionReason: string | null;
+  actor: string | null;
+  changedAt: string | null;
+}
+
+export interface ResolveTaskRequest {
+  note: string | null;
+}
+
+export interface RejectTaskRequest {
+  reason: string;
 }

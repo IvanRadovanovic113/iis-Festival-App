@@ -1,0 +1,57 @@
+<div class="modal-backdrop" role="presentation">
+  <form class="resource-modal" [formGroup]="resourceForm" (ngSubmit)="saveRequested.emit()">
+    <header>
+      <h2>{{ modalMode === 'edit' ? 'Edit resource' : 'Add resource' }}</h2>
+      <button type="button" class="close-button" aria-label="Close" (click)="closeRequested.emit()">x</button>
+    </header>
+
+    <div class="modal-body">
+      <label class="full">
+        <span>Resource name *</span>
+        <input type="text" formControlName="name" placeholder="e.g. Smoke machine, LED display..." />
+      </label>
+
+      <label>
+        <span>Resource type *</span>
+        <select formControlName="type">
+          <option>Equipment</option>
+          <option>Personnel</option>
+          <option>Special FX</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Quantity *</span>
+        <input type="number" min="1" formControlName="quantity" />
+      </label>
+
+      <label class="full">
+        <span>Stage *</span>
+        <select formControlName="stageId">
+          @for (stage of stages; track stage.stageId) {
+            <option [ngValue]="stage.stageId">{{ stage.name }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="share-row full">
+        <input type="checkbox" formControlName="shareable" />
+        <span>Resource is shareable between different stages</span>
+      </label>
+
+      <label class="full">
+        <span>Note (optional)</span>
+        <input type="text" formControlName="note" placeholder="Additional resource information" />
+      </label>
+
+      @if (resourceModalError) {
+        <p class="modal-error full">{{ resourceModalError }}</p>
+      }
+    </div>
+
+    <footer>
+      <button type="button" class="cancel-button" (click)="closeRequested.emit()">Cancel</button>
+      <button type="submit" class="primary-button">{{ modalMode === 'edit' ? 'Save changes' : 'Add resource' }}</button>
+    </footer>
+  </form>
+</div>

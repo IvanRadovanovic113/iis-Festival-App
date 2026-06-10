@@ -9,6 +9,7 @@ import com.festivalapp.model.eventorganization.EventReservationRequest;
 import com.festivalapp.model.eventorganization.EventReservationStatus;
 import com.festivalapp.repository.eventorganization.EventReservationRequestRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -21,12 +22,14 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EventReservationService {
 
     private static final String AVAILABLE_STATUS = "AVAILABLE";
 
     private final EventReservationRequestRepository reservationRequestRepository;
     private final EventOrganizationAccessService accessService;
+    private final EventOrganizationTaskService taskService;
 
     public List<EventReservationResponse> getReservationRequests(EventReservationStatus status, User user) {
         Festival festival = accessService.requireEventOrganizerFestival(user);
@@ -55,7 +58,9 @@ public class EventReservationService {
         validateStageAvailability(reservationRequest);
         reservationRequest.setStatus(EventReservationStatus.APPROVED);
         reservationRequest.setReviewedAt(LocalDateTime.now());
-        return EventReservationResponse.from(reservationRequestRepository.save(reservationRequest));
+        EventReservationRequest savedRequest = reservationRequestRepository.save(reservationRequest);
+        syncTasksWithoutBlockingReservation(festival, savedRequest.getId());
+        return EventReservationResponse.from(savedRequest);
     }
 
     public EventReservationResponse scheduleReservationRequest(Long requestId, EventReservationScheduleRequest scheduleRequest, User user) {
@@ -83,7 +88,9 @@ public class EventReservationService {
 
         reservationRequest.setStatus(EventReservationStatus.APPROVED);
         reservationRequest.setReviewedAt(LocalDateTime.now());
-        return EventReservationResponse.from(reservationRequestRepository.save(reservationRequest));
+        EventReservationRequest savedRequest = reservationRequestRepository.save(reservationRequest);
+        syncTasksWithoutBlockingReservation(festival, savedRequest.getId());
+        return EventReservationResponse.from(savedRequest);
     }
 
     public EventReservationResponse rejectReservationRequest(Long requestId, User user) {
@@ -139,6 +146,14 @@ public class EventReservationService {
         );
         if (overlaps) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Selected stage already has an approved request in this time slot");
+        }
+    }
+
+    private void syncTasksWithoutBlockingReservation(Festival festival, Long reservationRequestId) {
+        try {
+            taskService.syncOpenTasks(festival);
+        } catch (RuntimeException ex) {
+            log.warn("Reservation {} was approved, but task synchronization failed", reservationRequestId, ex);
         }
     }
 }

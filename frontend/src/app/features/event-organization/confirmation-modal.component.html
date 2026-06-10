@@ -1,0 +1,58 @@
+<div class="modal-backdrop" role="presentation">
+  <section class="confirmation-modal" [class.has-task-summary]="hasTasks">
+    <header>
+      <h2>Reservation confirmed</h2>
+      <button type="button" class="close-button" aria-label="Close" (click)="closeRequested.emit()">x</button>
+    </header>
+
+    @if (hasTasks) {
+      <section class="reservation-summary">
+        {{ reservation.performerName }} - {{ reservation.stageName }} - {{ reservation.startTime.slice(0, 5) }} - {{ reservation.endTime.slice(0, 5) }} - {{ formatLongDate(reservation.performanceDate) }}
+      </section>
+
+      <section class="task-created-summary">
+        <p class="task-warning">Warning: The following resources were unavailable and tasks have been created:</p>
+
+        <div class="created-task-list">
+          @for (task of tasks; track task.id) {
+            <article class="created-task-card" [class.non-existing-card]="task.type === 'NON_EXISTING'">
+              <div class="created-task-side">
+                <span class="task-type-pill" [class.non-existing]="task.type === 'NON_EXISTING'">{{ taskTypeLabel(task) }}</span>
+                <span>Deadline: {{ formatTaskDate(task.deadline) }}</span>
+              </div>
+              <div class="created-task-main">
+                <strong>{{ task.title }}</strong>
+                <span>{{ taskReason(task) }}</span>
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+
+      <footer class="confirmation-actions">
+        <button type="button" class="primary-button" (click)="viewTasksRequested.emit()">View tasks</button>
+        <button type="button" class="cancel-button" (click)="closeRequested.emit()">Done</button>
+      </footer>
+    } @else {
+      <dl>
+        <div>
+          <dt>Performer:</dt>
+          <dd>{{ reservation.performerName }}</dd>
+        </div>
+        <div>
+          <dt>Stage:</dt>
+          <dd>{{ reservation.stageName }}</dd>
+        </div>
+        <div>
+          <dt>Time slot:</dt>
+          <dd>{{ reservation.startTime.slice(0, 5) }} - {{ reservation.endTime.slice(0, 5) }} - {{ formatRequestDate(reservation.performanceDate) }}</dd>
+        </div>
+        <div>
+          <dt>Resources:</dt>
+          <dd>{{ requestResourceCounts[reservation.id] || 0 }} resources attached</dd>
+        </div>
+      </dl>
+      <button type="button" class="primary-button done-button" (click)="closeRequested.emit()">Done</button>
+    }
+  </section>
+</div>

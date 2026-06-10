@@ -52,6 +52,15 @@ public class RequestResourceController {
         return ResponseEntity.ok(requestResourceService.updateRequestResource(requestId, resourceId, request, user));
     }
 
+    @PutMapping("/items/{requestResourceId}")
+    public ResponseEntity<RequestResourceResponse> updateRequestResourceItem(
+            @PathVariable Long requestId,
+            @PathVariable Long requestResourceId,
+            @Valid @RequestBody RequestResourceRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(requestResourceService.updateRequestResourceItem(requestId, requestResourceId, request, user));
+    }
+
     @PutMapping("/{resourceId}/confirm")
     public ResponseEntity<RequestResourceResponse> confirmRequestResource(
             @PathVariable Long requestId,
@@ -60,12 +69,29 @@ public class RequestResourceController {
         return ResponseEntity.ok(requestResourceService.confirmRequestResource(requestId, resourceId, user));
     }
 
+    @PutMapping("/items/{requestResourceId}/confirm")
+    public ResponseEntity<RequestResourceResponse> confirmRequestResourceItem(
+            @PathVariable Long requestId,
+            @PathVariable Long requestResourceId,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(requestResourceService.confirmRequestResourceItem(requestId, requestResourceId, user));
+    }
+
     @DeleteMapping("/{resourceId}")
     public ResponseEntity<Void> removeResourceFromRequest(
             @PathVariable Long requestId,
             @PathVariable Long resourceId,
             @AuthenticationPrincipal User user) {
         requestResourceService.removeResourceFromRequest(requestId, resourceId, user);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/items/{requestResourceId}")
+    public ResponseEntity<Void> removeRequestResourceItem(
+            @PathVariable Long requestId,
+            @PathVariable Long requestResourceId,
+            @AuthenticationPrincipal User user) {
+        requestResourceService.removeRequestResourceItem(requestId, requestResourceId, user);
         return ResponseEntity.noContent().build();
     }
 }

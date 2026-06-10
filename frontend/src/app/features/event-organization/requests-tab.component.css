@@ -1,0 +1,146 @@
+.request-search {
+  width: min(750px, 100%);
+  height: 54px;
+  margin: 8px 0 18px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 10px;
+  background: #f0e8fb;
+  color: #aa9cab;
+}
+
+.request-search input {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #6f6371;
+  font-size: 20px;
+}
+
+.search-icon {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  border: 2px solid #2b2030;
+  border-radius: 50%;
+}
+
+.search-icon::after {
+  content: "";
+  position: absolute;
+  right: -6px;
+  bottom: -5px;
+  width: 8px;
+  height: 2px;
+  border-radius: 999px;
+  background: #2b2030;
+  transform: rotate(45deg);
+}
+
+.requests-table {
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.requests-row {
+  min-height: 78px;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: 1.2fr 1.15fr 1.05fr 0.85fr 0.9fr 1fr 1.55fr;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid #f4deea;
+  border-top: 0;
+  background: #fffafd;
+  color: #725f73;
+  font-size: 18px;
+}
+
+.requests-row:nth-child(odd):not(.requests-head) {
+  background: #f0e8fb;
+}
+
+.requests-row strong {
+  color: #2b2030;
+}
+
+.requests-head {
+  min-height: 54px;
+  border: 0;
+  background: #2a192d;
+  color: #d8c8d8;
+  font-weight: 600;
+}
+
+.status-pill {
+  display: inline-block;
+  min-width: 92px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #f0e8fb;
+  color: #6d6170;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.status-pill.pending {
+  background: #fff7e5;
+  color: #a56416;
+}
+
+.status-pill.approved {
+  background: #e9faef;
+  color: #197b51;
+}
+
+.status-pill.past {
+  background: #f7e8f1;
+  color: #725f73;
+}
+
+.view-button {
+  min-width: 108px;
+  height: 42px;
+  border: 1px solid #cf4d7b;
+  border-radius: 8px;
+  background: #fffafd;
+  color: #cf4d7b;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.time-pill {
+  display: inline-flex;
+  min-width: 192px;
+  height: 48px;
+  padding: 0 18px;
+  align-items: center;
+  border: 1px solid #8bd0a4;
+  border-radius: 8px;
+  background: #e4faef;
+  color: #4ebd9c;
+}
+
+.time-pill.past-time {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: #8e808d;
+}
+
+@media (max-width: 920px) {
+  .requests-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 16px;
+  }
+
+  .requests-head {
+    display: none;
+  }
+}
