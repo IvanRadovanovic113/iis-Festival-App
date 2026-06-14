@@ -130,8 +130,8 @@ public class DynamicPricingService {
         pricingPeriodRepository.save(period);
 
         String razlog = String.format(
-            "trend=%.2f, scarcity=%.0f%% (boost=%.2f), momentum=%d, adj=%.3f",
-            trendFactor, remainingPct, scarcityBoost, momentum, rawAdj
+            "trend=%.2f, scarcity=%.0f%% (boost=%.2f), momentum=%.3f, adj=%.3f",
+            trendFactor, remainingPct, scarcityBoost, weightedMomentum, rawAdj
         );
 
         CenovnaIstorija zapis = CenovnaIstorija.builder()
