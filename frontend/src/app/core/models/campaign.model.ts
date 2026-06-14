@@ -61,6 +61,10 @@ export interface Ad {
   currentPhaseId: number;
   currentPhaseAssignedRole: string;
   contentValue: string;
+  contentUrl: string | null;
+  contentOriginalFileName: string | null;
+  contentMimeType: string | null;
+  contentSize: number | null;
   festivalName: string;
   festivalLocation: string;
   campaignName: string;
@@ -112,6 +116,10 @@ export interface AdVersionDetail {
   typeName: string;
   contentType: string;
   contentValue: string;
+  contentUrl: string | null;
+  contentOriginalFileName: string | null;
+  contentMimeType: string | null;
+  contentSize: number | null;
   festivalName: string;
   campaignName: string;
   status: string;
@@ -191,7 +199,9 @@ export interface AdRequest {
 }
 
 export interface CreativeAdUpdateRequest {
-  contentValue: string;
+  contentText?: string;
+  file?: File;
+  clearExisting?: boolean;
 }
 
 export interface AdPromotionRequest {

@@ -38,6 +38,14 @@ public class EventResourceService {
         if (festival == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Admin users must assign resources through an event organizer");
         }
+        if (eventResourceRepository.findByFestival_FestivalIdAndNameIgnoreCaseAndTypeIgnoreCaseAndShareable(
+            festival.getFestivalId(),
+            request.getName(),
+            request.getType(),
+            Boolean.TRUE.equals(request.getShareable())
+        ).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A resource with this name, type and sharing setting already exists");
+        }
         EventResource resource = EventResource.builder()
             .name(request.getName())
             .type(request.getType())
@@ -52,13 +60,22 @@ public class EventResourceService {
     public EventResourceResponse updateResource(Long resourceId, EventResourceRequest request, User user) {
         Festival festival = accessService.requireEventOrganizerFestival(user);
         EventResource resource = accessService.requireResource(resourceId, festival);
+        if (eventResourceRepository.existsByFestival_FestivalIdAndNameIgnoreCaseAndTypeIgnoreCaseAndShareableAndIdNot(
+            resource.getFestival().getFestivalId(),
+            request.getName(),
+            request.getType(),
+            Boolean.TRUE.equals(request.getShareable()),
+            resourceId
+        )) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A resource with this name, type and sharing setting already exists");
+        }
         if (stageResourceRepository.existsDuplicateResourceNameOnAssignedStages(resourceId, request.getName())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "A resource with this name already exists on this stage");
         }
         resource.setName(request.getName());
         resource.setType(request.getType());
         resource.setDescription(request.getDescription());
-        resource.setTotalQuantity(request.getTotalQuantity());
+        resource.setTotalQuantity(resolveTotalQuantity(resourceId, request.getTotalQuantity()));
         resource.setShareable(Boolean.TRUE.equals(request.getShareable()));
         return EventResourceResponse.from(eventResourceRepository.save(resource));
     }
@@ -70,5 +87,10 @@ public class EventResourceService {
         requestResourceRepository.deleteByResource_Id(resourceId);
         stageResourceRepository.deleteByResource_Id(resourceId);
         eventResourceRepository.deleteById(resourceId);
+    }
+
+    private Integer resolveTotalQuantity(Long resourceId, Integer fallbackQuantity) {
+        Long assignedQuantity = stageResourceRepository.sumQuantityByResourceId(resourceId);
+        return assignedQuantity > 0 ? assignedQuantity.intValue() : fallbackQuantity;
     }
 }

@@ -54,16 +54,16 @@
         <div class="content-preview" [class.text-preview]="version.contentType === 'Text'">
           @if (version.contentType === 'Text') {
             <p>{{ version.contentValue || 'No text content was saved for this version.' }}</p>
-          } @else if (isImageContent(version.contentValue)) {
-            <img class="media-preview image-preview" [src]="version.contentValue" alt="Version image preview" />
-          } @else if (isAudioContent(version.contentValue)) {
-            <audio class="media-preview" controls [src]="version.contentValue"></audio>
-          } @else if (isVideoContent(version.contentValue)) {
-            <video class="media-preview video-preview" controls [src]="version.contentValue"></video>
+          } @else if (isImageContent()) {
+            <img class="media-preview image-preview" [src]="mediaPreviewUrl" alt="Version image preview" />
+          } @else if (isAudioContent()) {
+            <audio class="media-preview" controls [src]="mediaPreviewUrl"></audio>
+          } @else if (isVideoContent()) {
+            <video class="media-preview video-preview" controls [src]="mediaPreviewUrl"></video>
           } @else {
             <div>
               <strong>{{ version.contentType }} snapshot</strong>
-              <p>{{ version.contentValue || 'No uploaded content was saved for this version.' }}</p>
+              <p>{{ version.contentOriginalFileName || version.contentValue || 'No uploaded content was saved for this version.' }}</p>
             </div>
           }
         </div>

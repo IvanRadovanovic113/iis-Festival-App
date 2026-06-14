@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -13,7 +13,7 @@ import { Ad } from '../../../core/models/campaign.model';
   templateUrl: './creative-ad-editor.component.html',
   styleUrls: ['./creative-ad-editor.component.css']
 })
-export class CreativeAdEditorComponent implements OnInit {
+export class CreativeAdEditorComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -25,8 +25,11 @@ export class CreativeAdEditorComponent implements OnInit {
   saving = false;
   selectedFileName = '';
   previewUrl = '';
+  previewMimeType = '';
+  selectedFile: File | null = null;
   originalContentValue = '';
   contentCleared = false;
+  private protectedPreviewObjectUrl: string | null = null;
   readonly currentUser = this.authService.getCurrentUser();
   @ViewChild('fileInput') fileInput?: ElementRef<HTMLInputElement>;
 
@@ -36,6 +39,10 @@ export class CreativeAdEditorComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
+  }
+
+  ngOnDestroy(): void {
+    this.revokePreviewUrls();
   }
 
   get roleLabel(): string {
@@ -82,19 +89,19 @@ export class CreativeAdEditorComponent implements OnInit {
   }
 
   get hasExistingUploadedContent(): boolean {
-    return !!this.originalContentValue;
+    return !!this.ad?.contentUrl || !!this.originalContentValue;
   }
 
   get isImagePreview(): boolean {
-    return this.previewUrl.startsWith('data:image/');
+    return this.previewMimeType.startsWith('image/');
   }
 
   get isAudioPreview(): boolean {
-    return this.previewUrl.startsWith('data:audio/');
+    return this.previewMimeType.startsWith('audio/');
   }
 
   get isVideoPreview(): boolean {
-    return this.previewUrl.startsWith('data:video/');
+    return this.previewMimeType.startsWith('video/');
   }
 
   get contentLabel(): string {
@@ -135,14 +142,18 @@ export class CreativeAdEditorComponent implements OnInit {
     this.errorMessage = '';
     this.campaignService.getCreativeAd(campaignId, adId).subscribe({
       next: ad => {
+        this.revokePreviewUrls();
         this.ad = ad;
         this.originalContentValue = ad.contentValue ?? '';
         this.contentCleared = false;
-        this.selectedFileName = this.resolveDisplayFileName(ad.contentValue ?? '');
-        this.previewUrl = this.resolvePreviewUrl(ad.contentValue ?? '');
+        this.selectedFile = null;
+        this.selectedFileName = this.resolveDisplayFileName(ad);
+        this.previewMimeType = this.resolvePreviewMimeType(ad);
+        this.loadStoredPreview(ad);
         this.form.patchValue({
           contentValue: ad.contentValue ?? ''
         });
+        this.applyContentValidators();
       },
       error: () => this.errorMessage = 'Error loading ad.'
     });
@@ -163,19 +174,13 @@ export class CreativeAdEditorComponent implements OnInit {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.errorMessage = '';
-      this.contentCleared = false;
-      this.selectedFileName = file.name;
-      this.previewUrl = typeof reader.result === 'string' ? reader.result : '';
-      this.form.patchValue({ contentValue: this.previewUrl });
-    };
-    reader.onerror = () => {
-      this.errorMessage = 'Error reading selected file.';
-      this.clearSelectedContent();
-    };
-    reader.readAsDataURL(file);
+    this.revokePreviewUrls();
+    this.errorMessage = '';
+    this.contentCleared = false;
+    this.selectedFile = file;
+    this.selectedFileName = file.name;
+    this.previewUrl = URL.createObjectURL(file);
+    this.previewMimeType = file.type;
   }
 
   private isAcceptedFileType(file: File): boolean {
@@ -184,29 +189,49 @@ export class CreativeAdEditorComponent implements OnInit {
     return file.type.startsWith(`${majorType}/`);
   }
 
-  private resolvePreviewUrl(contentValue: string): string {
-    return contentValue.startsWith('data:') ? contentValue : '';
-  }
-
-  private resolveDisplayFileName(contentValue: string): string {
-    if (!contentValue) {
-      return '';
+  private resolveDisplayFileName(ad: Ad): string {
+    if (ad.contentOriginalFileName) {
+      return ad.contentOriginalFileName;
     }
-    if (contentValue.startsWith('data:video/')) {
+    if (ad.contentValue?.startsWith('data:video/')) {
       return 'Current uploaded video';
     }
-    if (contentValue.startsWith('data:audio/')) {
+    if (ad.contentValue?.startsWith('data:audio/')) {
       return 'Current uploaded audio';
     }
-    if (contentValue.startsWith('data:image/')) {
+    if (ad.contentValue?.startsWith('data:image/')) {
       return 'Current uploaded image';
     }
-    return contentValue;
+    return ad.contentValue ?? '';
+  }
+
+  private resolvePreviewMimeType(ad: Ad): string {
+    if (ad.contentMimeType) {
+      return ad.contentMimeType;
+    }
+    if (ad.contentValue?.startsWith('data:')) {
+      return ad.contentValue.slice(5, ad.contentValue.indexOf(';'));
+    }
+    return '';
+  }
+
+  private applyContentValidators(): void {
+    const control = this.form.get('contentValue');
+    if (!control) return;
+    if (this.expectsTextContent) {
+      control.setValidators([Validators.required]);
+    } else {
+      control.clearValidators();
+    }
+    control.updateValueAndValidity({ emitEvent: false });
   }
 
   clearSelectedContent(): void {
+    this.revokePreviewUrls();
+    this.selectedFile = null;
     this.selectedFileName = '';
     this.previewUrl = '';
+    this.previewMimeType = '';
     this.contentCleared = true;
     this.form.patchValue({ contentValue: '' });
     if (this.fileInput) {
@@ -215,22 +240,34 @@ export class CreativeAdEditorComponent implements OnInit {
   }
 
   save(): void {
-    if (!this.ad || this.form.invalid) {
+    if (!this.ad) {
+      return;
+    }
+    if (this.expectsTextContent && this.form.invalid) {
       this.form.markAllAsTouched();
+      return;
+    }
+    if (this.usesFileUpload && this.contentCleared && !this.selectedFile) {
+      this.errorMessage = `Upload a new ${this.ad.contentType.toLowerCase()} file before saving.`;
       return;
     }
 
     this.saving = true;
     this.errorMessage = '';
-    this.campaignService.updateCreativeAd(Number(this.route.snapshot.paramMap.get('campaignId')), this.ad.adId, this.form.getRawValue() as {
-      contentValue: string;
+    this.campaignService.updateCreativeAd(Number(this.route.snapshot.paramMap.get('campaignId')), this.ad.adId, {
+      contentText: this.expectsTextContent ? (this.form.value.contentValue ?? '') : undefined,
+      file: this.selectedFile ?? undefined,
+      clearExisting: this.contentCleared
     }).subscribe({
       next: updatedAd => {
+        this.revokePreviewUrls();
         this.ad = updatedAd;
         this.originalContentValue = this.ad.contentValue ?? '';
         this.contentCleared = false;
-        this.selectedFileName = this.resolveDisplayFileName(this.ad.contentValue ?? '');
-        this.previewUrl = this.resolvePreviewUrl(this.ad.contentValue ?? '');
+        this.selectedFile = null;
+        this.selectedFileName = this.resolveDisplayFileName(this.ad);
+        this.previewMimeType = this.resolvePreviewMimeType(this.ad);
+        this.loadStoredPreview(this.ad);
         this.form.patchValue({
           contentValue: this.ad.contentValue ?? ''
         });
@@ -248,5 +285,33 @@ export class CreativeAdEditorComponent implements OnInit {
 
   logout(): void {
     this.authService.logout();
+  }
+
+  private loadStoredPreview(ad: Ad): void {
+    if (ad.contentUrl) {
+      this.campaignService.getProtectedMediaUrl(ad.contentUrl).subscribe({
+        next: objectUrl => {
+          this.protectedPreviewObjectUrl = objectUrl;
+          this.previewUrl = objectUrl;
+        },
+        error: () => {
+          this.previewUrl = '';
+          this.errorMessage = 'Error loading content preview.';
+        }
+      });
+      return;
+    }
+
+    this.previewUrl = ad.contentValue?.startsWith('data:') ? ad.contentValue : '';
+  }
+
+  private revokePreviewUrls(): void {
+    if (this.selectedFile && this.previewUrl) {
+      URL.revokeObjectURL(this.previewUrl);
+    }
+    if (this.protectedPreviewObjectUrl) {
+      URL.revokeObjectURL(this.protectedPreviewObjectUrl);
+      this.protectedPreviewObjectUrl = null;
+    }
   }
 }

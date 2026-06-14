@@ -36,9 +36,10 @@ export class StatisticsDashboardComponent implements OnInit {
   dateFrom = '';
   dateTo = '';
 
-  private readonly phasePalette = ['#5fc24c', '#8ad56a', '#55c0d8', '#3fa88f', '#9be65d', '#2f7d32', '#6fdad0'];
-  private readonly typePalette = ['#6b3d57', '#874f6f', '#b86f80', '#d88ea1', '#93617f', '#cf9eb0'];
+  private readonly phasePalette = ['#4C956C', '#F4A259', '#5B8EED', '#C8553D', '#7D5BA6', '#2A9D8F', '#E9C46A', '#D62839', '#6C757D', '#43AA8B'];
+  private readonly typePalette = ['#7D5BA6', '#2A9D8F', '#E76F51', '#F4A259', '#5B8EED', '#C8553D', '#43AA8B', '#E9C46A', '#6D597A', '#90BE6D'];
   private readonly statusChartHeight = 240;
+  private readonly statusValueLabelHeight = 44;
 
   ngOnInit(): void {
     this.loadStatistics();
@@ -62,6 +63,30 @@ export class StatisticsDashboardComponent implements OnInit {
 
   get phaseCards(): StatisticsPhaseCount[] {
     return this.statistics?.phaseCounts ?? [];
+  }
+
+  get selectedCampaignLabel(): string {
+    if (!this.selectedCampaignId) return 'All campaigns';
+    const selected = this.statistics?.campaigns.find(campaign => campaign.campaignId === this.selectedCampaignId);
+    return selected ? `${selected.campaignName} - ${selected.festivalName}` : 'Selected campaign';
+  }
+
+  get selectedTypeLabel(): string {
+    if (!this.selectedAdTypeId) return 'All ad types';
+    const selected = this.statistics?.adTypes.find(type => type.adTypeId === this.selectedAdTypeId);
+    return selected?.name ?? 'Selected ad type';
+  }
+
+  get selectedPeriodLabel(): string {
+    if (this.dateFrom && this.dateTo) return `${this.dateFrom} to ${this.dateTo}`;
+    if (this.dateFrom) return `From ${this.dateFrom}`;
+    if (this.dateTo) return `Until ${this.dateTo}`;
+    return 'All available dates';
+  }
+
+  get pdfSummaryText(): string {
+    const totalAds = this.statistics?.totalAds ?? 0;
+    return `This report presents ${totalAds} ads for ${this.selectedCampaignLabel}, within the period ${this.selectedPeriodLabel}, and for ${this.selectedTypeLabel}. The charts below summarize how the filtered results are distributed across workflow phases and ad types.`;
   }
 
   get typeLegend(): Array<StatisticsTypeCount & { color: string; percentage: number; dash: string; offset: string }> {
@@ -89,6 +114,14 @@ export class StatisticsDashboardComponent implements OnInit {
       color: this.phasePalette[index % this.phasePalette.length],
       height: Math.max(item.count === 0 ? 0 : 14, (item.count / maxCount) * this.statusChartHeight)
     }));
+  }
+
+  get statusChartColumns(): string {
+    return `repeat(${Math.max(this.statusBars.length, 1)}, minmax(42px, 1fr))`;
+  }
+
+  get statusChartAreaHeight(): number {
+    return this.statusChartHeight + this.statusValueLabelHeight;
   }
 
   get statusChartMax(): number {

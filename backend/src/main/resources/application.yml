@@ -39,3 +39,5 @@ app:
   mail:
     enabled: ${APP_MAIL_ENABLED:false}
     from: ${APP_MAIL_FROM:${SPRING_MAIL_USERNAME:}}
+  storage:
+    upload-dir: ${APP_STORAGE_UPLOAD_DIR:uploads}

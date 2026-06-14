@@ -17,6 +17,10 @@ public class AdVersionDetailResponse {
     private String typeName;
     private String contentType;
     private String contentValue;
+    private String contentUrl;
+    private String contentOriginalFileName;
+    private String contentMimeType;
+    private Long contentSize;
     private String festivalName;
     private String campaignName;
     private String status;
@@ -32,6 +36,10 @@ public class AdVersionDetailResponse {
         response.typeName = ad.getAdType().getName();
         response.contentType = ad.getAdType().getContentType();
         response.contentValue = version.getContentValue();
+        response.contentUrl = version.getContentStoragePath() != null ? "/api/ad-content/ad-versions/" + version.getAdVersionId() : null;
+        response.contentOriginalFileName = version.getContentOriginalFileName();
+        response.contentMimeType = version.getContentMimeType();
+        response.contentSize = version.getContentSize();
         response.festivalName = ad.getCampaign().getFestival().getName();
         response.campaignName = ad.getCampaign().getName();
         response.status = version.getPhaseName();

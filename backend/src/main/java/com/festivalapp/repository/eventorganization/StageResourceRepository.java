@@ -10,10 +10,17 @@ import java.util.Optional;
 
 public interface StageResourceRepository extends JpaRepository<StageResource, Long> {
     List<StageResource> findByStage_StageIdOrderByResource_NameAsc(Long stageId);
+    List<StageResource> findByResource_Id(Long resourceId);
     Optional<StageResource> findByStage_StageIdAndResource_Id(Long stageId, Long resourceId);
     boolean existsByStage_StageIdAndResource_Id(Long stageId, Long resourceId);
     boolean existsByStage_StageIdAndResource_NameIgnoreCase(Long stageId, String resourceName);
     boolean existsByResource_Id(Long resourceId);
+    @Query("""
+        select coalesce(sum(stageResource.quantity), 0)
+        from StageResource stageResource
+        where stageResource.resource.id = :resourceId
+    """)
+    Long sumQuantityByResourceId(@Param("resourceId") Long resourceId);
     @Query("""
         select count(stageResource) > 0
         from StageResource stageResource

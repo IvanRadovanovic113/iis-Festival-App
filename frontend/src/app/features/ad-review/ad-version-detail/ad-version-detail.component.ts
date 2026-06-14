@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -12,13 +12,15 @@ import { AdVersionDetail } from '../../../core/models/campaign.model';
   templateUrl: './ad-version-detail.component.html',
   styleUrls: ['./ad-version-detail.component.css']
 })
-export class AdVersionDetailComponent implements OnInit {
+export class AdVersionDetailComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
   private readonly campaignService = inject(CampaignService);
 
   version: AdVersionDetail | null = null;
   errorMessage = '';
+  mediaPreviewUrl = '';
+  private protectedPreviewObjectUrl: string | null = null;
   readonly currentUser = this.authService.getCurrentUser();
 
   ngOnInit(): void {
@@ -26,9 +28,17 @@ export class AdVersionDetailComponent implements OnInit {
     const adId = Number(this.route.snapshot.paramMap.get('adId'));
     const versionNumber = Number(this.route.snapshot.paramMap.get('versionNumber'));
     this.campaignService.getAdVersionDetail(festivalId, adId, versionNumber).subscribe({
-      next: version => this.version = version,
+      next: version => {
+        this.revokeProtectedPreviewUrl();
+        this.version = version;
+        this.loadProtectedPreview(version.contentUrl, version.contentValue);
+      },
       error: () => this.errorMessage = 'Error loading ad version.'
     });
+  }
+
+  ngOnDestroy(): void {
+    this.revokeProtectedPreviewUrl();
   }
 
   get audience(): 'manager' | 'director' {
@@ -43,16 +53,16 @@ export class AdVersionDetailComponent implements OnInit {
       : ['/manager/festivals', festivalId, 'campaign', 'ads', adId];
   }
 
-  isImageContent(contentValue: string | undefined): boolean {
-    return !!contentValue && contentValue.startsWith('data:image/');
+  isImageContent(): boolean {
+    return this.version?.contentMimeType?.startsWith('image/') ?? !!this.version?.contentValue?.startsWith('data:image/');
   }
 
-  isAudioContent(contentValue: string | undefined): boolean {
-    return !!contentValue && contentValue.startsWith('data:audio/');
+  isAudioContent(): boolean {
+    return this.version?.contentMimeType?.startsWith('audio/') ?? !!this.version?.contentValue?.startsWith('data:audio/');
   }
 
-  isVideoContent(contentValue: string | undefined): boolean {
-    return !!contentValue && contentValue.startsWith('data:video/');
+  isVideoContent(): boolean {
+    return this.version?.contentMimeType?.startsWith('video/') ?? !!this.version?.contentValue?.startsWith('data:video/');
   }
 
   get displayName(): string {
@@ -70,5 +80,31 @@ export class AdVersionDetailComponent implements OnInit {
 
   logout(): void {
     this.authService.logout();
+  }
+
+  private loadProtectedPreview(contentUrl: string | null, contentValue: string | null): void {
+    this.revokeProtectedPreviewUrl();
+    if (contentUrl) {
+      this.campaignService.getProtectedMediaUrl(contentUrl).subscribe({
+        next: objectUrl => {
+          this.protectedPreviewObjectUrl = objectUrl;
+          this.mediaPreviewUrl = objectUrl;
+        },
+        error: () => {
+          this.mediaPreviewUrl = '';
+          this.errorMessage = 'Error loading content preview.';
+        }
+      });
+      return;
+    }
+
+    this.mediaPreviewUrl = contentValue?.startsWith('data:') ? contentValue : '';
+  }
+
+  private revokeProtectedPreviewUrl(): void {
+    if (this.protectedPreviewObjectUrl) {
+      URL.revokeObjectURL(this.protectedPreviewObjectUrl);
+      this.protectedPreviewObjectUrl = null;
+    }
   }
 }

@@ -7,6 +7,7 @@ import com.festivalapp.model.Stage;
 import com.festivalapp.model.User;
 import com.festivalapp.model.eventorganization.EventResource;
 import com.festivalapp.model.eventorganization.StageResource;
+import com.festivalapp.repository.eventorganization.EventResourceRepository;
 import com.festivalapp.repository.eventorganization.StageResourceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,7 @@ import java.util.List;
 public class StageResourceService {
 
     private final StageResourceRepository stageResourceRepository;
+    private final EventResourceRepository eventResourceRepository;
     private final EventOrganizationAccessService accessService;
 
     public List<StageResourceResponse> getStageResources(Long stageId, User user) {
@@ -30,6 +32,7 @@ public class StageResourceService {
             .stream().map(StageResourceResponse::from).toList();
     }
 
+    @Transactional
     public StageResourceResponse assignResourceToStage(Long stageId, StageResourceRequest request, User user) {
         Festival festival = accessService.requireEventOrganizerFestival(user);
         Stage stage = accessService.requireStage(stageId, festival);
@@ -43,40 +46,43 @@ public class StageResourceService {
         if (stageResourceRepository.existsByStage_StageIdAndResource_NameIgnoreCase(stageId, resource.getName())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "A resource with this name already exists on this stage");
         }
-        validateQuantity(request.getQuantity(), resource);
         StageResource stageResource = StageResource.builder()
             .stage(stage)
             .resource(resource)
             .quantity(request.getQuantity())
             .build();
-        return StageResourceResponse.from(stageResourceRepository.save(stageResource));
+        StageResource savedStageResource = stageResourceRepository.save(stageResource);
+        refreshTotalQuantity(resource);
+        return StageResourceResponse.from(savedStageResource);
     }
 
+    @Transactional
     public StageResourceResponse updateStageResource(Long stageId, Long resourceId, StageResourceRequest request, User user) {
         Festival festival = accessService.requireEventOrganizerFestival(user);
         accessService.requireStage(stageId, festival);
         EventResource resource = accessService.requireResource(resourceId, festival);
         StageResource stageResource = stageResourceRepository.findByStage_StageIdAndResource_Id(stageId, resourceId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Stage resource assignment was not found"));
-        validateQuantity(request.getQuantity(), resource);
         stageResource.setQuantity(request.getQuantity());
-        return StageResourceResponse.from(stageResourceRepository.save(stageResource));
+        StageResource savedStageResource = stageResourceRepository.save(stageResource);
+        refreshTotalQuantity(resource);
+        return StageResourceResponse.from(savedStageResource);
     }
 
     @Transactional
     public void removeResourceFromStage(Long stageId, Long resourceId, User user) {
         Festival festival = accessService.requireEventOrganizerFestival(user);
         accessService.requireStage(stageId, festival);
-        accessService.requireResource(resourceId, festival);
+        EventResource resource = accessService.requireResource(resourceId, festival);
         if (!stageResourceRepository.existsByStage_StageIdAndResource_Id(stageId, resourceId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Stage resource assignment was not found");
         }
         stageResourceRepository.deleteByStage_StageIdAndResource_Id(stageId, resourceId);
+        refreshTotalQuantity(resource);
     }
 
-    private void validateQuantity(Integer quantity, EventResource resource) {
-        if (quantity > resource.getTotalQuantity()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Assigned quantity cannot exceed total quantity");
-        }
+    private void refreshTotalQuantity(EventResource resource) {
+        resource.setTotalQuantity(stageResourceRepository.sumQuantityByResourceId(resource.getId()).intValue());
+        eventResourceRepository.save(resource);
     }
 }

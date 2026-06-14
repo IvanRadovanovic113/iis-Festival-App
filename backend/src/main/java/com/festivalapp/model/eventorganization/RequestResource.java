@@ -4,10 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(
-    name = "request_resources",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"reservation_request_id", "resource_id"})
-)
+@Table(name = "request_resources")
 @Getter
 @Setter
 @Builder
@@ -24,8 +21,14 @@ public class RequestResource {
     private EventReservationRequest reservationRequest;
 
     @ManyToOne
-    @JoinColumn(name = "resource_id", nullable = false)
+    @JoinColumn(name = "resource_id")
     private EventResource resource;
+
+    @Column(name = "requested_name")
+    private String requestedName;
+
+    @Column(name = "requested_type")
+    private String requestedType;
 
     @Column(nullable = false)
     private Integer quantity;

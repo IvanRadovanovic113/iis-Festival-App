@@ -12,7 +12,7 @@
     <button class="logout-btn" type="button" (click)="logout()"><span class="nav-icon">→</span><span>Log out</span></button>
   </aside>
 
-  <main class="page-content" #pdfContent>
+  <main class="page-content">
     <header class="page-header">
       <div>
         <p class="eyebrow">{{ pageTitle }}</p>
@@ -93,7 +93,7 @@
                 <span>{{ tick }}</span>
               }
             </div>
-            <div class="bar-chart">
+            <div class="bar-chart" [style.gridTemplateColumns]="statusChartColumns" [style.height.px]="statusChartAreaHeight">
               <div class="grid-lines">
                 @for (tick of statusAxisTicks; track $index) {
                   <span class="grid-line"></span>
@@ -105,7 +105,6 @@
                   <div class="bar-track">
                     <div class="bar-fill" [style.height.px]="bar.height" [style.background]="bar.color"></div>
                   </div>
-                  <span class="bar-label">{{ bar.name }}</span>
                 </div>
               }
             </div>
@@ -163,4 +162,127 @@
       <div class="loading-card">Loading statistics…</div>
     }
   </main>
+
+  @if (statistics) {
+    <section class="pdf-export-root" aria-hidden="true">
+      <div class="pdf-export-sheet" #pdfContent>
+        <header class="pdf-header">
+          <p class="eyebrow">{{ pageTitle }}</p>
+          <h1 class="pdf-title">Festival Advertising Statistics Report</h1>
+          <p class="pdf-subtitle">Overview of the currently selected statistical criteria and chart summaries.</p>
+        </header>
+
+        <section class="pdf-summary-card">
+          <p class="pdf-summary-text">{{ pdfSummaryText }}</p>
+        </section>
+
+        <section class="pdf-filter-text">
+          <div class="pdf-filter-row">
+            <span class="pdf-filter-label">Campaign</span>
+            <strong>{{ selectedCampaignLabel }}</strong>
+          </div>
+          <div class="pdf-filter-row">
+            <span class="pdf-filter-label">Date range</span>
+            <strong>{{ selectedPeriodLabel }}</strong>
+          </div>
+          <div class="pdf-filter-row">
+            <span class="pdf-filter-label">Ad type</span>
+            <strong>{{ selectedTypeLabel }}</strong>
+          </div>
+        </section>
+
+        <section class="stats-grid">
+          <article class="stat-card accent">
+            <span class="stat-label">All ads</span>
+            <strong>{{ statistics.totalAds }}</strong>
+          </article>
+          @for (phase of phaseCards; track phase.phaseId) {
+            <article class="stat-card">
+              <span class="stat-label">{{ phase.name }}</span>
+              <strong>{{ phase.count }}</strong>
+            </article>
+          }
+        </section>
+
+        <section class="charts-section pdf-charts-section">
+          <article class="chart-card">
+            <div class="chart-header">
+              <div>
+                <p class="eyebrow">Adds status</p>
+                <h2>Ads per phase</h2>
+              </div>
+            </div>
+
+            <div class="bar-chart-shell">
+              <div class="y-axis">
+                @for (tick of statusAxisTicks; track $index) {
+                  <span>{{ tick }}</span>
+                }
+              </div>
+              <div class="bar-chart" [style.gridTemplateColumns]="statusChartColumns" [style.height.px]="statusChartAreaHeight">
+                <div class="grid-lines">
+                  @for (tick of statusAxisTicks; track $index) {
+                    <span class="grid-line"></span>
+                  }
+                </div>
+                @for (bar of statusBars; track bar.phaseId) {
+                  <div class="bar-column">
+                    <span class="bar-value">{{ bar.count }}</span>
+                    <div class="bar-track">
+                      <div class="bar-fill" [style.height.px]="bar.height" [style.background]="bar.color"></div>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="legend-grid">
+              @for (bar of statusBars; track bar.phaseId) {
+                <div class="legend-item">
+                  <span class="legend-dot" [style.background]="bar.color"></span>
+                  <span>{{ bar.name }}</span>
+                  <strong>{{ bar.count }}</strong>
+                </div>
+              }
+            </div>
+          </article>
+
+          <article class="chart-card">
+            <div class="chart-header">
+              <div>
+                <p class="eyebrow">Adds types</p>
+                <h2>Ads per type</h2>
+              </div>
+            </div>
+
+            <div class="donut-layout">
+              <svg viewBox="0 0 42 42" class="donut-chart" aria-hidden="true">
+                <circle class="donut-base" cx="21" cy="21" r="15.9155"></circle>
+                @for (slice of typeLegend; track slice.adTypeId) {
+                  <circle
+                    class="donut-segment"
+                    cx="21"
+                    cy="21"
+                    r="15.9155"
+                    [attr.stroke]="slice.color"
+                    [attr.stroke-dasharray]="slice.dash"
+                    [attr.stroke-dashoffset]="slice.offset"></circle>
+                }
+              </svg>
+
+              <div class="legend-grid type-legend">
+                @for (slice of typeLegend; track slice.adTypeId) {
+                  <div class="legend-item">
+                    <span class="legend-dot" [style.background]="slice.color"></span>
+                    <span>{{ slice.name }}</span>
+                    <strong>{{ slice.count }}</strong>
+                  </div>
+                }
+              </div>
+            </div>
+          </article>
+        </section>
+      </div>
+    </section>
+  }
 </div>

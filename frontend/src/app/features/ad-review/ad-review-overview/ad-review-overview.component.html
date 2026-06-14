@@ -61,16 +61,16 @@
         <div class="content-preview" [class.text-preview]="review.ad.contentType === 'Text'">
           @if (review.ad.contentType === 'Text') {
             <p>{{ review.ad.contentValue || 'No text content added yet.' }}</p>
-          } @else if (isImageContent(review.ad.contentValue)) {
-            <img class="media-preview image-preview" [src]="review.ad.contentValue" alt="Ad image preview" />
-          } @else if (isAudioContent(review.ad.contentValue)) {
-            <audio class="media-preview" controls [src]="review.ad.contentValue"></audio>
-          } @else if (isVideoContent(review.ad.contentValue)) {
-            <video class="media-preview video-preview" controls [src]="review.ad.contentValue"></video>
+          } @else if (isImageContent()) {
+            <img class="media-preview image-preview" [src]="mediaPreviewUrl" alt="Ad image preview" />
+          } @else if (isAudioContent()) {
+            <audio class="media-preview" controls [src]="mediaPreviewUrl"></audio>
+          } @else if (isVideoContent()) {
+            <video class="media-preview video-preview" controls [src]="mediaPreviewUrl"></video>
           } @else {
             <div>
               <strong>{{ review.ad.contentType }} preview</strong>
-              <p>{{ review.ad.contentValue || 'No uploaded content yet.' }}</p>
+              <p>{{ review.ad.contentOriginalFileName || review.ad.contentValue || 'No uploaded content yet.' }}</p>
             </div>
           }
         </div>
