@@ -3,6 +3,8 @@ package com.festivalapp.model;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import com.festivalapp.model.Stage;
+import com.festivalapp.model.PerformerSchedulingStatus;
 
 @Entity
 @Table(name = "contracts")
@@ -31,6 +33,15 @@ public class Contract {
 
     @Column(name = "signed_at", nullable = false)
     private LocalDateTime signedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "stage_id", nullable = true)
+    private Stage stage;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private PerformerSchedulingStatus schedulingStatus = PerformerSchedulingStatus.NOT_ASSIGNED;
 
     @PrePersist
     protected void onCreate() {
