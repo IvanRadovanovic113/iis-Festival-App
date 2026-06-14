@@ -73,6 +73,7 @@ public class DataInitializer implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
+        migrateFestivalDateColumns();
         migrateKupciTierConstraint();
         migrateAssignmentRoleConstraint();
         migrateUsersRoleConstraint();
@@ -81,6 +82,7 @@ public class DataInitializer implements ApplicationRunner {
         createStatisticsFunctions();
         migrateStageResourcesStageForeignKey();
         migrateEventReservationReviewNoteColumn();
+        migrateRequestResourcesForCustomRequests();
         createAdminUser();
         seedEventOrganizationRequests();
         assignUnassignedEventResources();
@@ -286,6 +288,7 @@ public class DataInitializer implements ApplicationRunner {
         EventReservationRequest coby = ensureReservation(festival, stageTwo, "Coby B.",
             LocalDate.of(2026, 6, 17), LocalTime.of(19, 0), LocalTime.of(19, 45), EventReservationStatus.APPROVED, "Approved rap performance");
         ensureRequestResources(coby, List.of(sound, lights, security, technicians));
+        ensureCustomRequestResource(coby, "Custom LED floor panels", "Equipment", 1);
 
         EventReservationRequest stromae = ensureReservation(festival, mainStage, "Stromae",
             LocalDate.of(2026, 6, 20), LocalTime.of(21, 0), LocalTime.of(22, 20), EventReservationStatus.PENDING, "Main stage request");
@@ -302,6 +305,7 @@ public class DataInitializer implements ApplicationRunner {
         EventReservationRequest djSnake = ensureReservation(festival, vipStage, "DJ Snake",
             LocalDate.of(2026, 6, 19), LocalTime.of(20, 0), LocalTime.of(20, 45), EventReservationStatus.APPROVED, "Approved VIP stage performance");
         ensureRequestResources(djSnake, List.of(sound, lights, specialFx));
+        ensureCustomRequestResource(djSnake, "Hologram projector", "Equipment", 1);
 
         EventReservationRequest bicep = ensureReservation(festival, stageTwo, "Bicep",
             LocalDate.of(2026, 6, 22), LocalTime.of(22, 0), LocalTime.of(23, 0), EventReservationStatus.APPROVED, "Approved electronic set");
@@ -470,6 +474,19 @@ public class DataInitializer implements ApplicationRunner {
         }
     }
 
+    private void ensureCustomRequestResource(EventReservationRequest request, String name, String type, int quantity) {
+        if (requestResourceRepository.existsByReservationRequest_IdAndRequestedNameIgnoreCase(request.getId(), name)) {
+            return;
+        }
+        requestResourceRepository.save(RequestResource.builder()
+            .reservationRequest(request)
+            .requestedName(name)
+            .requestedType(type)
+            .quantity(quantity)
+            .status(RequestResourceStatus.REQUESTED)
+            .build());
+    }
+
     private AdPhase ensurePhase(String name, String description, int orderIndex, boolean emailNotification, Role assignedRole) {
         AdPhase phase = adPhaseRepository.findAll().stream()
             .filter(item -> item.getName().equalsIgnoreCase(name))
@@ -635,6 +652,15 @@ public class DataInitializer implements ApplicationRunner {
 
     // ─── DB migracije ────────────────────────────────────────────────────────
 
+    private void migrateFestivalDateColumns() {
+        jdbcTemplate.execute("ALTER TABLE festivals ADD COLUMN IF NOT EXISTS name VARCHAR(255)");
+        jdbcTemplate.execute("ALTER TABLE festivals ADD COLUMN IF NOT EXISTS location VARCHAR(255)");
+        jdbcTemplate.execute("ALTER TABLE festivals ADD COLUMN IF NOT EXISTS status VARCHAR(50)");
+        jdbcTemplate.execute("ALTER TABLE festivals ADD COLUMN IF NOT EXISTS start_date DATE");
+        jdbcTemplate.execute("ALTER TABLE festivals ADD COLUMN IF NOT EXISTS end_date DATE");
+        log.info("festivals columns ensured");
+    }
+
     /**
      * Stari CHECK constraint dozvoljava samo BRONZE/SILVER/GOLD.
      * Zamenjujemo ga novim koji uključuje i STANDARD.
@@ -675,6 +701,12 @@ public class DataInitializer implements ApplicationRunner {
         log.info("Legacy event reservation review_note column removed");
     }
 
+    private void migrateRequestResourcesForCustomRequests() {
+        jdbcTemplate.execute(
+            "ALTER TABLE request_resources ALTER COLUMN resource_id DROP NOT NULL");
+        log.info("request_resources.resource_id migrated to allow custom one-time requested resources");
+    }
+
     /**
      * Stari CHECK constraint na user_festival_assignments.role možda ne uključuje
      * sve uloge koje su dodate nakon merge-a (EVENT_ORGANIZER, SALES_DIRECTOR, itd.).
@@ -683,6 +715,11 @@ public class DataInitializer implements ApplicationRunner {
     private void migrateAssignmentRoleConstraint() {
         jdbcTemplate.execute(
             "ALTER TABLE user_festival_assignments DROP CONSTRAINT IF EXISTS user_festival_assignments_role_check");
+        jdbcTemplate.update(
+            "DELETE FROM user_festival_assignments WHERE role NOT IN " +
+            "('ADMIN','FESTIVAL_DIRECTOR','FESTIVAL_MANAGER','PRODUCT_DESIGNER'," +
+            "'TECHNICAL_SUPPORT','SALES_DIRECTOR','SALES_MANAGER','EVENT_ORGANIZER'," +
+            "'MARKETING_MANAGER','BUYER','NEGOTIATION_MANAGER')");
         jdbcTemplate.execute(
             "ALTER TABLE user_festival_assignments ADD CONSTRAINT user_festival_assignments_role_check " +
             "CHECK (role IN ('ADMIN','FESTIVAL_DIRECTOR','FESTIVAL_MANAGER','PRODUCT_DESIGNER'," +

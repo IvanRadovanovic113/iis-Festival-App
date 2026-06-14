@@ -1,0 +1,76 @@
+<div class="page">
+  <div class="page-header">
+    <a [routerLink]="['../..']" class="back-link">← Back to Ticket Types</a>
+    <div class="header-main">
+      <h2>Price History</h2>
+      @if (ticketType) {
+        <span class="tt-name">{{ ticketType.name }}</span>
+      }
+    </div>
+    <span class="total-badge">{{ totalElements }} records</span>
+  </div>
+
+  @if (errorMessage) {
+    <div class="error-banner">{{ errorMessage }}</div>
+  }
+
+  @if (loading) {
+    <div class="loading">Loading...</div>
+  }
+
+  @if (!loading && history.length === 0) {
+    <div class="empty-state">
+      <p>No price changes recorded yet.</p>
+    </div>
+  }
+
+  @if (!loading && history.length > 0) {
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Date & Time</th>
+          <th>Old Price</th>
+          <th>New Price</th>
+          <th>Change</th>
+          <th>Type</th>
+          <th>Reason</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (entry of history; track entry.cenovnaIstorijaId) {
+          <tr>
+            <td class="date-cell">{{ entry.datum | date:'dd.MM.yyyy HH:mm:ss' }}</td>
+            <td>€{{ entry.staraCena | number:'1.2-2' }}</td>
+            <td>€{{ entry.novaCena | number:'1.2-2' }}</td>
+            <td>
+              <span class="change-badge"
+                    [class.change-up]="priceDirection(entry) === 'up'"
+                    [class.change-down]="priceDirection(entry) === 'down'"
+                    [class.change-same]="priceDirection(entry) === 'same'">
+                @if (priceDirection(entry) === 'up') { ↑ +{{ (entry.novaCena - entry.staraCena) | number:'1.2-2' }} }
+                @if (priceDirection(entry) === 'down') { ↓ {{ (entry.novaCena - entry.staraCena) | number:'1.2-2' }} }
+                @if (priceDirection(entry) === 'same') { → 0.00 }
+              </span>
+            </td>
+            <td>
+              <span class="type-badge"
+                    [class.type-manual]="entry.jeRucnaPromena"
+                    [class.type-auto]="!entry.jeRucnaPromena">
+                {{ entry.jeRucnaPromena ? 'Manual' : 'Automatic' }}
+              </span>
+            </td>
+            <td class="reason-cell">{{ entry.razlog }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    @if (totalPages > 1) {
+      <div class="pagination">
+        <button class="btn-page" [disabled]="currentPage === 0" (click)="prevPage()">← Prev</button>
+        <span class="page-info">Page {{ currentPage + 1 }} of {{ totalPages }}</span>
+        <button class="btn-page" [disabled]="currentPage >= totalPages - 1" (click)="nextPage()">Next →</button>
+      </div>
+    }
+  }
+</div>

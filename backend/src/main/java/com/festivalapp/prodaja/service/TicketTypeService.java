@@ -9,6 +9,8 @@ import com.festivalapp.prodaja.dto.TicketTypeResponse;
 import com.festivalapp.prodaja.model.Segment;
 import com.festivalapp.prodaja.model.TicketType;
 import com.festivalapp.prodaja.model.TicketTypeSegment;
+import com.festivalapp.prodaja.model.PricingPeriod;
+import com.festivalapp.prodaja.repository.PricingPeriodRepository;
 import com.festivalapp.prodaja.repository.SegmentRepository;
 import com.festivalapp.prodaja.repository.TicketTypeRepository;
 import com.festivalapp.prodaja.repository.TicketTypeSegmentRepository;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -29,6 +32,8 @@ public class TicketTypeService {
     private final TicketTypeSegmentRepository ticketTypeSegmentRepository;
     private final SegmentRepository segmentRepository;
     private final UserFestivalAssignmentRepository assignmentRepository;
+    private final PricingPeriodRepository pricingPeriodRepository;
+    private final CenovnaIstorijaService cenovnaIstorijaService;
 
     private Festival requireTicketTypeAccess(User user) {
         UserFestivalAssignment assignment = assignmentRepository.findByUser_Id(user.getId())
@@ -40,8 +45,11 @@ public class TicketTypeService {
     }
 
     private TicketTypeResponse buildResponse(TicketType tt) {
+        PricingPeriod activePeriod = pricingPeriodRepository
+            .findActiveForTicketType(tt.getTicketTypeId(), LocalDate.now()).orElse(null);
         return TicketTypeResponse.from(tt,
-            ticketTypeSegmentRepository.findByTicketType_TicketTypeId(tt.getTicketTypeId()));
+            ticketTypeSegmentRepository.findByTicketType_TicketTypeId(tt.getTicketTypeId()),
+            activePeriod);
     }
 
     public List<TicketTypeResponse> getAll(User user) {
@@ -127,6 +135,23 @@ public class TicketTypeService {
         }
         tt.setDynamicPricingActive(active);
         tt = ticketTypeRepository.save(tt);
+
+        if (!active) {
+            // Resetuj currentPrice na basePrice za sve periode ovog tipa karte
+            List<com.festivalapp.prodaja.model.PricingPeriod> periods =
+                pricingPeriodRepository.findByTicketType_TicketTypeIdOrderByStartDateAsc(tt.getTicketTypeId());
+            for (com.festivalapp.prodaja.model.PricingPeriod period : periods) {
+                if (period.getCurrentPrice() != null
+                        && period.getCurrentPrice().compareTo(period.getBasePrice()) != 0) {
+                    java.math.BigDecimal staraCurrentPrice = period.getCurrentPrice();
+                    period.setCurrentPrice(period.getBasePrice());
+                    pricingPeriodRepository.save(period);
+                    cenovnaIstorijaService.logPromenu(tt, period, staraCurrentPrice, period.getBasePrice(),
+                        "Isključen dynamic pricing — reset na basePrice", true);
+                }
+            }
+        }
+
         return buildResponse(tt);
     }
 

@@ -1,0 +1,97 @@
+<section class="page-heading timetable-heading">
+  <h1>{{ reservationMode ? 'Schedule reservation' : 'Stage timetable' }}</h1>
+  @if (!reservationMode) {
+    <div class="week-filter" aria-label="Week filter">
+      <button type="button" aria-label="Previous week" (click)="previousWeekRequested.emit()">&lt;</button>
+      <span>{{ timetableWeekLabel }}</span>
+      <button type="button" aria-label="Next week" (click)="nextWeekRequested.emit()">&gt;</button>
+    </div>
+  }
+</section>
+
+@if (reservationMode && selectedReservationRequest) {
+  <section class="reservation-banner">
+    <span>Reserving for:</span>
+    <strong>{{ selectedReservationRequest.performerName }} - {{ selectedReservationRequest.stageName }} - {{ reservationDateLabel }} - {{ requestDurationMinutes(selectedReservationRequest) }} min - {{ requestResourceCounts[selectedReservationRequest.id] || 0 }} resources</strong>
+  </section>
+}
+
+<div class="stage-tabs timetable-stage-tabs" aria-label="Timetable stages">
+  @for (stage of stages; track stage.stageId) {
+    <button type="button" [class.active]="selectedStageId === stage.stageId" [disabled]="reservationMode && stage.stageId !== selectedReservationRequest?.stageId" (click)="stageSelected.emit(stage.stageId)">
+      {{ stage.name }}
+    </button>
+  }
+</div>
+
+@if (reservationMode && selectedReservationRequest) {
+  <section class="reservation-scheduler" aria-label="Reservation timetable">
+    <div class="reservation-time-header">
+      <span>Time</span>
+      @for (hour of timetableHours; track hour) {
+        <span>{{ hour }}</span>
+      }
+    </div>
+    <div class="reservation-time-row">
+      @for (hour of timetableHours; track hour) {
+        <button type="button"
+          [class.occupied]="getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status === 'OCCUPIED'"
+          [class.available]="getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status !== 'OCCUPIED' && isScheduleSlotAvailable(hour)"
+          [class.selected]="isScheduleSlotSelected(hour)"
+          [class.unavailable]="getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status !== 'OCCUPIED' && !isScheduleSlotAvailable(hour)"
+          [disabled]="getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status === 'OCCUPIED' || !isScheduleSlotAvailable(hour)"
+          (click)="scheduleStartSelected.emit(hour)">
+          @if (getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status === 'OCCUPIED') {
+            {{ getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.performerName }}
+          } @else if (isScheduleSlotSelected(hour) && selectedScheduleEnd) {
+            {{ selectedReservationRequest.performerName }}
+          } @else if (isScheduleSlotAvailable(hour)) {
+            Free
+          } @else {
+            Unavailable
+          }
+        </button>
+      }
+    </div>
+  </section>
+
+  <section class="legend reservation-legend" aria-label="Timetable legend">
+    <strong>Legend:</strong>
+    <span><i class="legend-box occupied"></i>Occupied</span>
+    <span><i class="legend-box suggestion"></i>Selectable slot</span>
+    <span><i class="legend-box free"></i>Selected</span>
+  </section>
+
+  <button type="button" class="primary-button reserve-button" [disabled]="!canReserveSelectedSlot" (click)="reserveSelectedSlotRequested.emit()">
+    Reserve
+  </button>
+} @else {
+  <section class="weekly-timetable" aria-label="Weekly stage timetable">
+    <div class="time-grid timetable-header">
+      <div class="day-heading">Day</div>
+      @for (hour of timetableHours; track hour) {
+        <div>{{ hour }}</div>
+      }
+    </div>
+
+    @for (day of timetableDays; track day.key) {
+      <div class="time-grid timetable-row">
+        <div class="day-cell">
+          <strong>{{ day.dayName }}</strong>
+          <span>{{ day.dateLabel }}</span>
+        </div>
+        @for (hour of timetableHours; track hour) {
+          <div class="free-slot" [class.occupied-slot]="getTimetableSlot(day.key, hour)?.status === 'OCCUPIED'">
+            {{ getTimetableSlot(day.key, hour)?.status === 'OCCUPIED' ? getTimetableSlot(day.key, hour)?.performerName : 'Free' }}
+          </div>
+        }
+      </div>
+    }
+  </section>
+
+  <section class="legend" aria-label="Timetable legend">
+    <strong>Legend:</strong>
+    <span><i class="legend-box occupied"></i>Occupied</span>
+    <span><i class="legend-box free"></i>Free slot</span>
+  </section>
+}

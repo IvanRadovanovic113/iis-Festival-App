@@ -94,6 +94,11 @@ export const routes: Routes = [
           import('./features/manager/ticket-types/pricing-periods/pricing-periods.component').then(m => m.PricingPeriodsComponent)
       },
       {
+        path: 'ticket-types/:id/price-history',
+        loadComponent: () =>
+          import('./features/manager/ticket-types/price-history/price-history.component').then(m => m.PriceHistoryComponent)
+      },
+      {
         path: 'promotions',
         loadComponent: () =>
           import('./features/prodaja/promotions/promotions.component').then(m => m.PromotionsComponent)

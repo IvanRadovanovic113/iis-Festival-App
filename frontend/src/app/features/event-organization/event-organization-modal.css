@@ -1,0 +1,342 @@
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(42, 25, 45, 0.35);
+}
+
+.resource-modal,
+.delete-modal,
+.confirmation-modal {
+  width: min(808px, 100%);
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  border-radius: 8px;
+  background: #fffafd;
+  box-shadow: 0 20px 70px rgba(42, 25, 45, 0.28);
+}
+
+.resource-modal header,
+.delete-modal header,
+.confirmation-modal header {
+  height: 80px;
+  padding: 0 18px 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #3b1732;
+  color: #fff;
+}
+
+.resource-modal h2,
+.delete-modal h2,
+.confirmation-modal h2 {
+  margin: 0;
+  font-size: 25px;
+}
+
+.close-button {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.modal-body {
+  padding: 24px 34px 26px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 26px 32px;
+}
+
+.modal-body label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #725a70;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.modal-body .full {
+  grid-column: 1 / -1;
+}
+
+.modal-body input,
+.modal-body select {
+  height: 53px;
+  width: 100%;
+  border: 2px solid #f7e4ee;
+  border-radius: 10px;
+  padding: 0 16px;
+  background: #fffafd;
+  color: #2b2030;
+  font-size: 20px;
+}
+
+.modal-body input::placeholder {
+  color: #b3acc3;
+}
+
+.modal-error {
+  margin: -8px 0 0;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #ffe9ed;
+  color: #b8243d;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.share-row {
+  height: 66px;
+  padding: 0 18px;
+  flex-direction: row !important;
+  align-items: center;
+  border-radius: 10px;
+  background: #f0e8fb;
+  color: #33405f !important;
+}
+
+.share-row input {
+  width: 28px;
+  height: 28px;
+  accent-color: #cf4d7b;
+}
+
+.resource-modal footer,
+.delete-modal footer {
+  padding: 0 34px 22px;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.resource-modal footer button,
+.delete-modal footer button {
+  width: 262px;
+  height: 60px;
+  font-size: 20px;
+}
+
+.delete-modal {
+  width: min(634px, 100%);
+}
+
+.confirmation-modal {
+  width: min(720px, 100%);
+}
+
+.confirmation-modal.has-task-summary {
+  width: min(870px, 100%);
+  border: 2px solid #62bd75;
+}
+
+.confirmation-modal header {
+  background: #68bea8;
+}
+
+.confirmation-modal dl {
+  margin: 24px 30px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #e4faef;
+  color: #2b2030;
+  font-size: 17px;
+}
+
+.confirmation-modal dl div {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 12px;
+}
+
+.confirmation-modal dt {
+  color: #725f73;
+}
+
+.confirmation-modal dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.confirmation-modal .done-button {
+  width: calc(100% - 60px);
+  height: 60px;
+  margin: 0 30px 26px;
+  background: #68bea8;
+}
+
+.reservation-summary {
+  margin: 24px 28px 0;
+  padding: 20px 18px;
+  border-radius: 10px;
+  background: #e4faef;
+  color: #286239;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.task-created-summary {
+  margin: 34px 28px 0;
+}
+
+.task-warning {
+  margin: 0 0 10px;
+  color: #8d6515;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.created-task-list {
+  display: grid;
+  gap: 20px;
+}
+
+.created-task-card {
+  display: grid;
+  grid-template-columns: 164px 1fr;
+  gap: 18px;
+  padding: 16px 18px;
+  border: 2px solid #b9cdfd;
+  border-radius: 10px;
+  background: #f4f0ff;
+}
+
+.created-task-card.non-existing-card {
+  border-color: #be96ff;
+  background: #f0e8fb;
+}
+
+.created-task-side,
+.created-task-main {
+  display: flex;
+  flex-direction: column;
+}
+
+.created-task-side {
+  gap: 18px;
+  color: #8c6618;
+  font-size: 16px;
+}
+
+.task-type-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  width: 160px;
+  border: 1px solid #e54a80;
+  border-radius: 999px;
+  color: #d84a7c;
+  background: #fff4fa;
+  font-weight: 700;
+}
+
+.task-type-pill.non-existing {
+  border-color: #8e36cf;
+  color: #8e36cf;
+  background: #f7efff;
+}
+
+.created-task-main {
+  justify-content: center;
+  gap: 6px;
+}
+
+.created-task-main strong {
+  color: #2b2030;
+  font-size: 20px;
+}
+
+.created-task-main span {
+  color: #766579;
+  font-size: 16px;
+}
+
+.confirmation-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  padding: 60px 28px 28px;
+}
+
+.confirmation-actions button {
+  height: 60px;
+  font-size: 20px;
+}
+
+.confirmation-actions .primary-button {
+  background: #cf4d7b;
+}
+
+.delete-body {
+  padding: 24px 22px 30px;
+}
+
+.warning-box,
+.info-box {
+  border-radius: 10px;
+  padding: 14px 18px;
+}
+
+.warning-box {
+  background: #fdebed;
+}
+
+.warning-box strong {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+
+.warning-box p {
+  margin: 0 0 6px 24px;
+  font-size: 18px;
+}
+
+.warning-box span {
+  margin-left: 24px;
+  color: #b86826;
+  font-size: 16px;
+}
+
+.info-box {
+  margin: 18px 0 0;
+  background: #f0e8fb;
+  color: #725a70;
+  font-size: 16px;
+}
+
+@media (max-width: 920px) {
+  .resource-modal footer,
+  .delete-modal footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .modal-body {
+    grid-template-columns: 1fr;
+  }
+
+  .resource-modal footer button,
+  .delete-modal footer button {
+    width: 100%;
+  }
+
+  .created-task-card {
+    grid-template-columns: 1fr;
+  }
+
+  .confirmation-actions {
+    grid-template-columns: 1fr;
+  }
+}

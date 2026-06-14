@@ -34,7 +34,9 @@ public class ShopTicketTypeResponse {
         r.totalQuantity = tt.getTotalQuantity();
         r.soldCount = tt.getSoldCount();
         r.available = tt.getTotalQuantity() - tt.getSoldCount();
-        r.currentPrice = activePeriod != null ? activePeriod.getBasePrice() : null;
+        r.currentPrice = activePeriod != null
+            ? (activePeriod.getCurrentPrice() != null ? activePeriod.getCurrentPrice() : activePeriod.getBasePrice())
+            : null;
         r.activeBundles = bundles.stream()
             .map(b -> new BundleInfo(b.getKupiKarata(), b.getDobijaKarata()))
             .toList();

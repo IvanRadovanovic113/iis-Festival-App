@@ -109,8 +109,10 @@
           <th>Start Date</th>
           <th>End Date</th>
           <th>Base Price</th>
+          <th>Current Price</th>
           <th>Min Price</th>
           <th>Dynamic</th>
+          <th>DP Config</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -120,6 +122,16 @@
             <td>{{ p.startDate }}</td>
             <td>{{ p.endDate }}</td>
             <td>€{{ p.basePrice | number:'1.2-2' }}</td>
+            <td>
+              <span [class.current-price-changed]="p.currentPrice !== p.basePrice">
+                €{{ p.currentPrice | number:'1.2-2' }}
+              </span>
+              @if (p.currentPrice !== p.basePrice) {
+                <span class="current-price-diff">
+                  {{ p.currentPrice > p.basePrice ? '↑' : '↓' }}
+                </span>
+              }
+            </td>
             <td>€{{ p.minPrice | number:'1.2-2' }}</td>
             <td>
               <span class="badge"
@@ -128,11 +140,107 @@
                 {{ p.dynamicPricingActive ? 'Active' : 'Off' }}
               </span>
             </td>
+            <td>
+              @if (p.dynamicPricingActive) {
+                <span class="badge"
+                      [class.badge-active]="!!p.ocekivanaProdaja"
+                      [class.badge-inactive]="!p.ocekivanaProdaja">
+                  {{ p.ocekivanaProdaja ? 'Configured ✓' : 'Not set' }}
+                </span>
+              } @else {
+                <span class="badge badge-inactive">—</span>
+              }
+            </td>
             <td class="actions">
               <button class="btn-link" (click)="openEditForm(p)">Edit</button>
+              @if (p.dynamicPricingActive) {
+                <button class="btn-link btn-link-dp" (click)="toggleDpConfig(p)">
+                  {{ dpExpandedPeriodId === p.pricingPeriodId ? 'Close DP' : 'DP Config' }}
+                </button>
+              }
               <button class="btn-danger-sm" (click)="deletePeriod(p)">Delete</button>
             </td>
           </tr>
+          <!-- DP config expanded row -->
+          @if (dpExpandedPeriodId === p.pricingPeriodId) {
+            <tr class="dp-config-row">
+              <td colspan="7">
+                <div class="dp-config-panel" [formGroup]="dpForm">
+                  <div class="dp-config-title">Dynamic Pricing Configuration</div>
+                  @if (dpError) {
+                    <div class="error-banner">{{ dpError }}</div>
+                  }
+                  <div class="dp-grid">
+                    <div class="field">
+                      <label>Expected tickets *</label>
+                      <input type="number" formControlName="brojKarata" placeholder="e.g. 100" min="1" />
+                      @if (dpForm.get('brojKarata')!.invalid && dpForm.get('brojKarata')!.touched) {
+                        <span class="field-error">Min 1.</span>
+                      }
+                    </div>
+                    <div class="field">
+                      <label>Time window (hours) *</label>
+                      <input type="number" formControlName="brojSati" placeholder="e.g. 24" min="1" />
+                      @if (dpForm.get('brojSati')!.invalid && dpForm.get('brojSati')!.touched) {
+                        <span class="field-error">Min 1.</span>
+                      }
+                    </div>
+                    <div class="field">
+                      <label>Aggressiveness (0.01–1.00) *</label>
+                      <input type="number" formControlName="agresivnost" placeholder="e.g. 0.10" min="0.01" max="1" step="0.01" />
+                      @if (dpForm.get('agresivnost')!.invalid && dpForm.get('agresivnost')!.touched) {
+                        <span class="field-error">Range 0.01–1.00.</span>
+                      }
+                    </div>
+                    <div class="field">
+                      <label>Check interval (minutes) *</label>
+                      <input type="number" formControlName="intervalMinuti" placeholder="e.g. 60" min="1" />
+                      @if (dpForm.get('intervalMinuti')!.invalid && dpForm.get('intervalMinuti')!.touched) {
+                        <span class="field-error">Min 1.</span>
+                      }
+                    </div>
+
+                    <div class="field dp-section-label">
+                      <label>Scarcity low threshold (% remaining) *</label>
+                      <input type="number" formControlName="scarcityPragNizak" placeholder="e.g. 30" min="1" max="99" />
+                      <span class="field-hint">Moderate aggressiveness boost</span>
+                      @if (dpForm.get('scarcityPragNizak')!.invalid && dpForm.get('scarcityPragNizak')!.touched) {
+                        <span class="field-error">Range 1–99.</span>
+                      }
+                    </div>
+                    <div class="field">
+                      <label>Low threshold multiplier *</label>
+                      <input type="number" formControlName="scarcityMultiplikatorNizak" placeholder="e.g. 1.5" min="1" step="0.1" />
+                      @if (dpForm.get('scarcityMultiplikatorNizak')!.invalid && dpForm.get('scarcityMultiplikatorNizak')!.touched) {
+                        <span class="field-error">Min 1.</span>
+                      }
+                    </div>
+                    <div class="field">
+                      <label>Scarcity high threshold (% remaining) *</label>
+                      <input type="number" formControlName="scarcityPragVisok" placeholder="e.g. 10" min="1" max="99" />
+                      <span class="field-hint">High aggressiveness boost — must be less than low threshold</span>
+                      @if (dpForm.get('scarcityPragVisok')!.invalid && dpForm.get('scarcityPragVisok')!.touched) {
+                        <span class="field-error">Range 1–99.</span>
+                      }
+                    </div>
+                    <div class="field">
+                      <label>High threshold multiplier *</label>
+                      <input type="number" formControlName="scarcityMultiplikatorVisok" placeholder="e.g. 2.5" min="1" step="0.1" />
+                      @if (dpForm.get('scarcityMultiplikatorVisok')!.invalid && dpForm.get('scarcityMultiplikatorVisok')!.touched) {
+                        <span class="field-error">Min 1 and must be > low multiplier.</span>
+                      }
+                    </div>
+                  </div>
+                  <div class="form-actions">
+                    <button class="btn-save" (click)="saveDpConfig(p)" [disabled]="dpSubmitting">
+                      {{ dpSubmitting ? 'Saving...' : 'Save Configuration' }}
+                    </button>
+                    <button class="btn-cancel" (click)="cancelDpConfig()">Cancel</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          }
         }
       </tbody>
     </table>

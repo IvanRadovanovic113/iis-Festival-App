@@ -7,6 +7,7 @@ import com.festivalapp.prodaja.dto.PurchaseRequest;
 import com.festivalapp.prodaja.dto.PurchaseResponse;
 import com.festivalapp.prodaja.model.*;
 import com.festivalapp.prodaja.repository.*;
+import com.festivalapp.service.TicketMailService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ public class PurchaseService {
     private final KupovinaRepository kupovinaRepository;
     private final KartaRepository kartaRepository;
     private final TierConfigService tierConfigService;
+    private final TicketMailService ticketMailService;
 
     // ────────────────────────────────────────────────────────────────────────
     // PUBLIC API
@@ -94,6 +96,7 @@ public class PurchaseService {
         entityManager.refresh(kupac);
         tierConfigService.evaluateAndUpgrade(kupac);
 
+        ticketMailService.sendTicketEmail(user, kupovina, karte);
         return PurchaseResponse.from(kupovina, karte);
     }
 
@@ -125,10 +128,10 @@ public class PurchaseService {
                 "Not enough tickets available. Requested: " + quantity + ", available: " + available);
         }
 
-        // 3. Aktivna cena
+        // 3. Aktivna cena — currentPrice ako postoji (dynamic pricing), inače basePrice
         BigDecimal pricePerTicket = pricingPeriodRepository
             .findActiveForTicketType(ticketType.getTicketTypeId(), today)
-            .map(p -> p.getBasePrice())
+            .map(p -> p.getCurrentPrice() != null ? p.getCurrentPrice() : p.getBasePrice())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "No active pricing period for this ticket type"));
 
