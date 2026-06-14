@@ -48,3 +48,12 @@
 .btn-link{background:none;border:none;color:#1976d2;font-size:.88rem;font-weight:500;cursor:pointer;padding:0}
 .btn-danger-sm{padding:.3rem .7rem;background:#fff;color:#c62828;border:1px solid #ef9a9a;border-radius:4px;cursor:pointer;font-size:.82rem}
 .btn-danger-sm:hover{background:#ffebee}
+.btn-link-dp{color:#6a1b9a}
+.current-price-changed{color:#e65100;font-weight:600}
+.current-price-diff{margin-left:.25rem;font-size:.82rem;font-weight:700}
+.dp-config-row td{padding:0;background:#f3e5f5}
+.dp-config-panel{padding:1.25rem 1.5rem;border-top:2px solid #ce93d8}
+.dp-config-title{font-size:.9rem;font-weight:600;color:#6a1b9a;margin-bottom:1rem}
+.dp-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.dp-section-label{}
+

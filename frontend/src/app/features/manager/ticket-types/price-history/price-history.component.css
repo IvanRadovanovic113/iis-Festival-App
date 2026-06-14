@@ -1,0 +1,30 @@
+.page{max-width:960px}
+.page-header{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.header-main{flex:1;display:flex;align-items:baseline;gap:.75rem}
+.page-header h2{margin:0;font-size:1.5rem;font-weight:600;color:#212121}
+.tt-name{font-size:1rem;color:#757575}
+.back-link{color:#2e7d32;text-decoration:none;font-size:.9rem}
+.back-link:hover{text-decoration:underline}
+.total-badge{background:#f5f5f5;color:#616161;padding:.25rem .75rem;border-radius:12px;font-size:.82rem;font-weight:500}
+.error-banner{background:#ffebee;color:#c62828;border:1px solid #ef9a9a;border-radius:6px;padding:.75rem 1rem;margin-bottom:1rem;font-size:.9rem}
+.loading{text-align:center;padding:2rem;color:#757575}
+.empty-state{background:#fff;border-radius:8px;padding:3rem;text-align:center;color:#757575;border:1px solid #e0e0e0}
+.data-table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.data-table th{background:#f5f5f5;padding:.75rem 1rem;text-align:left;font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#616161;border-bottom:1px solid #e0e0e0}
+.data-table td{padding:.85rem 1rem;border-bottom:1px solid #f0f0f0;vertical-align:middle;font-size:.9rem;color:#212121}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:#fafafa}
+.date-cell{color:#616161;font-size:.85rem;white-space:nowrap}
+.reason-cell{color:#757575;font-size:.82rem;max-width:280px;word-break:break-word}
+.change-badge{padding:.25rem .6rem;border-radius:12px;font-size:.82rem;font-weight:600;font-family:monospace}
+.change-up{background:#e8f5e9;color:#2e7d32}
+.change-down{background:#ffebee;color:#c62828}
+.change-same{background:#f5f5f5;color:#9e9e9e}
+.type-badge{padding:.25rem .6rem;border-radius:12px;font-size:.78rem;font-weight:500}
+.type-manual{background:#fff8e1;color:#e65100}
+.type-auto{background:#e3f2fd;color:#1565c0}
+.pagination{display:flex;align-items:center;justify-content:center;gap:1rem;margin-top:1.25rem}
+.btn-page{padding:.4rem 1rem;background:#fff;border:1px solid #e0e0e0;border-radius:6px;cursor:pointer;font-size:.88rem;color:#424242}
+.btn-page:hover:not(:disabled){background:#f5f5f5}
+.btn-page:disabled{opacity:.4;cursor:not-allowed}
+.page-info{font-size:.88rem;color:#757575}

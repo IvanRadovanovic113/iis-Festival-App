@@ -27,6 +27,10 @@ services:
       SPRING_DATASOURCE_PASSWORD: festival_pass
       JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
       JWT_EXPIRATION: 86400000
+      SPRING_MAIL_USERNAME: ivradov@gmail.com
+      SPRING_MAIL_PASSWORD: alhs zvtl aaxi vkke
+      APP_MAIL_ENABLED: "true"
+      APP_MAIL_FROM: ivradov@gmail.com
     ports:
       - "8080:8080"
     depends_on:

@@ -73,6 +73,7 @@ public class DataInitializer implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
+        migrateFestivalDateColumns();
         migrateKupciTierConstraint();
         migrateAssignmentRoleConstraint();
         migrateUsersRoleConstraint();
@@ -651,6 +652,15 @@ public class DataInitializer implements ApplicationRunner {
 
     // ─── DB migracije ────────────────────────────────────────────────────────
 
+    private void migrateFestivalDateColumns() {
+        jdbcTemplate.execute("ALTER TABLE festivals ADD COLUMN IF NOT EXISTS name VARCHAR(255)");
+        jdbcTemplate.execute("ALTER TABLE festivals ADD COLUMN IF NOT EXISTS location VARCHAR(255)");
+        jdbcTemplate.execute("ALTER TABLE festivals ADD COLUMN IF NOT EXISTS status VARCHAR(50)");
+        jdbcTemplate.execute("ALTER TABLE festivals ADD COLUMN IF NOT EXISTS start_date DATE");
+        jdbcTemplate.execute("ALTER TABLE festivals ADD COLUMN IF NOT EXISTS end_date DATE");
+        log.info("festivals columns ensured");
+    }
+
     /**
      * Stari CHECK constraint dozvoljava samo BRONZE/SILVER/GOLD.
      * Zamenjujemo ga novim koji uključuje i STANDARD.
@@ -705,6 +715,11 @@ public class DataInitializer implements ApplicationRunner {
     private void migrateAssignmentRoleConstraint() {
         jdbcTemplate.execute(
             "ALTER TABLE user_festival_assignments DROP CONSTRAINT IF EXISTS user_festival_assignments_role_check");
+        jdbcTemplate.update(
+            "DELETE FROM user_festival_assignments WHERE role NOT IN " +
+            "('ADMIN','FESTIVAL_DIRECTOR','FESTIVAL_MANAGER','PRODUCT_DESIGNER'," +
+            "'TECHNICAL_SUPPORT','SALES_DIRECTOR','SALES_MANAGER','EVENT_ORGANIZER'," +
+            "'MARKETING_MANAGER','BUYER','NEGOTIATION_MANAGER')");
         jdbcTemplate.execute(
             "ALTER TABLE user_festival_assignments ADD CONSTRAINT user_festival_assignments_role_check " +
             "CHECK (role IN ('ADMIN','FESTIVAL_DIRECTOR','FESTIVAL_MANAGER','PRODUCT_DESIGNER'," +
