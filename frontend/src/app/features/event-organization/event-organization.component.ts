@@ -323,12 +323,7 @@ export class EventOrganizationComponent implements OnInit {
     this.loadTimetable();
     if (request.status === 'PENDING') {
       this.eventReservationService.suggestSlot(request.id).subscribe({
-        next: res => {
-          this.suggestedStart = res.suggestedStart;
-          if (res.suggestedStart && !this.selectedScheduleStart) {
-            this.selectedScheduleStart = res.suggestedStart;
-          }
-        },
+        next: res => { this.suggestedStart = res.suggestedStart; },
         error: () => {}
       });
     }

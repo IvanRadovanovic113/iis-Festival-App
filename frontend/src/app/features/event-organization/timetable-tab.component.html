@@ -37,6 +37,7 @@
         <button type="button"
           [class.occupied]="getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status === 'OCCUPIED'"
           [class.suggestion]="isSuggestionSlot(hour) && !isScheduleSlotSelected(hour)"
+          [class.selected-suggestion]="isSuggestionSlot(hour) && isScheduleSlotSelected(hour)"
           [class.available]="getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status !== 'OCCUPIED' && isScheduleSlotAvailable(hour) && !isSuggestionSlot(hour)"
           [class.selected]="isScheduleSlotSelected(hour)"
           [class.unavailable]="getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status !== 'OCCUPIED' && !isScheduleSlotAvailable(hour)"
@@ -45,7 +46,7 @@
           @if (getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status === 'OCCUPIED') {
             {{ getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.performerName }}
           } @else if (isScheduleSlotSelected(hour) && selectedScheduleEnd) {
-            {{ selectedReservationRequest.performerName }}
+            @if (isSuggestionSlot(hour)) { ★ } {{ selectedReservationRequest.performerName }}
           } @else if (isSuggestionSlot(hour)) {
             ★ {{ hour }}
           } @else if (isScheduleSlotAvailable(hour)) {

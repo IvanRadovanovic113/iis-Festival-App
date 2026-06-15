@@ -125,6 +125,15 @@
   font-weight: 700;
 }
 
+.reservation-time-row button.selected-suggestion {
+  border-color: #5dc777;
+  background: #e4faef;
+  color: #197b51;
+  font-weight: 700;
+  outline: 2px solid #e6a817;
+  outline-offset: -3px;
+}
+
 .reservation-time-row button.unavailable {
   cursor: not-allowed;
   opacity: 0.6;
