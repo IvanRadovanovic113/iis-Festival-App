@@ -1,6 +1,7 @@
 package com.festivalapp.dto;
 
 import com.festivalapp.model.Performer;
+import com.festivalapp.model.PerformerPopularity;
 import com.festivalapp.model.PerformerStatus;
 import com.festivalapp.model.PerformerType;
 import lombok.Getter;
@@ -16,7 +17,7 @@ public class PerformerResponse {
     private String firstName;
     private String lastName;
     private String genre;
-    private Integer popularity;
+    private PerformerPopularity popularity;
     private Integer averageDurationMinutes;
     private String countryOfOrigin;
     private PerformerType performerType;

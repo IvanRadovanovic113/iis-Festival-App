@@ -11,6 +11,7 @@ import com.festivalapp.model.AdType;
 import com.festivalapp.model.Ad;
 import com.festivalapp.model.Campaign;
 import com.festivalapp.model.Performer;
+import com.festivalapp.model.PerformerPopularity;
 import com.festivalapp.model.PerformerType;
 import com.festivalapp.model.PerformerStatus;
 import com.festivalapp.model.Offer;
@@ -110,6 +111,7 @@ public class DataInitializer implements ApplicationRunner {
         migrateEventReservationContractColumn();
         migrateEventReservationContractForeignKey();
         migrateRequestResourcesForCustomRequests();
+        migratePerformerPopularityToEnum();
         createAdminUser();
         seedEventOrganizationRequests();
         assignUnassignedEventResources();
@@ -766,16 +768,16 @@ public class DataInitializer implements ApplicationRunner {
         Stage vipStage = stages.stream().filter(s -> s.getName().equals("VIP Stage")).findFirst().orElse(stages.get(0));
 
         seedDemoContract(negotiationManager, template, finalState, mainStage, festival,
-            "Massive Attack", "Trip-hop", 85, 70, "United Kingdom",
+            "Massive Attack", "Trip-hop", PerformerPopularity.HEADLINER, 70, "United Kingdom",
             LocalDateTime.of(2026, 6, 21, 21, 0), 55);
         seedDemoContract(negotiationManager, template, finalState, stageTwo, festival,
-            "Disclosure", "Electronic", 80, 60, "United Kingdom",
+            "Disclosure", "Electronic", PerformerPopularity.HEADLINER, 60, "United Kingdom",
             LocalDateTime.of(2026, 6, 23, 22, 0), 60);
         seedDemoContract(negotiationManager, template, finalState, smallStage, festival,
-            "Kaytranada", "Electronic", 75, 60, "Canada",
+            "Kaytranada", "Electronic", PerformerPopularity.POPULAR, 60, "Canada",
             LocalDateTime.of(2026, 6, 24, 21, 0), 60);
         seedDemoContract(negotiationManager, template, finalState, vipStage, festival,
-            "Bicep", "Electronic", 78, 60, "United Kingdom",
+            "Bicep", "Electronic", PerformerPopularity.POPULAR, 60, "United Kingdom",
             LocalDateTime.of(2026, 6, 22, 22, 0), 60);
 
         log.info("Demo contracts seeded for performer manager view");
@@ -789,7 +791,7 @@ public class DataInitializer implements ApplicationRunner {
             Festival festival,
             String stageName,
             String genre,
-            int popularity,
+            PerformerPopularity popularity,
             int avgDurationMinutes,
             String country,
             LocalDateTime performanceDate,
@@ -810,8 +812,14 @@ public class DataInitializer implements ApplicationRunner {
             .status(PerformerStatus.ACTIVE)
             .build());
 
+        BigDecimal price = switch (popularity) {
+            case HEADLINER -> BigDecimal.valueOf(100_000L);
+            case POPULAR -> BigDecimal.valueOf(75_000L);
+            case EMERGING -> BigDecimal.valueOf(50_000L);
+        };
+
         Offer offer = offerRepository.save(Offer.builder()
-            .price(BigDecimal.valueOf(popularity * 1000L))
+            .price(price)
             .performanceDate(performanceDate)
             .location(festival.getLocation())
             .durationMinutes(durationMinutes)
@@ -835,6 +843,21 @@ public class DataInitializer implements ApplicationRunner {
             .stage(stage)
             .schedulingStatus(PerformerSchedulingStatus.STAGE_ASSIGNED)
             .build());
+    }
+
+    private void migratePerformerPopularityToEnum() {
+        String columnType = jdbcTemplate.queryForObject(
+            "SELECT data_type FROM information_schema.columns " +
+            "WHERE table_name = 'performers' AND column_name = 'popularity'",
+            String.class);
+        if (columnType != null && columnType.equalsIgnoreCase("integer")) {
+            jdbcTemplate.execute(
+                "ALTER TABLE performers ALTER COLUMN popularity TYPE VARCHAR(50) " +
+                "USING CASE WHEN popularity >= 80 THEN 'HEADLINER' " +
+                "           WHEN popularity >= 50 THEN 'POPULAR' " +
+                "           ELSE 'EMERGING' END");
+            log.info("performers.popularity migrated from INTEGER to VARCHAR enum");
+        }
     }
 
     // ─── DB migracije ────────────────────────────────────────────────────────

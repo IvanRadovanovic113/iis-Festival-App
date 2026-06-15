@@ -29,8 +29,9 @@ public class Performer {
     @Column(nullable = false)
     private String genre;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Integer popularity;
+    private PerformerPopularity popularity;
 
     @Column(name = "average_duration_minutes", nullable = false)
     private Integer averageDurationMinutes;
