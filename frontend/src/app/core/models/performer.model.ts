@@ -3,6 +3,12 @@ export enum PerformerType {
   BAND = 'BAND'
 }
 
+export enum PerformerPopularity {
+  EMERGING = 'EMERGING',
+  POPULAR = 'POPULAR',
+  HEADLINER = 'HEADLINER'
+}
+
 export enum PerformerStatus {
   ACTIVE = 'ACTIVE',
   ARCHIVED = 'ARCHIVED'
@@ -13,7 +19,7 @@ export interface PerformerRequest {
   firstName?: string;
   lastName?: string;
   genre: string;
-  popularity: number;
+  popularity: PerformerPopularity;
   averageDurationMinutes: number;
   countryOfOrigin: string;
   performerType: PerformerType;
@@ -27,7 +33,7 @@ export interface PerformerResponse {
   firstName?: string;
   lastName?: string;
   genre: string;
-  popularity: number;
+  popularity: PerformerPopularity;
   averageDurationMinutes: number;
   countryOfOrigin: string;
   performerType: PerformerType;

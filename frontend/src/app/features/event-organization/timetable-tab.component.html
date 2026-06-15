@@ -36,7 +36,9 @@
       @for (hour of timetableHours; track hour) {
         <button type="button"
           [class.occupied]="getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status === 'OCCUPIED'"
-          [class.available]="getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status !== 'OCCUPIED' && isScheduleSlotAvailable(hour)"
+          [class.suggestion]="isSuggestionSlot(hour) && !isScheduleSlotSelected(hour)"
+          [class.selected-suggestion]="isSuggestionSlot(hour) && isScheduleSlotSelected(hour)"
+          [class.available]="getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status !== 'OCCUPIED' && isScheduleSlotAvailable(hour) && !isSuggestionSlot(hour)"
           [class.selected]="isScheduleSlotSelected(hour)"
           [class.unavailable]="getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status !== 'OCCUPIED' && !isScheduleSlotAvailable(hour)"
           [disabled]="getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status === 'OCCUPIED' || !isScheduleSlotAvailable(hour)"
@@ -44,7 +46,9 @@
           @if (getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.status === 'OCCUPIED') {
             {{ getTimetableSlot(selectedReservationRequest.performanceDate, hour)?.performerName }}
           } @else if (isScheduleSlotSelected(hour) && selectedScheduleEnd) {
-            {{ selectedReservationRequest.performerName }}
+            @if (isSuggestionSlot(hour)) { ★ } {{ selectedReservationRequest.performerName }}
+          } @else if (isSuggestionSlot(hour)) {
+            ★ {{ hour }}
           } @else if (isScheduleSlotAvailable(hour)) {
             Free
           } @else {
@@ -58,8 +62,9 @@
   <section class="legend reservation-legend" aria-label="Timetable legend">
     <strong>Legend:</strong>
     <span><i class="legend-box occupied"></i>Occupied</span>
-    <span><i class="legend-box suggestion"></i>Selectable slot</span>
-    <span><i class="legend-box free"></i>Selected</span>
+    <span><i class="legend-box suggestion"></i>System suggestion</span>
+    <span><i class="legend-box free"></i>Free slot</span>
+    <span><i class="legend-box selected"></i>Selected</span>
   </section>
 
   <button type="button" class="primary-button reserve-button" [disabled]="!canReserveSelectedSlot" (click)="reserveSelectedSlotRequested.emit()">

@@ -39,6 +39,7 @@ export interface EventReservationRequest {
   performerName: string;
   stageId: number;
   stageName: string;
+  contractId: number | null;
   performanceDate: string;
   startTime: string;
   endTime: string;

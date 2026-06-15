@@ -138,6 +138,13 @@ export const routes: Routes = [
     data: { festivalRoles: ['EVENT_ORGANIZER'] }
   },
   {
+    path: 'performer-manager',
+    loadComponent: () =>
+      import('./features/performer-manager/performer-manager-reservations.component').then(m => m.PerformerManagerReservationsComponent),
+    canActivate: [authGuard],
+    data: { festivalRoles: ['PERFORMER_MANAGER'] }
+  },
+  {
     path: 'director/festivals',
     loadComponent: () =>
       import('./features/festival-director/director-festival-list/director-festival-list.component').then(m => m.DirectorFestivalListComponent),

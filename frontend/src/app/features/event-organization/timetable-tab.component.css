@@ -32,16 +32,20 @@
 .reservation-banner {
   margin: 8px 0 28px;
   padding: 12px 24px;
-  border: 2px solid #9ec5ff;
+  border: 2px solid #e33e78;
   border-radius: 12px;
-  background: #eef6ff;
-  color: #18315f;
+  background: #fef0f5;
+  color: #2b2030;
 }
 
 .reservation-banner span {
   display: block;
   margin-bottom: 4px;
-  color: #4c7fd9;
+  color: #cf4d7b;
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .timetable-stage-tabs {
@@ -100,10 +104,18 @@
   font-weight: 700;
 }
 
+.reservation-time-row button.suggestion {
+  border-color: #e6a817;
+  background: #fffbe8;
+  color: #8a6200;
+  font-weight: 600;
+}
+
 .reservation-time-row button.available {
-  border-color: #f3a166;
-  background: #fff2e8;
-  color: #a56416;
+  border-color: #d1b8e8;
+  background: #f0e8fb;
+  color: #725f73;
+  cursor: pointer;
 }
 
 .reservation-time-row button.selected {
@@ -111,6 +123,15 @@
   background: #e4faef;
   color: #197b51;
   font-weight: 700;
+}
+
+.reservation-time-row button.selected-suggestion {
+  border-color: #5dc777;
+  background: #e4faef;
+  color: #197b51;
+  font-weight: 700;
+  outline: 2px solid #e6a817;
+  outline-offset: -3px;
 }
 
 .reservation-time-row button.unavailable {
@@ -123,8 +144,13 @@
 }
 
 .legend-box.suggestion {
-  border: 2px solid #f3a166;
-  background: #fff2e8;
+  border: 2px solid #e6a817;
+  background: #fffbe8;
+}
+
+.legend-box.selected {
+  border: 2px solid #5dc777;
+  background: #e4faef;
 }
 
 .reserve-button {

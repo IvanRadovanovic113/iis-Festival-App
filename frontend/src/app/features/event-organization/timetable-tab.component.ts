@@ -28,6 +28,7 @@ export class TimetableTabComponent {
   @Input({ required: true }) selectedScheduleStart: string | null = null;
   @Input({ required: true }) selectedScheduleEnd: string | null = null;
   @Input({ required: true }) canReserveSelectedSlot = false;
+  @Input() suggestedStart: string | null = null;
 
   @Output() previousWeekRequested = new EventEmitter<void>();
   @Output() nextWeekRequested = new EventEmitter<void>();
@@ -58,6 +59,12 @@ export class TimetableTabComponent {
 
   isScheduleSlotSelected(hour: string): boolean {
     return this.selectedScheduleStart === hour;
+  }
+
+  isSuggestionSlot(hour: string): boolean {
+    return this.suggestedStart === hour
+      && this.getTimetableSlot(this.selectedReservationRequest!.performanceDate, hour)?.status !== 'OCCUPIED'
+      && this.isScheduleSlotAvailable(hour);
   }
 
   requestDurationMinutes(request: EventReservationRequest): number {

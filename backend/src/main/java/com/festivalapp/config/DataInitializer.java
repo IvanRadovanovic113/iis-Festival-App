@@ -10,6 +10,18 @@ import com.festivalapp.model.AdPhase;
 import com.festivalapp.model.AdType;
 import com.festivalapp.model.Ad;
 import com.festivalapp.model.Campaign;
+import com.festivalapp.model.Performer;
+import com.festivalapp.model.PerformerPopularity;
+import com.festivalapp.model.PerformerType;
+import com.festivalapp.model.PerformerStatus;
+import com.festivalapp.model.Offer;
+import com.festivalapp.model.OfferStatus;
+import com.festivalapp.model.Negotiation;
+import com.festivalapp.model.NegotiationStatus;
+import com.festivalapp.model.WorkflowTemplate;
+import com.festivalapp.model.WorkflowState;
+import com.festivalapp.model.Contract;
+import com.festivalapp.model.PerformerSchedulingStatus;
 import com.festivalapp.model.eventorganization.EventReservationRequest;
 import com.festivalapp.model.eventorganization.EventReservationStatus;
 import com.festivalapp.model.eventorganization.EventResource;
@@ -31,6 +43,12 @@ import com.festivalapp.repository.UserFestivalAssignmentRepository;
 import com.festivalapp.repository.UserRepository;
 import com.festivalapp.repository.CampaignRepository;
 import com.festivalapp.repository.AdRepository;
+import com.festivalapp.repository.PerformerRepository;
+import com.festivalapp.repository.OfferRepository;
+import com.festivalapp.repository.NegotiationRepository;
+import com.festivalapp.repository.ContractRepository;
+import com.festivalapp.repository.WorkflowTemplateRepository;
+import com.festivalapp.repository.WorkflowStateRepository;
 import com.festivalapp.service.AdVersionSnapshotService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +59,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -69,6 +89,12 @@ public class DataInitializer implements ApplicationRunner {
     private final EventResourceRepository eventResourceRepository;
     private final RequestResourceRepository requestResourceRepository;
     private final StageResourceRepository stageResourceRepository;
+    private final PerformerRepository performerRepository;
+    private final OfferRepository offerRepository;
+    private final NegotiationRepository negotiationRepository;
+    private final ContractRepository contractRepository;
+    private final WorkflowTemplateRepository workflowTemplateRepository;
+    private final WorkflowStateRepository workflowStateRepository;
 
     @Override
     @Transactional
@@ -82,10 +108,14 @@ public class DataInitializer implements ApplicationRunner {
         createStatisticsFunctions();
         migrateStageResourcesStageForeignKey();
         migrateEventReservationReviewNoteColumn();
+        migrateEventReservationContractColumn();
+        migrateEventReservationContractForeignKey();
         migrateRequestResourcesForCustomRequests();
+        migratePerformerPopularityToEnum();
         createAdminUser();
         seedEventOrganizationRequests();
         assignUnassignedEventResources();
+        seedNegotiationsAndContracts();
         seedTierConfig();
         createTriggers();
     }
@@ -142,6 +172,26 @@ public class DataInitializer implements ApplicationRunner {
         assignment.setRole(Role.EVENT_ORGANIZER);
         assignmentRepository.save(assignment);
         log.info("Event organizer user ready: event.organizer / event123");
+
+        User performerManager = userRepository.findByUsername("performer.manager")
+            .orElseGet(() -> userRepository.save(User.builder()
+                .username("performer.manager")
+                .email("performer.manager@festivalapp.com")
+                .password(passwordEncoder.encode("performer123"))
+                .role(null)
+                .build()));
+
+        if (performerManager.getRole() != null) {
+            performerManager.setRole(null);
+            userRepository.save(performerManager);
+        }
+
+        UserFestivalAssignment performerManagerAssignment = assignmentRepository.findByUser_Id(performerManager.getId())
+            .orElse(UserFestivalAssignment.builder().user(performerManager).build());
+        performerManagerAssignment.setFestival(demoFestival);
+        performerManagerAssignment.setRole(Role.PERFORMER_MANAGER);
+        assignmentRepository.save(performerManagerAssignment);
+        log.info("Performer manager user ready: performer.manager / performer123");
 
         User festivalDirector = userRepository.findByUsername("festival.director")
             .orElseGet(() -> userRepository.save(User.builder()
@@ -212,6 +262,26 @@ public class DataInitializer implements ApplicationRunner {
         technicalSupportAssignment.setRole(Role.TECHNICAL_SUPPORT);
         assignmentRepository.save(technicalSupportAssignment);
         log.info("Technical support user ready: technical.support / support123");
+
+        User negotiationManager = userRepository.findByUsername("negotiation.manager")
+            .orElseGet(() -> userRepository.save(User.builder()
+                .username("negotiation.manager")
+                .email("negotiation.manager@festivalapp.com")
+                .password(passwordEncoder.encode("negotiation123"))
+                .role(null)
+                .build()));
+
+        if (negotiationManager.getRole() != null) {
+            negotiationManager.setRole(null);
+            userRepository.save(negotiationManager);
+        }
+
+        UserFestivalAssignment negotiationManagerAssignment = assignmentRepository.findByUser_Id(negotiationManager.getId())
+            .orElse(UserFestivalAssignment.builder().user(negotiationManager).build());
+        negotiationManagerAssignment.setFestival(demoFestival);
+        negotiationManagerAssignment.setRole(Role.NEGOTIATION_MANAGER);
+        assignmentRepository.save(negotiationManagerAssignment);
+        log.info("Negotiation manager user ready: negotiation.manager / negotiation123");
 
         AdPhase managerReview = ensurePhase("MANAGER REVIEW", "Festival manager reviews the ad brief and workflow handoff.", 1, false, Role.FESTIVAL_MANAGER);
         AdPhase designContent = ensurePhase("DESIGN CONTENT", "Product designer prepares text and visual content.", 2, true, Role.PRODUCT_DESIGNER);
@@ -650,6 +720,166 @@ public class DataInitializer implements ApplicationRunner {
     private record SeedTemplate(AdType adType, AdPhase phase) {
     }
 
+    // ─── Demo contracts for performer manager ────────────────────────────────
+
+    private void seedNegotiationsAndContracts() {
+        if (contractRepository.count() > 0) {
+            log.info("Demo contracts seed skipped – contracts already exist");
+            return;
+        }
+
+        Festival festival = festivalRepository.findAll().stream().findFirst().orElse(null);
+        if (festival == null) {
+            return;
+        }
+
+        User negotiationManager = userRepository.findByUsername("negotiation.manager").orElse(null);
+        if (negotiationManager == null) {
+            return;
+        }
+
+        WorkflowTemplate template = workflowTemplateRepository.findAll().stream()
+            .filter(t -> t.getName().equalsIgnoreCase("Demo Contract Workflow"))
+            .findFirst()
+            .orElseGet(() -> workflowTemplateRepository.save(WorkflowTemplate.builder()
+                .name("Demo Contract Workflow")
+                .archived(false)
+                .build()));
+
+        WorkflowState finalState = workflowStateRepository.findAll().stream()
+            .filter(s -> s.getTemplate().getId().equals(template.getId()) && s.isFinalState())
+            .findFirst()
+            .orElseGet(() -> workflowStateRepository.save(WorkflowState.builder()
+                .name("Contract Signed")
+                .initial(false)
+                .finalState(true)
+                .defaultDeadlineDays(0)
+                .template(template)
+                .build()));
+
+        List<Stage> stages = stageRepository.findByFestival_FestivalId(festival.getFestivalId());
+        if (stages.isEmpty()) {
+            return;
+        }
+
+        Stage mainStage = stages.stream().filter(s -> s.getName().equals("Main Stage")).findFirst().orElse(stages.get(0));
+        Stage stageTwo = stages.stream().filter(s -> s.getName().equals("Stage 2")).findFirst().orElse(stages.get(0));
+        Stage smallStage = stages.stream().filter(s -> s.getName().equals("Small Stage")).findFirst().orElse(stages.get(0));
+        Stage vipStage = stages.stream().filter(s -> s.getName().equals("VIP Stage")).findFirst().orElse(stages.get(0));
+
+        seedDemoContract(negotiationManager, template, finalState, mainStage, festival,
+            "Massive Attack", "Trip-hop", PerformerPopularity.HEADLINER, 70, "United Kingdom",
+            LocalDateTime.of(2026, 6, 21, 21, 0), 55);
+        seedDemoContract(negotiationManager, template, finalState, stageTwo, festival,
+            "Disclosure", "Electronic", PerformerPopularity.HEADLINER, 60, "United Kingdom",
+            LocalDateTime.of(2026, 6, 23, 22, 0), 60);
+        seedDemoContract(negotiationManager, template, finalState, smallStage, festival,
+            "Kaytranada", "Electronic", PerformerPopularity.POPULAR, 60, "Canada",
+            LocalDateTime.of(2026, 6, 24, 21, 0), 60);
+        seedDemoContract(negotiationManager, template, finalState, vipStage, festival,
+            "Bicep", "Electronic", PerformerPopularity.POPULAR, 60, "United Kingdom",
+            LocalDateTime.of(2026, 6, 22, 22, 0), 60);
+
+        log.info("Demo contracts seeded for performer manager view");
+    }
+
+    private void seedDemoContract(
+            User negotiationManager,
+            WorkflowTemplate template,
+            WorkflowState finalState,
+            Stage stage,
+            Festival festival,
+            String stageName,
+            String genre,
+            PerformerPopularity popularity,
+            int avgDurationMinutes,
+            String country,
+            LocalDateTime performanceDate,
+            int durationMinutes) {
+
+        if (performerRepository.existsByStageNameIgnoreCase(stageName)) {
+            return;
+        }
+
+        Performer performer = performerRepository.save(Performer.builder()
+            .stageName(stageName)
+            .genre(genre)
+            .popularity(popularity)
+            .averageDurationMinutes(avgDurationMinutes)
+            .countryOfOrigin(country)
+            .performerType(PerformerType.SOLO)
+            .numberOfMembers(1)
+            .status(PerformerStatus.ACTIVE)
+            .build());
+
+        BigDecimal price = switch (popularity) {
+            case HEADLINER -> BigDecimal.valueOf(100_000L);
+            case POPULAR -> BigDecimal.valueOf(75_000L);
+            case EMERGING -> BigDecimal.valueOf(50_000L);
+        };
+
+        Offer offer = offerRepository.save(Offer.builder()
+            .price(price)
+            .performanceDate(performanceDate)
+            .location(festival.getLocation())
+            .durationMinutes(durationMinutes)
+            .status(OfferStatus.ACCEPTED)
+            .workflowTemplateId(template.getId())
+            .createdBy(negotiationManager)
+            .build());
+
+        Negotiation negotiation = negotiationRepository.save(Negotiation.builder()
+            .offer(offer)
+            .performer(performer)
+            .startedBy(negotiationManager)
+            .currentState(finalState)
+            .status(NegotiationStatus.COMPLETED)
+            .build());
+
+        contractRepository.save(Contract.builder()
+            .negotiation(negotiation)
+            .signedBy(negotiationManager)
+            .conditionSnapshotJson("{\"seeded\":true,\"performer\":\"" + stageName + "\"}")
+            .stage(stage)
+            .schedulingStatus(PerformerSchedulingStatus.STAGE_ASSIGNED)
+            .build());
+    }
+
+    private void migratePerformerPopularityToEnum() {
+        List<String> types = jdbcTemplate.queryForList(
+            "SELECT data_type FROM information_schema.columns " +
+            "WHERE table_schema = 'public' AND table_name = 'performers' AND column_name = 'popularity'",
+            String.class);
+        if (types.isEmpty()) {
+            log.info("performers.popularity column not found – skipping enum migration");
+            return;
+        }
+        if (types.get(0).equalsIgnoreCase("integer")) {
+            jdbcTemplate.execute(
+                "ALTER TABLE performers ALTER COLUMN popularity TYPE VARCHAR(50) " +
+                "USING CASE WHEN popularity >= 80 THEN 'HEADLINER' " +
+                "           WHEN popularity >= 50 THEN 'POPULAR' " +
+                "           ELSE 'EMERGING' END");
+            log.info("performers.popularity migrated from INTEGER to VARCHAR enum");
+        } else {
+            // Column is already VARCHAR but may contain numeric strings (e.g. '85') if
+            // Hibernate's ddl-auto converted INTEGER→VARCHAR via a plain ::varchar cast.
+            int updated = jdbcTemplate.update("""
+                UPDATE performers
+                SET popularity = CASE
+                    WHEN popularity ~ '^[0-9]+$' AND popularity::integer >= 80 THEN 'HEADLINER'
+                    WHEN popularity ~ '^[0-9]+$' AND popularity::integer >= 50 THEN 'POPULAR'
+                    WHEN popularity ~ '^[0-9]+$'                               THEN 'EMERGING'
+                    ELSE popularity
+                END
+                WHERE popularity NOT IN ('EMERGING', 'POPULAR', 'HEADLINER')
+                """);
+            if (updated > 0) {
+                log.info("performers.popularity: {} numeric string value(s) converted to enum names", updated);
+            }
+        }
+    }
+
     // ─── DB migracije ────────────────────────────────────────────────────────
 
     private void migrateFestivalDateColumns() {
@@ -684,7 +914,7 @@ public class DataInitializer implements ApplicationRunner {
         jdbcTemplate.execute(
             "ALTER TABLE users ADD CONSTRAINT users_role_check " +
             "CHECK (role IS NULL OR role IN ('ADMIN','FESTIVAL_DIRECTOR','FESTIVAL_MANAGER','PRODUCT_DESIGNER'," +
-            "'TECHNICAL_SUPPORT','SALES_DIRECTOR','SALES_MANAGER','EVENT_ORGANIZER'," +
+            "'TECHNICAL_SUPPORT','SALES_DIRECTOR','SALES_MANAGER','EVENT_ORGANIZER','PERFORMER_MANAGER'," +
             "'MARKETING_MANAGER','BUYER','NEGOTIATION_MANAGER'))");
         log.info("users_role_check constraint updated with all roles");
     }
@@ -699,6 +929,25 @@ public class DataInitializer implements ApplicationRunner {
         jdbcTemplate.execute(
             "ALTER TABLE event_reservation_requests DROP COLUMN IF EXISTS review_note");
         log.info("Legacy event reservation review_note column removed");
+    }
+
+    private void migrateEventReservationContractColumn() {
+        jdbcTemplate.execute(
+            "ALTER TABLE event_reservation_requests ADD COLUMN IF NOT EXISTS contract_id BIGINT");
+        jdbcTemplate.execute(
+            "ALTER TABLE event_reservation_requests DROP CONSTRAINT IF EXISTS uk_event_reservation_requests_contract_id");
+        jdbcTemplate.execute(
+            "ALTER TABLE event_reservation_requests ADD CONSTRAINT uk_event_reservation_requests_contract_id UNIQUE (contract_id)");
+        log.info("event_reservation_requests.contract_id column ensured");
+    }
+
+    private void migrateEventReservationContractForeignKey() {
+        jdbcTemplate.execute(
+            "ALTER TABLE event_reservation_requests DROP CONSTRAINT IF EXISTS fk_event_reservation_contracts");
+        jdbcTemplate.execute(
+            "ALTER TABLE event_reservation_requests ADD CONSTRAINT fk_event_reservation_contracts " +
+            "FOREIGN KEY (contract_id) REFERENCES contracts(id)");
+        log.info("event_reservation_requests.contract_id foreign key ensured");
     }
 
     private void migrateRequestResourcesForCustomRequests() {
@@ -718,12 +967,12 @@ public class DataInitializer implements ApplicationRunner {
         jdbcTemplate.update(
             "DELETE FROM user_festival_assignments WHERE role NOT IN " +
             "('ADMIN','FESTIVAL_DIRECTOR','FESTIVAL_MANAGER','PRODUCT_DESIGNER'," +
-            "'TECHNICAL_SUPPORT','SALES_DIRECTOR','SALES_MANAGER','EVENT_ORGANIZER'," +
+            "'TECHNICAL_SUPPORT','SALES_DIRECTOR','SALES_MANAGER','EVENT_ORGANIZER','PERFORMER_MANAGER'," +
             "'MARKETING_MANAGER','BUYER','NEGOTIATION_MANAGER')");
         jdbcTemplate.execute(
             "ALTER TABLE user_festival_assignments ADD CONSTRAINT user_festival_assignments_role_check " +
             "CHECK (role IN ('ADMIN','FESTIVAL_DIRECTOR','FESTIVAL_MANAGER','PRODUCT_DESIGNER'," +
-            "'TECHNICAL_SUPPORT','SALES_DIRECTOR','SALES_MANAGER','EVENT_ORGANIZER'," +
+            "'TECHNICAL_SUPPORT','SALES_DIRECTOR','SALES_MANAGER','EVENT_ORGANIZER','PERFORMER_MANAGER'," +
             "'MARKETING_MANAGER','BUYER','NEGOTIATION_MANAGER'))");
         log.info("user_festival_assignments_role_check constraint updated with all roles");
     }
