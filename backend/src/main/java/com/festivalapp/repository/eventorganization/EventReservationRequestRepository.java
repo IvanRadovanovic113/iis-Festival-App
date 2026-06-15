@@ -9,8 +9,13 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface EventReservationRequestRepository extends JpaRepository<EventReservationRequest, Long> {
+    Optional<EventReservationRequest> findByContract_Id(Long contractId);
+
+    boolean existsByContract_Id(Long contractId);
+
     List<EventReservationRequest> findByFestival_FestivalIdOrderByPerformanceDateAscStartTimeAsc(Long festivalId);
 
     List<EventReservationRequest> findByFestival_FestivalIdAndStatusOrderByPerformanceDateAscStartTimeAsc(

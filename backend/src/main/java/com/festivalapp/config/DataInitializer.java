@@ -82,6 +82,7 @@ public class DataInitializer implements ApplicationRunner {
         createStatisticsFunctions();
         migrateStageResourcesStageForeignKey();
         migrateEventReservationReviewNoteColumn();
+        migrateEventReservationContractColumn();
         migrateRequestResourcesForCustomRequests();
         createAdminUser();
         seedEventOrganizationRequests();
@@ -684,7 +685,7 @@ public class DataInitializer implements ApplicationRunner {
         jdbcTemplate.execute(
             "ALTER TABLE users ADD CONSTRAINT users_role_check " +
             "CHECK (role IS NULL OR role IN ('ADMIN','FESTIVAL_DIRECTOR','FESTIVAL_MANAGER','PRODUCT_DESIGNER'," +
-            "'TECHNICAL_SUPPORT','SALES_DIRECTOR','SALES_MANAGER','EVENT_ORGANIZER'," +
+            "'TECHNICAL_SUPPORT','SALES_DIRECTOR','SALES_MANAGER','EVENT_ORGANIZER','PERFORMER_MANAGER'," +
             "'MARKETING_MANAGER','BUYER','NEGOTIATION_MANAGER'))");
         log.info("users_role_check constraint updated with all roles");
     }
@@ -699,6 +700,16 @@ public class DataInitializer implements ApplicationRunner {
         jdbcTemplate.execute(
             "ALTER TABLE event_reservation_requests DROP COLUMN IF EXISTS review_note");
         log.info("Legacy event reservation review_note column removed");
+    }
+
+    private void migrateEventReservationContractColumn() {
+        jdbcTemplate.execute(
+            "ALTER TABLE event_reservation_requests ADD COLUMN IF NOT EXISTS contract_id BIGINT");
+        jdbcTemplate.execute(
+            "ALTER TABLE event_reservation_requests DROP CONSTRAINT IF EXISTS uk_event_reservation_requests_contract_id");
+        jdbcTemplate.execute(
+            "ALTER TABLE event_reservation_requests ADD CONSTRAINT uk_event_reservation_requests_contract_id UNIQUE (contract_id)");
+        log.info("event_reservation_requests.contract_id column ensured");
     }
 
     private void migrateRequestResourcesForCustomRequests() {
@@ -718,12 +729,12 @@ public class DataInitializer implements ApplicationRunner {
         jdbcTemplate.update(
             "DELETE FROM user_festival_assignments WHERE role NOT IN " +
             "('ADMIN','FESTIVAL_DIRECTOR','FESTIVAL_MANAGER','PRODUCT_DESIGNER'," +
-            "'TECHNICAL_SUPPORT','SALES_DIRECTOR','SALES_MANAGER','EVENT_ORGANIZER'," +
+            "'TECHNICAL_SUPPORT','SALES_DIRECTOR','SALES_MANAGER','EVENT_ORGANIZER','PERFORMER_MANAGER'," +
             "'MARKETING_MANAGER','BUYER','NEGOTIATION_MANAGER')");
         jdbcTemplate.execute(
             "ALTER TABLE user_festival_assignments ADD CONSTRAINT user_festival_assignments_role_check " +
             "CHECK (role IN ('ADMIN','FESTIVAL_DIRECTOR','FESTIVAL_MANAGER','PRODUCT_DESIGNER'," +
-            "'TECHNICAL_SUPPORT','SALES_DIRECTOR','SALES_MANAGER','EVENT_ORGANIZER'," +
+            "'TECHNICAL_SUPPORT','SALES_DIRECTOR','SALES_MANAGER','EVENT_ORGANIZER','PERFORMER_MANAGER'," +
             "'MARKETING_MANAGER','BUYER','NEGOTIATION_MANAGER'))");
         log.info("user_festival_assignments_role_check constraint updated with all roles");
     }

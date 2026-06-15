@@ -2,6 +2,7 @@ package com.festivalapp.model.eventorganization;
 
 import com.festivalapp.model.Festival;
 import com.festivalapp.model.Stage;
+import com.festivalapp.model.Contract;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -32,6 +33,10 @@ public class EventReservationRequest {
     @ManyToOne
     @JoinColumn(name = "stage_id", nullable = false)
     private Stage stage;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "contract_id", unique = true)
+    private Contract contract;
 
     @Column(nullable = false)
     private LocalDate performanceDate;
