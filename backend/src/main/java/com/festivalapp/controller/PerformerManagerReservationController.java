@@ -9,10 +9,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -28,7 +28,7 @@ public class PerformerManagerReservationController {
 
     @GetMapping("/contracts")
     public ResponseEntity<List<PerformerContractReservationResponse>> getContracts(
-            @RequestAttribute("user") User user) {
+            @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(reservationService.getContracts(user));
     }
 
@@ -36,7 +36,7 @@ public class PerformerManagerReservationController {
     public ResponseEntity<EventReservationResponse> createReservationRequest(
             @PathVariable Long contractId,
             @Valid @RequestBody CreateContractReservationRequest request,
-            @RequestAttribute("user") User user) {
+            @AuthenticationPrincipal User user) {
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(reservationService.createReservationRequest(contractId, request, user));
     }

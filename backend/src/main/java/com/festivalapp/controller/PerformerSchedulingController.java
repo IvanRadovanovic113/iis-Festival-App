@@ -6,6 +6,7 @@ import com.festivalapp.model.User;
 import com.festivalapp.service.PerformerSchedulingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,7 +20,7 @@ public class PerformerSchedulingController {
 
     @GetMapping
     public ResponseEntity<List<PerformerSchedulingResponse>> getAll(
-            @RequestAttribute("user") User user) {
+            @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(schedulingService.getAllScheduling(user));
     }
 
@@ -27,14 +28,14 @@ public class PerformerSchedulingController {
     public ResponseEntity<PerformerSchedulingResponse> assignStage(
             @PathVariable Long contractId,
             @RequestBody StageAssignmentRequest request,
-            @RequestAttribute("user") User user) {
+            @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(schedulingService.assignStage(contractId, request.getStageId(), user));
     }
 
     @DeleteMapping("/{contractId}/stage")
     public ResponseEntity<Void> unassignStage(
             @PathVariable Long contractId,
-            @RequestAttribute("user") User user) {
+            @AuthenticationPrincipal User user) {
         schedulingService.unassignStage(contractId, user);
         return ResponseEntity.noContent().build();
     }
