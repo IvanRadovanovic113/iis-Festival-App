@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,6 +28,21 @@ public interface EventReservationRequestRepository extends JpaRepository<EventRe
         Long stageId,
         LocalDate performanceDate,
         EventReservationStatus status
+    );
+
+    @Query("""
+        select request from EventReservationRequest request
+        where request.stage.stageId = :stageId
+          and request.performanceDate = :performanceDate
+          and request.status in :statuses
+          and request.id <> :excludedId
+        order by request.startTime asc
+    """)
+    List<EventReservationRequest> findOccupiedOnStageDate(
+        @Param("stageId") Long stageId,
+        @Param("performanceDate") LocalDate performanceDate,
+        @Param("statuses") Collection<EventReservationStatus> statuses,
+        @Param("excludedId") Long excludedId
     );
 
     @Query("""

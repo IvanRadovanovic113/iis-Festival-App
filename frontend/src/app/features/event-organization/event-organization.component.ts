@@ -83,6 +83,7 @@ export class EventOrganizationComponent implements OnInit {
   requestSearch = '';
   timetableMode: TimetableMode = 'static';
   selectedScheduleStart: string | null = null;
+  suggestedStart: string | null = null;
   confirmedReservation: EventReservationRequest | null = null;
   confirmedReservationTasks: EventOrganizationTask[] = [];
 
@@ -316,9 +317,21 @@ export class EventOrganizationComponent implements OnInit {
     this.selectedStageId = request.stageId;
     this.activeTab = 'timetable';
     this.timetableMode = 'reservation';
-    this.selectedScheduleStart = this.normalizeHour(request.startTime);
+    this.selectedScheduleStart = null;
+    this.suggestedStart = null;
     this.setTimetableWeekToDate(request.performanceDate);
     this.loadTimetable();
+    if (request.status === 'PENDING') {
+      this.eventReservationService.suggestSlot(request.id).subscribe({
+        next: res => {
+          this.suggestedStart = res.suggestedStart;
+          if (res.suggestedStart && !this.selectedScheduleStart) {
+            this.selectedScheduleStart = res.suggestedStart;
+          }
+        },
+        error: () => {}
+      });
+    }
   }
 
   selectReservationRequest(request: EventReservationRequest): void {

@@ -34,4 +34,8 @@ export class EventReservationService {
     const params = new HttpParams().set('date', date);
     return this.http.get<TimetableSlot[]>(`${this.API}/stages/${stageId}/timetable`, { params });
   }
+
+  suggestSlot(requestId: number): Observable<{ suggestedStart: string | null }> {
+    return this.http.get<{ suggestedStart: string | null }>(`${this.API}/requests/${requestId}/suggest-slot`);
+  }
 }

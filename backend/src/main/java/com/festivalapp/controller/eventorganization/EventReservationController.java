@@ -2,6 +2,7 @@ package com.festivalapp.controller.eventorganization;
 
 import com.festivalapp.dto.eventorganization.EventReservationResponse;
 import com.festivalapp.dto.eventorganization.EventReservationScheduleRequest;
+import com.festivalapp.dto.eventorganization.SlotSuggestionResponse;
 import com.festivalapp.dto.eventorganization.TimetableSlotResponse;
 import com.festivalapp.model.User;
 import com.festivalapp.model.eventorganization.EventReservationStatus;
@@ -56,6 +57,13 @@ public class EventReservationController {
             @PathVariable Long requestId,
             @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(eventReservationService.rejectReservationRequest(requestId, user));
+    }
+
+    @GetMapping("/requests/{requestId}/suggest-slot")
+    public ResponseEntity<SlotSuggestionResponse> suggestSlot(
+            @PathVariable Long requestId,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(eventReservationService.suggestSlot(requestId, user));
     }
 
     @GetMapping("/stages/{stageId}/timetable")
