@@ -846,17 +846,37 @@ public class DataInitializer implements ApplicationRunner {
     }
 
     private void migratePerformerPopularityToEnum() {
-        String columnType = jdbcTemplate.queryForObject(
+        List<String> types = jdbcTemplate.queryForList(
             "SELECT data_type FROM information_schema.columns " +
-            "WHERE table_name = 'performers' AND column_name = 'popularity'",
+            "WHERE table_schema = 'public' AND table_name = 'performers' AND column_name = 'popularity'",
             String.class);
-        if (columnType != null && columnType.equalsIgnoreCase("integer")) {
+        if (types.isEmpty()) {
+            log.info("performers.popularity column not found – skipping enum migration");
+            return;
+        }
+        if (types.get(0).equalsIgnoreCase("integer")) {
             jdbcTemplate.execute(
                 "ALTER TABLE performers ALTER COLUMN popularity TYPE VARCHAR(50) " +
                 "USING CASE WHEN popularity >= 80 THEN 'HEADLINER' " +
                 "           WHEN popularity >= 50 THEN 'POPULAR' " +
                 "           ELSE 'EMERGING' END");
             log.info("performers.popularity migrated from INTEGER to VARCHAR enum");
+        } else {
+            // Column is already VARCHAR but may contain numeric strings (e.g. '85') if
+            // Hibernate's ddl-auto converted INTEGER→VARCHAR via a plain ::varchar cast.
+            int updated = jdbcTemplate.update("""
+                UPDATE performers
+                SET popularity = CASE
+                    WHEN popularity ~ '^[0-9]+$' AND popularity::integer >= 80 THEN 'HEADLINER'
+                    WHEN popularity ~ '^[0-9]+$' AND popularity::integer >= 50 THEN 'POPULAR'
+                    WHEN popularity ~ '^[0-9]+$'                               THEN 'EMERGING'
+                    ELSE popularity
+                END
+                WHERE popularity NOT IN ('EMERGING', 'POPULAR', 'HEADLINER')
+                """);
+            if (updated > 0) {
+                log.info("performers.popularity: {} numeric string value(s) converted to enum names", updated);
+            }
         }
     }
 
