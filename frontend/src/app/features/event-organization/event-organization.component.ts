@@ -320,13 +320,7 @@ export class EventOrganizationComponent implements OnInit {
     this.selectedScheduleStart = null;
     this.suggestedStart = null;
     this.setTimetableWeekToDate(request.performanceDate);
-    this.loadTimetable();
-    if (request.status === 'PENDING') {
-      this.eventReservationService.suggestSlot(request.id).subscribe({
-        next: res => { this.suggestedStart = res.suggestedStart; },
-        error: () => {}
-      });
-    }
+    this.loadReservationTimetable(request);
   }
 
   selectReservationRequest(request: EventReservationRequest): void {
@@ -813,6 +807,24 @@ export class EventOrganizationComponent implements OnInit {
         this.confirmedReservationTasks = [];
         this.errorMessage = 'Reservation confirmed, but tasks could not be loaded.';
       }
+    });
+  }
+
+  private loadReservationTimetable(request: EventReservationRequest): void {
+    const timetable$ = this.eventReservationService.getTimetable(request.stageId, request.performanceDate);
+    const suggestion$ = request.status === 'PENDING'
+      ? this.eventReservationService.suggestSlot(request.id)
+      : of({ suggestedStart: null as string | null });
+
+    forkJoin({ timetable: timetable$, suggestion: suggestion$ }).subscribe({
+      next: ({ timetable, suggestion }) => {
+        this.timetableSlots = { [request.performanceDate]: {} };
+        timetable.forEach(slot => {
+          this.timetableSlots[request.performanceDate][this.normalizeHour(slot.startTime)] = slot;
+        });
+        this.suggestedStart = suggestion.suggestedStart;
+      },
+      error: () => this.errorMessage = 'Unable to load timetable.'
     });
   }
 
