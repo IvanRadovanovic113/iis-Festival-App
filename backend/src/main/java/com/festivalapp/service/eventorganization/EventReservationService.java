@@ -160,7 +160,7 @@ public class EventReservationService {
 
         String bestStart = IntStream.rangeClosed(14, 23)
             .map(h -> h * 60)
-            .filter(startMin -> startMin + durationMinutes <= 24 * 60)
+            .filter(startMin -> startMin + durationMinutes < 24 * 60)
             .filter(startMin -> {
                 int endMin = startMin + durationMinutes;
                 return occupied.stream().noneMatch(interval -> interval[0] < endMin && interval[1] > startMin);
