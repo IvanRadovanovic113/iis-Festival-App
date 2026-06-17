@@ -2,13 +2,18 @@ package com.festivalapp.service.eventorganization;
 
 import com.festivalapp.dto.eventorganization.EventReservationResponse;
 import com.festivalapp.dto.eventorganization.EventReservationScheduleRequest;
+import com.festivalapp.dto.eventorganization.SlotSuggestionResponse;
 import com.festivalapp.dto.eventorganization.TimetableSlotResponse;
 import com.festivalapp.model.Festival;
+import com.festivalapp.model.PerformerPopularity;
 import com.festivalapp.model.User;
 import com.festivalapp.model.eventorganization.EventReservationRequest;
 import com.festivalapp.model.eventorganization.EventReservationStatus;
+import com.festivalapp.model.eventorganization.RequestResourceStatus;
 import com.festivalapp.repository.eventorganization.EventReservationRequestRepository;
+import com.festivalapp.repository.eventorganization.RequestResourceRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -17,16 +22,21 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.IntStream;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EventReservationService {
 
     private static final String AVAILABLE_STATUS = "AVAILABLE";
 
     private final EventReservationRequestRepository reservationRequestRepository;
+    private final RequestResourceRepository requestResourceRepository;
     private final EventOrganizationAccessService accessService;
+    private final EventOrganizationTaskService taskService;
 
     public List<EventReservationResponse> getReservationRequests(EventReservationStatus status, User user) {
         Festival festival = accessService.requireEventOrganizerFestival(user);
@@ -55,7 +65,9 @@ public class EventReservationService {
         validateStageAvailability(reservationRequest);
         reservationRequest.setStatus(EventReservationStatus.APPROVED);
         reservationRequest.setReviewedAt(LocalDateTime.now());
-        return EventReservationResponse.from(reservationRequestRepository.save(reservationRequest));
+        EventReservationRequest savedRequest = reservationRequestRepository.save(reservationRequest);
+        syncTasksWithoutBlockingReservation(festival, savedRequest.getId());
+        return EventReservationResponse.from(savedRequest);
     }
 
     public EventReservationResponse scheduleReservationRequest(Long requestId, EventReservationScheduleRequest scheduleRequest, User user) {
@@ -83,7 +95,9 @@ public class EventReservationService {
 
         reservationRequest.setStatus(EventReservationStatus.APPROVED);
         reservationRequest.setReviewedAt(LocalDateTime.now());
-        return EventReservationResponse.from(reservationRequestRepository.save(reservationRequest));
+        EventReservationRequest savedRequest = reservationRequestRepository.save(reservationRequest);
+        syncTasksWithoutBlockingReservation(festival, savedRequest.getId());
+        return EventReservationResponse.from(savedRequest);
     }
 
     public EventReservationResponse rejectReservationRequest(Long requestId, User user) {
@@ -123,6 +137,85 @@ public class EventReservationService {
         return slots;
     }
 
+    public SlotSuggestionResponse suggestSlot(Long requestId, User user) {
+        Festival festival = accessService.requireEventOrganizerFestival(user);
+        EventReservationRequest request = accessService.requireReservationRequest(requestId, festival);
+
+        int durationMinutes = (int) java.time.Duration.between(request.getStartTime(), request.getEndTime()).toMinutes();
+        if (durationMinutes <= 0) {
+            return new SlotSuggestionResponse(null);
+        }
+
+        int targetMinutes = resolveTargetMinutes(request);
+
+        List<int[]> occupied = reservationRequestRepository.findOccupiedOnStageDate(
+            request.getStage().getStageId(),
+            request.getPerformanceDate(),
+            List.of(EventReservationStatus.PENDING, EventReservationStatus.APPROVED),
+            requestId
+        ).stream().map(r -> new int[]{
+            r.getStartTime().getHour() * 60 + r.getStartTime().getMinute(),
+            r.getEndTime().getHour() * 60 + r.getEndTime().getMinute()
+        }).toList();
+
+        String bestStart = IntStream.rangeClosed(14, 23)
+            .map(h -> h * 60)
+            .filter(startMin -> startMin + durationMinutes < 24 * 60)
+            .filter(startMin -> {
+                int endMin = startMin + durationMinutes;
+                return occupied.stream().noneMatch(interval -> interval[0] < endMin && interval[1] > startMin);
+            })
+            .boxed()
+            .min(Comparator.comparingInt(startMin -> {
+                int timeScore = Math.abs(startMin - targetMinutes);
+                int penalty = computeResourcePenalty(request, startMin, durationMinutes);
+                return timeScore + penalty;
+            }))
+            .map(startMin -> String.format("%02d:00", startMin / 60))
+            .orElse(null);
+
+        return new SlotSuggestionResponse(bestStart);
+    }
+
+    private int resolveTargetMinutes(EventReservationRequest request) {
+        PerformerPopularity popularity = null;
+        try {
+            if (request.getContract() != null) {
+                popularity = request.getContract().getNegotiation().getPerformer().getPopularity();
+            }
+        } catch (Exception ignored) {}
+
+        if (popularity == null) popularity = PerformerPopularity.POPULAR;
+
+        return switch (popularity) {
+            case HEADLINER -> 21 * 60;
+            case POPULAR -> 19 * 60;
+            case EMERGING -> 17 * 60;
+        };
+    }
+
+    private int computeResourcePenalty(EventReservationRequest request, int candidateStartMin, int durationMinutes) {
+        LocalTime candidateStart = LocalTime.of(candidateStartMin / 60, candidateStartMin % 60);
+        LocalTime candidateEnd = LocalTime.of((candidateStartMin + durationMinutes) / 60, (candidateStartMin + durationMinutes) % 60);
+        long unavailable = requestResourceRepository
+            .findByReservationRequest_IdOrderByResource_NameAsc(request.getId())
+            .stream()
+            .filter(rr -> rr.getResource() != null)
+            .filter(rr -> {
+                Integer overlapping = requestResourceRepository.sumOverlappingQuantityByResource(
+                    rr.getResource().getId(),
+                    request.getId(),
+                    request.getPerformanceDate(),
+                    candidateStart,
+                    candidateEnd,
+                    RequestResourceStatus.CONFIRMED
+                );
+                return overlapping != null && overlapping >= rr.getResource().getTotalQuantity();
+            })
+            .count();
+        return (int) unavailable * 30;
+    }
+
     private void validateReservationTime(LocalTime startTime, LocalTime endTime) {
         if (!startTime.isBefore(endTime)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Start time must be before end time");
@@ -139,6 +232,14 @@ public class EventReservationService {
         );
         if (overlaps) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Selected stage already has an approved request in this time slot");
+        }
+    }
+
+    private void syncTasksWithoutBlockingReservation(Festival festival, Long reservationRequestId) {
+        try {
+            taskService.syncOpenTasks(festival);
+        } catch (RuntimeException ex) {
+            log.warn("Reservation {} was approved, but task synchronization failed", reservationRequestId, ex);
         }
     }
 }

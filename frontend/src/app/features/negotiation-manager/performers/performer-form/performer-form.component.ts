@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { PerformerService } from '../../../../core/services/performer.service';
-import { PerformerType } from '../../../../core/models/performer.model';
+import { PerformerPopularity, PerformerType } from '../../../../core/models/performer.model';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
@@ -25,8 +25,8 @@ export class PerformerFormComponent implements OnInit {
   performerId: number | null = null;
   errorMessage: string | null = null;
 
-  // Izlaganje enuma za HTML template
   PerformerType = PerformerType;
+  PerformerPopularity = PerformerPopularity;
 
   ngOnInit(): void {
     this.initForm();
@@ -39,7 +39,7 @@ export class PerformerFormComponent implements OnInit {
       firstName: [''],
       lastName: [''],
       genre: ['', [Validators.required]],
-      popularity: [50, [Validators.required, Validators.min(0), Validators.max(100)]],
+      popularity: [PerformerPopularity.POPULAR, [Validators.required]],
       averageDurationMinutes: [60, [Validators.required, Validators.min(1)]],
       countryOfOrigin: ['', [Validators.required]],
       performerType: [PerformerType.SOLO, [Validators.required]],

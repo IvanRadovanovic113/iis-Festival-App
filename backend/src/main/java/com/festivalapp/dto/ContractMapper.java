@@ -5,12 +5,14 @@ import com.festivalapp.model.Contract;
 public class ContractMapper {
 
     public static ContractResponse toResponse(Contract contract) {
+        var n = contract.getNegotiation();
+        
         return ContractResponse.builder()
                 .id(contract.getId())
-                .negotiationId(contract.getNegotiation().getId())
-                .offerTitle(contract.getNegotiation().getOffer().getLocation())
-                .performerName(contract.getNegotiation().getPerformer().getStageName())
-                .signedByUserName(contract.getSignedBy().getUsername())
+                .negotiationId(n != null ? n.getId() : null)
+                .offerTitle((n != null && n.getOffer() != null) ? n.getOffer().getLocation() : "N/A")
+                .performerName((n != null && n.getPerformer() != null) ? n.getPerformer().getStageName() : "N/A")
+                .signedByUserName(contract.getSignedBy() != null ? contract.getSignedBy().getUsername() : "System")
                 .signedAt(contract.getSignedAt())
                 .conditionSnapshotJson(contract.getConditionSnapshotJson())
                 .build();

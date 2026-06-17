@@ -1,0 +1,147 @@
+<div class="pm-shell">
+  <header class="pm-header">
+    <div>
+      <span class="eyebrow">Performer manager</span>
+      <h1>Contract reservation requests</h1>
+    </div>
+    <button type="button" class="logout-button" (click)="logout()">Log out</button>
+  </header>
+
+  <div class="pm-body">
+  @if (errorMessage) {
+    <div class="alert error">{{ errorMessage }}</div>
+  }
+  @if (successMessage) {
+    <div class="alert success">{{ successMessage }}</div>
+  }
+
+  @if (loading) {
+    <section class="empty-state">Loading confirmed contracts...</section>
+  } @else if (!contracts.length) {
+    <section class="empty-state">No confirmed stage-assigned contracts are ready for reservation requests.</section>
+  } @else {
+    <main class="pm-layout">
+      <section class="contract-list" aria-label="Confirmed contracts">
+        <div class="section-heading">
+          <h2>Ready for request</h2>
+          <span>{{ pendingContracts.length }}</span>
+        </div>
+
+        @for (contract of pendingContracts; track contract.contractId) {
+          <button
+            type="button"
+            class="contract-row"
+            [class.active]="selectedContract?.contractId === contract.contractId"
+            (click)="selectContract(contract)">
+            <strong>{{ contract.performerName }}</strong>
+            <span>{{ contract.stageName }} · {{ contract.performanceDate }} · {{ contract.durationMinutes }} min</span>
+          </button>
+        }
+
+        @if (submittedContracts.length) {
+          <div class="section-heading submitted-heading">
+            <h2>Submitted</h2>
+            <span>{{ submittedContracts.length }}</span>
+          </div>
+        }
+
+        @for (contract of submittedContracts; track contract.contractId) {
+          <button
+            type="button"
+            class="contract-row submitted"
+            [class.active]="selectedContract?.contractId === contract.contractId"
+            (click)="selectContract(contract)">
+            <strong>{{ contract.performerName }}</strong>
+            <span>{{ contract.stageName }} · request #{{ contract.reservationRequestId }} · {{ contract.reservationStatus }}</span>
+          </button>
+        }
+      </section>
+
+      <section class="request-panel" aria-label="Reservation request details">
+        @if (selectedContract) {
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">Selected contract</span>
+              <h2>{{ selectedContract.performerName }}</h2>
+            </div>
+            <span class="status-pill">{{ selectedContract.reservationStatus || selectedContract.schedulingStatus }}</span>
+          </div>
+
+          <dl class="contract-meta">
+            <div>
+              <dt>Stage</dt>
+              <dd>{{ selectedContract.stageName }}</dd>
+            </div>
+            <div>
+              <dt>Date</dt>
+              <dd>{{ selectedContract.performanceDate }}</dd>
+            </div>
+            <div>
+              <dt>Duration</dt>
+              <dd>{{ selectedContract.durationMinutes }} min</dd>
+            </div>
+          </dl>
+
+          @if (selectedContract.reservationRequestId) {
+            <div class="locked-message">
+              Reservation request has already been submitted to event organization.
+            </div>
+          } @else {
+            <section class="resource-section">
+              <h3>Stage resources</h3>
+              @if (!selectedContract.stageResources.length) {
+                <p class="muted">This stage has no assigned resources yet.</p>
+              }
+
+              @for (resource of selectedContract.stageResources; track resource.resourceId) {
+                <label class="resource-row">
+                  <input
+                    type="checkbox"
+                    [checked]="selectedResources[resource.resourceId]"
+                    (change)="toggleResource(resource.resourceId, $any($event.target).checked)">
+                  <span>
+                    <strong>{{ resource.resourceName }}</strong>
+                    <small>{{ resource.resourceType }} · available on stage: {{ resource.quantity }}</small>
+                  </span>
+                  <input
+                    type="number"
+                    min="1"
+                    [max]="resource.quantity"
+                    [disabled]="!selectedResources[resource.resourceId]"
+                    [ngModel]="resourceQuantities[resource.resourceId]"
+                    (ngModelChange)="resourceQuantities[resource.resourceId] = $event">
+                </label>
+              }
+            </section>
+
+            <section class="resource-section">
+              <div class="custom-heading">
+                <h3>Custom resources</h3>
+                <button type="button" class="secondary-button" (click)="addCustomResource()">Add custom</button>
+              </div>
+
+              @for (resource of customResources; track $index) {
+                <div class="custom-row">
+                  <input type="text" placeholder="Resource name" [(ngModel)]="resource.requestedName">
+                  <input type="text" placeholder="Type" [(ngModel)]="resource.requestedType">
+                  <input type="number" min="1" [(ngModel)]="resource.quantity">
+                  <button type="button" class="ghost-button" (click)="removeCustomResource($index)">Remove</button>
+                </div>
+              }
+            </section>
+
+            <label class="notes-field">
+              Notes
+              <textarea rows="3" [(ngModel)]="notes" placeholder="Optional notes for event organization"></textarea>
+            </label>
+
+            <button type="button" class="primary-button" [disabled]="submitting" (click)="createReservationRequest()">
+              {{ submitting ? 'Sending...' : 'Send reservation request' }}
+            </button>
+          }
+        }
+      </section>
+    </main>
+  }
+  </div>
+</div>

@@ -101,13 +101,4 @@ public class NegotiationController {
         negotiationService.failNegotiation(negotiationId, request.getReason(), user);
         return ResponseEntity.ok().build();
     }
-
-
-    @PostMapping("/{negotiationId}/complete-test")
-public ResponseEntity<Void> completeTest(
-        @PathVariable Long negotiationId,
-        @AuthenticationPrincipal User user) {
-    System.out.println("TEST endpoint hit, user: " + user.getId());
-    return ResponseEntity.ok().build();
-}
 }

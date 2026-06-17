@@ -1,0 +1,145 @@
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.page-heading {
+  margin-bottom: 16px;
+}
+
+.page-heading h1 {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.2;
+}
+
+.page-heading p {
+  margin: 3px 0 0;
+  color: #8e808d;
+  font-size: 18px;
+}
+
+.row-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.primary-button,
+.cancel-button,
+.delete-button,
+.outline-button {
+  border-radius: 8px;
+  min-height: 40px;
+  padding: 0 24px;
+}
+
+.primary-button {
+  border: 0;
+  background: #cf4d7b;
+  color: #fff;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.primary-button:disabled {
+  cursor: not-allowed;
+  background: #d8c8d8;
+}
+
+.row-heading .primary-button {
+  min-width: 210px;
+  height: 55px;
+}
+
+.cancel-button {
+  border: 1px solid #f5dfe9;
+  background: #fffafd;
+  color: #705d6f;
+  font-weight: 600;
+}
+
+.delete-button {
+  border: 0;
+  background: #dc5262;
+  color: #fff;
+  font-weight: 600;
+}
+
+.outline-button {
+  min-width: 78px;
+  border: 1px solid #e33e78;
+  background: #fffafd;
+  color: #d83e73;
+  font-weight: 500;
+}
+
+.outline-button.danger {
+  color: #ec3651;
+}
+
+.placeholder-page,
+.empty-card {
+  border: 1px solid #f4deea;
+  border-radius: 8px;
+  padding: 28px;
+  background: #fff;
+  color: #766579;
+}
+
+.placeholder-page h1,
+.empty-card h2 {
+  margin: 0 0 8px;
+  color: #2b2030;
+}
+
+.empty-table {
+  margin: 0;
+  padding: 20px;
+  background: #f0e8fb;
+  color: #766579;
+}
+
+.stage-tabs {
+  display: flex;
+  gap: 18px;
+  margin: 6px 0 30px;
+}
+
+.stage-tabs button {
+  min-width: 180px;
+  height: 54px;
+  border: 0;
+  border-radius: 10px;
+  background: #f0e8fb;
+  color: #725f73;
+  font-size: 20px;
+}
+
+.stage-tabs button.active {
+  background: #cf4d7b;
+  color: #fff;
+}
+
+.stage-tabs button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+@media (max-width: 920px) {
+  .row-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .stage-tabs {
+    overflow-x: auto;
+  }
+}

@@ -20,14 +20,14 @@ public class ContractService {
 
     @Transactional(readOnly = true)
     public List<ContractResponse> getAllContracts() {
-        return contractRepository.findAll().stream()
+        return contractRepository.findAllWithDetails().stream()
                 .map(ContractMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public ContractResponse getContractById(Long id) {
-        return contractRepository.findById(id)
+        return contractRepository.findByIdWithDetails(id)
                 .map(ContractMapper::toResponse)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Contract not found"));
     }

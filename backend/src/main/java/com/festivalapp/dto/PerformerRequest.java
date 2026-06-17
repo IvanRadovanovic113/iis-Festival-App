@@ -1,5 +1,6 @@
 package com.festivalapp.dto;
 
+import com.festivalapp.model.PerformerPopularity;
 import com.festivalapp.model.PerformerType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -23,7 +24,7 @@ public class PerformerRequest {
     @NotBlank(message = "Genre is a required field.")
     private String genre;
 
-    private Integer popularity;
+    private PerformerPopularity popularity;
 
     @Min(value = 1, message = "Average duration must be positive.")
     private Integer averageDurationMinutes;

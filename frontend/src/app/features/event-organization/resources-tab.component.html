@@ -1,0 +1,102 @@
+@if (activeResourceTab === 'manage') {
+  <section class="page-heading row-heading">
+    <div>
+      <h1>Stage resources</h1>
+      <p>Manage equipment and personnel assigned to each stage</p>
+    </div>
+    <button type="button" class="primary-button" (click)="addResourceRequested.emit()">+ Add Resource</button>
+  </section>
+
+  <div class="stage-tabs" aria-label="Stages">
+    @for (stage of stages; track stage.stageId) {
+      <button type="button" [class.active]="selectedStageId === stage.stageId" (click)="stageSelected.emit(stage.stageId)">
+        {{ stage.name }}
+      </button>
+    }
+  </div>
+
+  <section class="resource-grid">
+    @for (stageResource of stageResources; track stageResource.id) {
+      <article class="resource-card">
+        <div class="resource-card-main">
+          <div>
+            <h2>{{ stageResource.resourceName }}</h2>
+            <p>{{ stageResource.quantity }} {{ stageResource.resourceType === 'Personnel' ? 'people' : stageResource.quantity === 1 ? 'set' : 'units' }}</p>
+          </div>
+          <span class="pill" [class.personnel]="stageResource.resourceType === 'Personnel'" [class.fx]="stageResource.resourceType === 'Special FX'">
+            {{ stageResource.resourceType }}
+          </span>
+        </div>
+        <div class="card-actions">
+          <button type="button" class="outline-button" (click)="editResourceRequested.emit(stageResource)">Edit</button>
+          <button type="button" class="outline-button danger" (click)="deleteResourceRequested.emit(stageResource)">Delete</button>
+        </div>
+      </article>
+    } @empty {
+      <section class="empty-card">
+        <h2>No resources on this stage</h2>
+        <p>Add the first resource for {{ selectedStage?.name || 'a stage' }}.</p>
+      </section>
+    }
+  </section>
+}
+
+@if (activeResourceTab === 'inventory') {
+  <section class="page-heading">
+    <h1>Resource inventory</h1>
+    <p>Overview of all resources available in the system across all stages</p>
+  </section>
+
+  <section class="metric-grid">
+    <article class="metric pink">
+      <strong>{{ resources.length }}</strong>
+      <span>Total resource types</span>
+    </article>
+    <article class="metric green">
+      <strong>{{ totalUnits }}</strong>
+      <span>Total units</span>
+    </article>
+    <article class="metric orange">
+      <strong>{{ sharedResourceCount }}</strong>
+      <span>Shared resources</span>
+    </article>
+    <article class="metric purple">
+      <strong>{{ stages.length }}</strong>
+      <span>Stages</span>
+    </article>
+  </section>
+
+  <section class="inventory-filters">
+    <input type="search" placeholder="Search resources..." [value]="inventorySearch" (input)="updateInventorySearch($event)" />
+    <label>
+      <span>Filter by stage:</span>
+      <select [value]="inventoryStageFilter" (change)="updateInventoryStageFilter($event)">
+        <option value="All">All</option>
+        @for (stage of stages; track stage.stageId) {
+          <option [value]="stage.name">{{ stage.name }}</option>
+        }
+      </select>
+    </label>
+  </section>
+
+  <section class="inventory-table" aria-label="Resource inventory table">
+    <div class="inventory-row inventory-head">
+      <span>Resource name</span>
+      <span>Type</span>
+      <span>Total</span>
+      <span>Shared</span>
+      <span>Stages</span>
+    </div>
+    @for (row of inventoryRows; track row.resource.id) {
+      <div class="inventory-row">
+        <span>{{ row.resource.name }}</span>
+        <span>{{ row.resource.type }}</span>
+        <span>{{ row.resource.totalQuantity }}</span>
+        <span [class.yes]="row.shared" [class.no]="!row.shared">{{ row.shared ? 'Yes' : 'No' }}</span>
+        <span>{{ row.stageNames.length ? row.stageNames.join(', ') : '-' }}</span>
+      </div>
+    } @empty {
+      <p class="empty-table">No resources match the selected filters.</p>
+    }
+  </section>
+}

@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:classpath:application-local.yml
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/festival_db}
     username: ${SPRING_DATASOURCE_USERNAME:festival_user}
@@ -30,6 +32,8 @@ jwt:
 
 server:
   port: 8080
+  error:
+    include-message: always
 
 logging:
   level:

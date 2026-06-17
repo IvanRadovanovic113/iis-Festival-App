@@ -1,10 +1,12 @@
 package com.festivalapp.prodaja.dto;
 
+import com.festivalapp.prodaja.model.PricingPeriod;
 import com.festivalapp.prodaja.model.TicketType;
 import com.festivalapp.prodaja.model.TicketTypeSegment;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Getter
@@ -19,10 +21,15 @@ public class TicketTypeResponse {
     private List<SegmentInfo> segments;
     private Long festivalId;
     private String festivalName;
+    private BigDecimal currentPrice;
 
     public record SegmentInfo(Long segmentId, String name) {}
 
     public static TicketTypeResponse from(TicketType tt, List<TicketTypeSegment> segments) {
+        return from(tt, segments, null);
+    }
+
+    public static TicketTypeResponse from(TicketType tt, List<TicketTypeSegment> segments, PricingPeriod activePeriod) {
         TicketTypeResponse r = new TicketTypeResponse();
         r.ticketTypeId = tt.getTicketTypeId();
         r.name = tt.getName();
@@ -36,6 +43,11 @@ public class TicketTypeResponse {
                 s.getSegment().getSegmentId(),
                 s.getSegment().getName()))
             .toList();
+        if (activePeriod != null) {
+            r.currentPrice = activePeriod.getCurrentPrice() != null
+                ? activePeriod.getCurrentPrice()
+                : activePeriod.getBasePrice();
+        }
         return r;
     }
 }

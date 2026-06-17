@@ -1,0 +1,278 @@
+.tasks-heading {
+  margin: 18px 0 68px;
+}
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 20px;
+}
+
+.task-card {
+  min-height: 120px;
+  padding: 20px 24px 10px 20px;
+  display: grid;
+  grid-template-columns: 168px 1fr 360px;
+  align-items: center;
+  gap: 14px;
+  border: 2px solid #b9d0ff;
+  border-radius: 10px;
+  background: #fffafd;
+  color: #2b2030;
+}
+
+.task-card.non-existing-card {
+  border-color: #bd94ff;
+  background: #f2eafd;
+}
+
+.task-type {
+  width: 150px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #df4b7e;
+  border-radius: 999px;
+  color: #df4b7e;
+  background: #fff7fb;
+  font-weight: 600;
+}
+
+.task-type.non-existing {
+  border-color: #923bd7;
+  color: #923bd7;
+  background: #f8f0ff;
+}
+
+.task-main h2 {
+  margin: 0 0 4px;
+  font-size: 21px;
+  line-height: 1.2;
+}
+
+.task-main p {
+  margin: 0 0 4px;
+  color: #766579;
+  font-size: 17px;
+}
+
+.task-main span {
+  color: #8b611f;
+  font-size: 16px;
+}
+
+.rejection-reason {
+  margin-top: 9px;
+  padding: 7px 12px;
+  border-radius: 5px;
+  background: #fdebed;
+  color: #a23737;
+  font-size: 15px;
+}
+
+.task-status-column {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.task-status {
+  min-width: 120px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #fdebf3;
+  color: #d84d80;
+  font-weight: 600;
+}
+
+.task-status.resolved {
+  background: #e4faef;
+  color: #63bfa9;
+}
+
+.task-status.rejected {
+  background: #fdebed;
+  color: #e14d61;
+}
+
+.resolve-button,
+.reject-button {
+  height: 38px;
+  border-radius: 8px;
+  font-size: 17px;
+}
+
+.resolve-button {
+  border: 0;
+  background: #67c0aa;
+  color: #fff;
+}
+
+.reject-button {
+  grid-column: 2;
+  border: 1px solid #cf3535;
+  background: #fffafd;
+  color: #e14d61;
+}
+
+.task-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 16px;
+}
+
+.task-meta strong {
+  font-weight: 500;
+}
+
+.task-meta span {
+  color: #a08298;
+}
+
+.success-meta {
+  color: #50bca5;
+}
+
+.rejected-meta {
+  color: #e14d61;
+}
+
+.task-modal {
+  width: min(660px, 100%);
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  border-radius: 14px;
+  background: #fffafd;
+  box-shadow: 0 20px 70px rgba(42, 25, 45, 0.28);
+}
+
+.task-modal header {
+  min-height: 78px;
+  padding: 18px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #3b1732;
+  color: #fff;
+}
+
+.reject-modal {
+  border: 2px solid #e14d61;
+}
+
+.task-modal h2 {
+  margin: 0 0 4px;
+  font-size: 24px;
+}
+
+.task-modal header p {
+  margin: 0;
+  color: #cdbfcb;
+}
+
+.task-modal-body {
+  padding: 24px 28px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.task-summary {
+  padding: 18px;
+  border-radius: 10px;
+  background: #f1e8fb;
+}
+
+.task-summary.reject-summary {
+  background: #fdebed;
+}
+
+.task-summary strong {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 18px;
+}
+
+.task-summary span {
+  color: #9a8196;
+}
+
+.task-modal label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #705d6f;
+  font-weight: 600;
+}
+
+.task-modal input {
+  height: 54px;
+  border: 0;
+  border-radius: 9px;
+  padding: 0 18px;
+  background: #f1e8fb;
+  color: #2b2030;
+  font-size: 18px;
+}
+
+.task-modal input::placeholder {
+  color: #b3acc3;
+}
+
+.required-note {
+  margin: -10px 0 0;
+  color: #a23737;
+}
+
+.task-modal footer {
+  padding: 16px 28px 24px;
+  display: grid;
+  grid-template-columns: 1fr 1.8fr;
+  gap: 18px;
+}
+
+.task-modal footer button {
+  height: 58px;
+  font-size: 20px;
+}
+
+.resolve-submit {
+  background: #67c0aa;
+}
+
+.reject-submit {
+  background: #dc5262;
+}
+
+@media (max-width: 920px) {
+  .tasks-heading {
+    margin-bottom: 28px;
+  }
+
+  .task-list {
+    padding: 0;
+  }
+
+  .task-card {
+    grid-template-columns: 1fr;
+  }
+
+  .task-status-column {
+    grid-template-columns: 1fr;
+  }
+
+  .reject-button {
+    grid-column: auto;
+  }
+
+  .task-modal footer {
+    grid-template-columns: 1fr;
+  }
+}

@@ -76,7 +76,7 @@
         <td>{{ performer.countryOfOrigin }}</td>
         <td>{{ performer.numberOfMembers }}</td>
         <td>
-          <div class="popularity-badge">⭐ {{ performer.popularity }}/100</div>
+          <div class="popularity-badge">{{ performer.popularity }}</div>
         </td>
         <td>
           <span class="status-badge" [ngClass]="performer.status.toLowerCase()">
