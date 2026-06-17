@@ -8,3 +8,16 @@ export interface Contract {
   conditionSnapshotJson: string;
   snapshotData?: any;
 }
+
+export interface PerformerSchedulingItem {
+  contractId: number;
+  negotiationId: number;
+  performerName: string;
+  stageId: number | null;
+  stageName: string | null;
+  schedulingStatus: 'NOT_ASSIGNED' | 'STAGE_ASSIGNED' | 'TIME_ASSIGNED';
+}
+
+export interface StageAssignmentRequest {
+  stageId: number;
+}
