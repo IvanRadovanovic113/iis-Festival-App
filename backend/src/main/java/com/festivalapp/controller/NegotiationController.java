@@ -14,10 +14,12 @@ import com.festivalapp.dto.*;
 import com.festivalapp.dto.NegotiationMapper;
 import com.festivalapp.repository.NegotiationStateHistoryRepository;
 import com.festivalapp.repository.NegotiationConditionValueRepository;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.festivalapp.dto.FailReasonRequest;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/negotiations")
+@RequestMapping("/api/negotiation-manager/negotiations")
 @RequiredArgsConstructor
 public class NegotiationController {
 
@@ -30,7 +32,7 @@ public class NegotiationController {
     public ResponseEntity<NegotiationResponse> initiate(
             @PathVariable Long offerId,
             @PathVariable Long performerId,
-            @RequestAttribute("user") User user) {
+            @AuthenticationPrincipal User user) {
         Negotiation n = negotiationService.initiateNegotiation(offerId, performerId, user);
         return ResponseEntity.ok(NegotiationMapper.toResponse(n));
     }
@@ -39,12 +41,11 @@ public class NegotiationController {
     @GetMapping("/{negotiationId}")
     public ResponseEntity<NegotiationDetailsResponse> getDetails(
             @PathVariable Long negotiationId,
-            @RequestAttribute("user") User user) {
-        Negotiation n = negotiationService.getNegotiationDetails(negotiationId, user);
-        var history = historyRepository.findByNegotiation_IdOrderByEntryTimeDesc(negotiationId);
-        var conditions = conditionValueRepository.findByNegotiation_Id(negotiationId);
+            @AuthenticationPrincipal User user) {
         
-        return ResponseEntity.ok(NegotiationMapper.toDetailsResponse(n, history, conditions));
+        NegotiationDetailsResponse details = negotiationService.getNegotiationDetails(negotiationId, user);
+        
+        return ResponseEntity.ok(details);
     }
 
     // 3. Paginirana lista sa filterima
@@ -55,7 +56,7 @@ public class NegotiationController {
             @RequestParam(required = false) Long offerId,
             @RequestParam(required = false) Long stateId,
             Pageable pageable,
-            @RequestAttribute("user") User user) {
+            @AuthenticationPrincipal User user) {
         Page<Negotiation> page = negotiationService.getNegotiations(status, performerId, offerId, stateId, pageable, user);
         return ResponseEntity.ok(page.map(NegotiationMapper::toResponse));
     }
@@ -65,7 +66,7 @@ public class NegotiationController {
     public ResponseEntity<Void> saveConditions(
             @PathVariable Long negotiationId,
             @RequestBody List<ConditionValueDto> conditions,
-            @RequestAttribute("user") User user) {
+            @AuthenticationPrincipal User user) {
         negotiationService.saveNegotiationConditions(negotiationId, conditions, user);
         return ResponseEntity.ok().build();
     }
@@ -75,7 +76,7 @@ public class NegotiationController {
     public ResponseEntity<Void> transition(
             @PathVariable Long negotiationId,
             @PathVariable Long transitionId,
-            @RequestAttribute("user") User user) {
+            @AuthenticationPrincipal User user) {
         TransitionRequest request = new TransitionRequest();
         request.setTransitionId(transitionId);
         negotiationService.transitionToNextState(negotiationId, request, user);
@@ -83,12 +84,11 @@ public class NegotiationController {
     }
 
     // 6.. Završetak pregovora (Ugovor)
-    @PostMapping("/{negotiationId}/complete/{transitionId}")
+    @PostMapping("/{negotiationId}/complete")
     public ResponseEntity<Void> complete(
             @PathVariable Long negotiationId,
-            @PathVariable Long transitionId,
-            @RequestAttribute("user") User user) {
-        negotiationService.completeNegotiation(negotiationId, transitionId, user);
+            @AuthenticationPrincipal User user) {
+        negotiationService.completeNegotiation(negotiationId, user);
         return ResponseEntity.ok().build();
     }
 
@@ -96,9 +96,18 @@ public class NegotiationController {
     @PostMapping("/{negotiationId}/fail")
     public ResponseEntity<Void> fail(
             @PathVariable Long negotiationId,
-            @RequestParam(required = false) String reason,
-            @RequestAttribute("user") User user) {
-        negotiationService.failNegotiation(negotiationId, reason, user);
+            @RequestBody FailReasonRequest request,
+            @AuthenticationPrincipal User user) {
+        negotiationService.failNegotiation(negotiationId, request.getReason(), user);
         return ResponseEntity.ok().build();
     }
+
+
+    @PostMapping("/{negotiationId}/complete-test")
+public ResponseEntity<Void> completeTest(
+        @PathVariable Long negotiationId,
+        @AuthenticationPrincipal User user) {
+    System.out.println("TEST endpoint hit, user: " + user.getId());
+    return ResponseEntity.ok().build();
+}
 }
