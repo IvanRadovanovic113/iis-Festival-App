@@ -32,16 +32,16 @@
 .reservation-banner {
   margin: 8px 0 28px;
   padding: 12px 24px;
-  border: 2px solid #e33e78;
+  border: 2px solid #44518c;
   border-radius: 12px;
-  background: #fef0f5;
+  background: #eef0f8;
   color: #2b2030;
 }
 
 .reservation-banner span {
   display: block;
   margin-bottom: 4px;
-  color: #cf4d7b;
+  color: #44518c;
   font-weight: 700;
   font-size: 13px;
   text-transform: uppercase;
