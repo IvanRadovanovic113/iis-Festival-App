@@ -1,0 +1,35 @@
+<div class="negotiation-form-container">
+  <div class="header-row">
+    <h2>Start Negotiation</h2>
+    <button class="btn-cancel" routerLink="../../">Cancel</button>
+  </div>
+
+  <div class="card">
+    <h3>Negotiation Context</h3>
+    <div class="info-grid">
+      <div><label>OFFER</label><p>{{ offer?.location }} — {{ offer?.performanceDate | date:'y' }}</p></div>
+      <div><label>PERFORMER</label><p>{{ performer?.stageName }}</p></div>
+      <div><label>INITIAL PRICE</label><p>{{ offer?.price | currency:'EUR' }}</p></div>
+    </div>
+    
+    <div class="workflow-box">
+      <label>WORKFLOW TEMPLATE</label>
+      <p><strong>{{ template?.name }}</strong> <span class="badge">locked after start</span></p>
+      </div>
+  </div>
+
+  <div class="card">
+    <h3>Additional Notes</h3>
+    <textarea [(ngModel)]="notes" placeholder="Any context for this negotiation that isn't in the offer..."></textarea>
+  </div>
+
+  <div class="card confirmation-box">
+    <h3>What happens when you confirm:</h3>
+    <ul>
+      <li> Offer status changes to <strong>Frozen</strong> — no other negotiations can start from it</li>
+      <li> Negotiation is created in state <strong>Initial Contact</strong></li>
+      <li> State deadline timer starts (default: 48h per template)</li>
+    </ul>
+    <button class="btn-primary" (click)="confirmAndStart()">Confirm & Start Negotiation →</button>
+  </div>
+</div>

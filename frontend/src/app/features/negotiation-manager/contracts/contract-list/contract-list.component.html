@@ -1,0 +1,43 @@
+<div class="offers-container">
+  <div class="header-row">
+    <div>
+      <h2>Signed Contracts</h2>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-wrapper">
+      <input type="text" [(ngModel)]="searchTerm" (input)="onSearch()" placeholder="Search by performer or offer...">
+    </div>
+    <span class="totals-text">{{ filteredContracts.length }} contracts total</span>
+  </div>
+
+  <table class="offers-table">
+    <thead>
+      <tr>
+        <th>OFFER</th>
+        <th>PERFORMER</th>
+        <th>SIGNED BY</th>
+        <th>DATE</th>
+        <th>ACTIONS</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (c of filteredContracts; track c.id) {
+        <tr>
+          <td class="bold-text">{{ c.offerTitle }}</td>
+          <td>{{ c.performerName }}</td>
+          <td>{{ c.signedByUserName }}</td>
+          <td>{{ c.signedAt | date:'mediumDate' }}</td>
+          <td>
+            <button class="btn-view" [routerLink]="['.', c.id]">Details</button>
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="5" class="empty-state">No signed contracts found.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

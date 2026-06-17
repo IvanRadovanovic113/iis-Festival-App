@@ -1,0 +1,86 @@
+.negotiation-form-container {
+  padding: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 15px;
+}
+
+.info-grid label {
+  display: block;
+  font-size: 11px;
+  color: #777;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.workflow-box {
+  margin-top: 20px;
+  padding: 15px;
+  background: #f9f9f9;
+  border-radius: 6px;
+}
+
+textarea {
+  width: 100%;
+  height: 100px;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-top: 10px;
+  resize: vertical;
+}
+
+.confirmation-box ul {
+  padding-left: 20px;
+  color: #555;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.badge {
+  background: #fff3cd;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  border: 1px solid #ffeeba;
+}
+
+/* Dugmad */
+.btn-primary {
+  background-color: #1a1a1a;
+  color: #fff;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-cancel {
+  background: transparent;
+  border: 1px solid #ccc;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}

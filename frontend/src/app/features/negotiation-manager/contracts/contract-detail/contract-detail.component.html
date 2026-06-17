@@ -1,0 +1,32 @@
+<div class="detail-container" *ngIf="contract">
+  <div class="header-row">
+    <button class="btn-back" routerLink="../">← Back to List</button>
+    <h2>Contract Details</h2>
+  </div>
+
+  <div class="card">
+    <div class="info-grid">
+      <div class="info-item">
+        <label>Offer Title</label>
+        <p>{{ contract.offerTitle }}</p>
+      </div>
+      <div class="info-item">
+        <label>Performer</label>
+        <p>{{ contract.performerName }}</p>
+      </div>
+      <div class="info-item">
+        <label>Signed By</label>
+        <p>{{ contract.signedByUserName }}</p>
+      </div>
+      <div class="info-item">
+        <label>Date Signed</label>
+        <p>{{ contract.signedAt | date:'fullDate' }}</p>
+      </div>
+    </div>
+
+    <div class="snapshot-section" *ngIf="contract.snapshotData">
+      <h3>Contract Snapshot Data</h3>
+      <pre class="json-display">{{ contract.snapshotData | json }}</pre>
+    </div>
+  </div>
+</div>

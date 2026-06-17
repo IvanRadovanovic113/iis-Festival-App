@@ -1,0 +1,59 @@
+<div class="offers-container"> <div class="header-row">
+    <div class="header-title-zone">
+      <h1>Negotiations</h1>
+      <p class="subtitle">Manage festival negotiations, fill conditions and create contracts</p>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-wrapper">
+      <input type="text" 
+             [(ngModel)]="searchTerm" 
+             (input)="onFilterChange()" 
+             placeholder="Search by performer or offer...">
+    </div>
+    
+    <select [(ngModel)]="selectedStatus" (change)="onFilterChange()" class="status-select">
+      <option value="">All Statuses</option>
+      @for (status of statuses; track status) {
+        <option [value]="status">{{ status }}</option>
+      }
+    </select>
+    <span class="totals-text">{{ negotiations.length }} negotiations total</span>
+  </div>
+
+  <table class="offers-table">
+    <thead>
+      <tr>
+        <th>PERFORMER</th>
+        <th>OFFER</th>
+        <th>CURRENT STATE</th>
+        <th>STATUS</th>
+        <th>STARTED</th>
+        <th>ACTIONS</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (n of negotiations; track n.id) {
+        <tr>
+          <td class="bold-text">{{ n.performerName }}</td>
+          <td>{{ n.offerTitle }}</td>
+          <td>{{ n.currentStateName }}</td>
+          <td>
+            <span class="status-badge" [class]="n.status.toLowerCase()">
+              {{ n.status }}
+            </span>
+          </td>
+          <td>{{ n.startedAt | date:'MMM d, y' }}</td>
+          <td>
+            <button class="btn-view" [routerLink]="['/negotiation-manager/negotiations', n.id]">View</button>
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="6" class="empty-state">No negotiations found.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
