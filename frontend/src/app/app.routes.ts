@@ -102,6 +102,12 @@ export const routes: Routes = [
         path: 'promotions',
         loadComponent: () =>
           import('./features/prodaja/promotions/promotions.component').then(m => m.PromotionsComponent)
+      },
+      {
+        path: 'performer-scheduling',
+        loadComponent: () =>
+          import('./features/manager/performer-scheduling/performer-scheduling-list/performer-scheduling-list.component')
+            .then(m => m.PerformerSchedulingListComponent)
       }
     ]
   },

@@ -1,0 +1,73 @@
+<div class="page">
+  <div class="page-header">
+    <h2>Performer Scheduling</h2>
+  </div>
+
+  @if (errorMessage) {
+    <div class="error-banner">{{ errorMessage }}</div>
+  }
+
+  @if (items.length === 0) {
+    <div class="empty-state">
+      <p>No signed contracts found.</p>
+    </div>
+  } @else {
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Performer</th>
+          <th>Contract ID</th>
+          <th>Status</th>
+          <th>Stage</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of items; track item.contractId) {
+          <tr>
+            <td class="performer-name">{{ item.performerName }}</td>
+            <td class="muted">#{{ item.contractId }}</td>
+            <td>
+              <span class="badge"
+                    [class.badge-not-assigned]="item.schedulingStatus === 'NOT_ASSIGNED'"
+                    [class.badge-stage-assigned]="item.schedulingStatus === 'STAGE_ASSIGNED'"
+                    [class.badge-time-assigned]="item.schedulingStatus === 'TIME_ASSIGNED'">
+                {{ statusLabel(item.schedulingStatus) }}
+              </span>
+            </td>
+            <td>
+              @if (item.schedulingStatus === 'NOT_ASSIGNED') {
+                <select class="stage-select"
+                        [(ngModel)]="selectedStageIds[item.contractId]">
+                  <option [ngValue]="undefined" disabled selected>Select stage...</option>
+                  @for (stage of stages; track stage.stageId) {
+                    <option [ngValue]="stage.stageId">{{ stage.name }}</option>
+                  }
+                </select>
+              } @else {
+                <span class="stage-name">{{ item.stageName }}</span>
+              }
+            </td>
+            <td class="actions">
+              @if (item.schedulingStatus === 'NOT_ASSIGNED') {
+                <button class="btn-save-sm"
+                        [disabled]="!selectedStageIds[item.contractId] || submittingId === item.contractId"
+                        (click)="assign(item)">
+                  {{ submittingId === item.contractId ? 'Saving...' : 'Assign' }}
+                </button>
+              } @else if (item.schedulingStatus === 'STAGE_ASSIGNED') {
+                <button class="btn-danger-sm"
+                        [disabled]="submittingId === item.contractId"
+                        (click)="remove(item)">
+                  {{ submittingId === item.contractId ? 'Removing...' : 'Remove' }}
+                </button>
+              } @else {
+                <span class="muted">—</span>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
