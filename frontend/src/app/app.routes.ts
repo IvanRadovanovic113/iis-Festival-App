@@ -365,6 +365,39 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/negotiation-manager/workflow-template/workflow-template-detail/workflow-template-detail.component')
             .then(m => m.WorkflowTemplateDetailComponent)
+      },
+
+      // Negotiations Modul
+
+      {
+        path: 'negotiations',
+        loadComponent: () =>
+          import('./features/negotiation-manager/negotiations/negotiation-list/negotiation-list.component')
+            .then(m => m.NegotiationListComponent)
+      },
+      {
+        path: 'negotiations/new',
+        loadComponent: () =>
+          import('./features/negotiation-manager/negotiations/negotiation-form/negotiation-form.component')
+            .then(m => m.NegotiationFormComponent)
+      },
+      {
+        path: 'negotiations/:id',
+        loadComponent: () =>
+          import('./features/negotiation-manager/negotiations/negotiation-detail/negotiation-detail.component')
+            .then(m => m.NegotiationDetailComponent)
+      },
+      {
+        path: 'contracts',
+        loadComponent: () =>
+          import('./features/negotiation-manager/contracts/contract-list/contract-list.component')
+            .then(m => m.ContractListComponent)
+      },
+      {
+        path: 'contracts/:id',
+        loadComponent: () =>
+          import('./features/negotiation-manager/contracts/contract-detail/contract-detail.component')
+            .then(m => m.ContractDetailComponent)
       }
     ]
   },

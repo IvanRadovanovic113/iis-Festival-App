@@ -68,6 +68,11 @@
             <div class="state-lock-message">
               ⚠️ You must <strong>Publish</strong> this offer first before you can register interested performers.
             </div>
+          } @else if (isFrozen()) {
+            <div class="state-lock-message">
+              🔒 This offer is <strong>Frozen</strong> because a negotiation is currently in progress. 
+              You cannot add or remove performers until the negotiation is concluded or fails.
+            </div>
           } @else {
             <p class="subtitle">Select a performer to start a negotiation</p>
             <hr>
@@ -87,7 +92,11 @@
                   <div class="row-actions">
                     <button class="btn-secondary-sm" [routerLink]="['/negotiation-manager/performers', perf.performerId]">View Profile</button>
                     <button class="btn-remove-sm" (click)="removePerformer(perf.performerId)">Remove</button>
-                    <button class="btn-dark-sm">Start Negotiation →</button>
+                    <button class="btn-dark-sm" 
+                            [routerLink]="['/negotiation-manager/negotiations/new']" 
+                            [queryParams]="{ offerId: offer.offerId, performerId: perf.performerId }">
+                      Start Negotiation →
+                    </button>
                   </div>
                 </div>
               }
