@@ -15,4 +15,6 @@ public class ConditionValueDto {
 
     @NotNull(message = "Value cannot be null.")
     private String value;
+
+    private String conditionLabel;
 }
