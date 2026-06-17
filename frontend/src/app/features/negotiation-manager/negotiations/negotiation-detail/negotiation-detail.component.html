@@ -1,0 +1,115 @@
+<div class="detail-container" *ngIf="negotiation">
+  <div class="header-row">
+    <div>
+      <span class="sub-title">NEGOTIATION › #{{ negotiation.id }}</span>
+      <h2>{{ negotiation.performerName }}</h2>
+    </div>
+    <div class="actions">
+       <button class="btn-cancel" routerLink="../">Back to List</button>
+    </div>
+  </div>
+
+  <div class="state-tracker-card">
+    <div class="tracker-item">
+      <span class="label">CURRENT STATE</span>
+      <span class="status-badge">{{ negotiation.currentState }}</span>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    <div class="left-column">
+      <div class="card">
+        <h3>Negotiation Context</h3>
+        <hr>
+        <div class="info-grid">
+          <div><label>OFFER</label><p>{{ negotiation.offerTitle }}</p></div>
+          <div><label>STATUS</label><p>{{ negotiation.status }}</p></div>
+          <div><label>LAST UPDATE</label><p>{{ negotiation.lastUpdated | date:'short' }}</p></div>
+        </div>
+      </div>
+
+      <div class="card" *ngIf="negotiation.enteredConditions.length > 0">
+        <h3>Current Conditions</h3>
+        <hr>
+        <div class="conditions-list">
+          <div *ngFor="let cond of negotiation.enteredConditions" class="condition-item">
+            <span class="cond-label">{{ cond.conditionLabel }}</span>
+            <span class="cond-value">{{ cond.value }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card input-card">
+        <h3>Workflow Actions</h3>
+        <hr>
+        
+        <div class="transition-buttons" style="margin-bottom: 20px;">
+          <button *ngFor="let trans of negotiation.availableTransitions" 
+                  class="btn-secondary" 
+                  (click)="selectTransition(trans)"
+                  [class.active]="selectedTransition?.id === trans.id">
+            {{ trans.label }}
+          </button>
+        </div>
+
+        <div *ngIf="selectedTransition" class="condition-form">
+          <h4>Conditions for: {{ selectedTransition.label }}</h4>
+          
+          <div *ngFor="let cond of selectedTransition.requiredConditions" class="form-group">
+            <label>{{ cond.label }} {{ cond.necessary ? '*' : '' }}</label>
+
+            <div [ngSwitch]="cond.dataType">
+              <div *ngSwitchCase="'BOOLEAN'" class="checkbox-group">
+                <input type="checkbox" [(ngModel)]="conditionInputs[cond.id]">
+                <span>Check to confirm</span>
+              </div>
+
+              <input *ngSwitchCase="'NUMBER'" type="number" 
+                    [(ngModel)]="conditionInputs[cond.id]" class="search-input">
+
+              <input *ngSwitchDefault [type]="cond.dataType === 'DATE' ? 'date' : 'text'" 
+                    [(ngModel)]="conditionInputs[cond.id]" class="search-input">
+            </div>
+          </div>
+
+          <button class="btn-primary" (click)="onTransition()">Confirm Transition</button>
+        </div>
+
+        <hr *ngIf="selectedTransition">
+
+        <div class="final-actions" style="display: flex; gap: 10px; margin-top: 20px;">
+          <button class="btn-primary" 
+                  [disabled]="!isFinalState()" 
+                  [class.disabled-btn]="!isFinalState()"
+                  (click)="completeNegotiation()">
+            Complete Negotiation
+          </button>
+          
+          <button class="btn-cancel" 
+                  *ngIf="negotiation.status === 'ACTIVE'" 
+                  (click)="failNegotiation()">
+            Fail Negotiation
+          </button>
+        </div>
+      </div>
+    </div>
+
+   <div class="right-column">
+      <div class="card">
+        <h3>History</h3>
+        <hr>
+        <table class="offers-table">
+          <thead>
+            <tr><th>State</th><th>Entered</th><th>Duration</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let h of negotiation.history">
+              <td><strong>{{ h.stateName }}</strong></td>
+              <td>{{ h.entryTime | date:'shortTime' }}</td>
+              <td>{{ h.duration || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+  </div>
+</div>

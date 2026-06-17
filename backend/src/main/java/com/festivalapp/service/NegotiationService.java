@@ -15,6 +15,13 @@ import org.springframework.web.server.ResponseStatusException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.stream.Collectors;
 import com.festivalapp.repository.NegotiationSpecification;
+import com.festivalapp.dto.TransitionDto;
+import com.festivalapp.dto.TransitionConditionResponse;
+import com.festivalapp.dto.NegotiationMapper;
+import com.festivalapp.dto.NegotiationDetailsResponse;
+import com.festivalapp.dto.FailReasonRequest;
+import java.util.ArrayList;
+import java.util.Map;
 
 import java.time.LocalDateTime;
 
@@ -91,16 +98,35 @@ public class NegotiationService {
     }
 
     @Transactional(readOnly = true)
-    public Negotiation getNegotiationDetails(Long negotiationId, User user) {
+    public NegotiationDetailsResponse getNegotiationDetails(Long negotiationId, User user) {
         Negotiation negotiation = negotiationRepository.findById(negotiationId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Negotiation not found"));
-            
-        // Provera vlasništva (samo menadžer koji je započeo može da vidi detalje - po zahtevu)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Negotiation not found"));
+
         if (!negotiation.getStartedBy().getId().equals(user.getId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not have access to this negotiation");
         }
-        
-        return negotiation;
+
+        var history = historyRepository.findByNegotiation_IdOrderByEntryTimeDesc(negotiationId);
+
+        var allConditions = negotiationConditionValueRepository.findByNegotiation_Id(negotiationId);
+        var uniqueConditions = new ArrayList<>(allConditions.stream()
+                .collect(Collectors.toMap(
+                        c -> c.getCondition().getId(),
+                        c -> c,
+                        (existing, replacement) -> existing.getEnteredAt().isAfter(replacement.getEnteredAt()) 
+                                                ? existing : replacement
+                )).values());
+
+        List<WorkflowTransition> possible = workflowTransitionRepository.findBySourceState_Id(negotiation.getCurrentState().getId());
+
+        List<TransitionDto> transitionDtos = possible.stream().map(t -> TransitionDto.builder()
+                .id(t.getId())
+                .label(t.getLabel())
+                .requiredConditions(t.getConditions().stream()
+                        .map(TransitionConditionResponse::from).collect(Collectors.toList()))
+                .build()).collect(Collectors.toList());
+
+        return NegotiationMapper.toDetailsResponse(negotiation, history, uniqueConditions, transitionDtos);
     }
 
     @Transactional
@@ -180,54 +206,76 @@ public class NegotiationService {
     }
 
     @Transactional
-    public void completeNegotiation(Long negotiationId, Long transitionId, User user) {
-        // 1. Prvo izvršimo tranziciju do finalnog stanja
-        TransitionRequest request = new TransitionRequest();
-        request.setTransitionId(transitionId);
-        transitionToNextState(negotiationId, request, user);
-        
-        Negotiation negotiation = negotiationRepository.findById(negotiationId).get();
-        
-        // 2. Provera da li je novo stanje zaista finalno
-        if (!negotiation.getCurrentState().isFinalState()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Negotiation must be in a final state to complete.");
+    public void completeNegotiation(Long negotiationId, User user) {
+        // 1. Provera ulaza
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not authenticated");
         }
 
-        // 3. Status pregovora -> COMPLETED
-        negotiation.setStatus(NegotiationStatus.COMPLETED);
-        negotiationRepository.save(negotiation);
+        // 2. Osvežavanje pregovora iz baze (osigurava da je u sesiji)
+        Negotiation negotiation = negotiationRepository.findById(negotiationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Negotiation not found"));
 
-        // 4. Kreiranje JSON snapshot-a svih uslova
-        // Ovde dohvatamo sve unete uslove za ovaj pregovor
-        List<NegotiationConditionValue> allConditions = negotiationConditionValueRepository.findByNegotiation_Id(negotiationId);
+            System.out.println("=== COMPLETE DEBUG ===");
+    System.out.println("user.getId() = " + user.getId());
+    System.out.println("startedBy.getId() = " + negotiation.getStartedBy().getId());
+    System.out.println("equals = " + negotiation.getStartedBy().getId().equals(user.getId()));
+    System.out.println("======================");
+
+        // 3. Sigurnosna provera
+        if (!negotiation.getStartedBy().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
+        }
+
+        // 4. Provera statusa pregovora (mora biti u finalnom stanju)
+        if (negotiation.getCurrentState() == null || !negotiation.getCurrentState().isFinalState()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Negotiation not in final state.");
+        }
         
+        // 5. Provera da li već postoji ugovor da izbegnemo grešku baze
+        // Ako bi ovo vratilo true, ne smemo praviti dupli ugovor
+        // (Ovo je opcionalno, zavisi da li dozvoljavaš ponovno potpisivanje)
+        
+        // 6. Priprema podataka za Snapshot
+        List<NegotiationConditionValue> allConditions = negotiationConditionValueRepository.findByNegotiation_Id(negotiationId);
         String snapshotJson = convertConditionsToJson(allConditions);
 
-        // 5. Kreiranje Ugovora
-        Contract contract = Contract.builder()
-                .negotiation(negotiation)
-                .signedBy(user) // Menadžer koji je završio pregovor
-                .conditionSnapshotJson(snapshotJson)
-                .signedAt(LocalDateTime.now())
-                .build();
+        // 7. Kreiranje i čuvanje Ugovora
+        Contract contract = new Contract();
+        contract.setNegotiation(negotiation);
+        contract.setSignedBy(user);
+        contract.setConditionSnapshotJson(snapshotJson);
+        contract.setSignedAt(LocalDateTime.now());
         
         contractRepository.save(contract);
 
-        // 6. Ponuda -> ACCEPTED
+        // 8. Status pregovora -> COMPLETED
+        negotiation.setStatus(NegotiationStatus.COMPLETED);
+        negotiationRepository.save(negotiation);
+
+        // 9. Status ponude -> ACCEPTED
         Offer offer = negotiation.getOffer();
-        offer.setStatus(OfferStatus.ACCEPTED);
-        offer.setAcceptedAt(LocalDateTime.now());
-        offerRepository.save(offer);
+        if (offer != null) {
+            offer.setStatus(OfferStatus.ACCEPTED);
+            offer.setAcceptedAt(LocalDateTime.now());
+            offerRepository.save(offer);
+        }
     }
 
     private String convertConditionsToJson(List<NegotiationConditionValue> conditions) {
         try {
             ObjectMapper mapper = new ObjectMapper();
-            // Kreiramo jednostavnu mapu ili DTO za JSON
-            return mapper.writeValueAsString(conditions.stream()
-                .collect(Collectors.toMap(c -> c.getCondition().getLabel(), NegotiationConditionValue::getValue)));
+            Map<String, String> snapshot = conditions.stream()
+                .collect(Collectors.toMap(
+                    c -> c.getCondition().getLabel(),
+                    NegotiationConditionValue::getValue,
+                    (existing, replacement) -> replacement
+                ));
+            return mapper.writeValueAsString(snapshot);
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to create contract snapshot");
+            e.printStackTrace();
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, 
+                "Failed to create contract snapshot: " + e.getMessage());
         }
     }
 

@@ -74,23 +74,6 @@
     </div>
 
     <div class="grid-col-right">
-      
-      <div class="panel-card spacing-bottom">
-        <div class="panel-header">
-          <h3>Recent Activity</h3>
-        </div>
-        <div class="activity-list">
-          @for (act of recentActivities; track act.text) {
-            <div class="activity-item">
-              <span class="activity-dot" [ngClass]="act.dotClass"></span>
-              <div class="activity-body">
-                <p [innerHTML]="act.text"></p>
-                <span class="activity-time">{{ act.time }}</span>
-              </div>
-            </div>
-          }
-        </div>
-      </div>
 
       <div class="panel-card">
         <div class="panel-header">

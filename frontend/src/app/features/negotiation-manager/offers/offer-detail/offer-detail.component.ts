@@ -140,4 +140,5 @@ export class OfferDetailComponent implements OnInit {
   isDraft() { return this.offer?.status === OfferStatus.DRAFT; }
   isPublished() { return this.offer?.status === OfferStatus.PUBLISHED; }
   isArchived() { return this.offer?.status === OfferStatus.ARCHIVED; }
+  isFrozen() { return this.offer?.status === 'FROZEN'; }
 }

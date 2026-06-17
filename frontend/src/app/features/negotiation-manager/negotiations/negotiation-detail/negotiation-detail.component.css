@@ -1,0 +1,183 @@
+/* Container i Header */
+.detail-container { padding: 8px 0; }
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.sub-title { font-size: 12px; color: #777; text-transform: uppercase; }
+.header-row h2 { font-size: 26px; font-weight: 700; margin: 4px 0 0 0; }
+.actions { display: flex; gap: 12px; }
+
+/* Grid Raspored */
+.main-grid {
+  display: grid;
+  grid-template-columns: 2.2fr 1fr;
+  gap: 24px;
+}
+
+.left-column, .right-column { display: flex; flex-direction: column; gap: 24px; }
+
+/* Kartice */
+.card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.card h3 { font-size: 16px; font-weight: 600; margin: 0 0 16px 0; color: #111; }
+hr { border: 0; border-top: 1px solid #eee; margin: 0 0 20px 0; }
+
+/* Info Grid (Unutar kartica) */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.info-grid label { font-size: 11px; font-weight: 600; color: #888; display: block; margin-bottom: 4px; }
+.info-grid p { margin: 0; font-size: 14px; font-weight: 500; color: #111; }
+
+/* Forma za uslove */
+.form-group { margin-bottom: 15px; }
+.form-group label { font-size: 12px; color: #666; margin-bottom: 5px; display: block; }
+.search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+/* Istorija tabela */
+.offers-table { width: 100%; border-collapse: collapse; }
+.offers-table td { padding: 12px 0; border-bottom: 1px solid #f5f5f5; font-size: 13px; }
+
+/* Dugmad */
+.btn-primary {
+  background-color: #1a1a1a;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.btn-cancel {
+  background-color: #fff;
+  color: #d32f2f;
+  border: 1px solid #ffcdd2;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Status Badge */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* Tracker (opciono ako želiš da zadržiš vizuelni flow) */
+.state-tracker-card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 16px 24px;
+  display: flex;
+  margin-bottom: 24px;
+}
+.tracker-item .label { font-size: 10px; color: #777; display: block; }
+
+/* Workflow Actions Dugmad */
+.transition-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-secondary {
+  background-color: #f0f0f0;
+  color: #333;
+  border: 1px solid #ddd;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover { background-color: #e0e0e0; }
+
+.btn-secondary.active {
+  background-color: #1a1a1a;
+  color: #fff;
+  border-color: #1a1a1a;
+}
+
+/* Styling za unesene uslove */
+.conditions-list { display: flex; flex-direction: column; gap: 8px; }
+.condition-item { 
+  display: flex; 
+  justify-content: space-between; 
+  padding: 8px; 
+  background: #f9f9f9; 
+  border-radius: 4px; 
+  font-size: 13px; 
+}
+
+/* Bolja tabela istorije */
+.offers-table th { font-size: 11px; color: #888; text-transform: uppercase; padding-bottom: 8px; }
+.offers-table td { padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 13px; }
+
+/* Checkbox stil za boolean uslove */
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.conditions-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.condition-item {
+  padding: 8px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  border: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+}
+
+.cond-label {
+  font-size: 11px;
+  color: #666;
+  font-weight: 600;
+}
+
+.cond-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #333;
+}
+
+.btn-primary:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
