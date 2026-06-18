@@ -22,6 +22,8 @@ import com.festivalapp.dto.NegotiationDetailsResponse;
 import com.festivalapp.dto.FailReasonRequest;
 import java.util.ArrayList;
 import java.util.Map;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDateTime;
 
@@ -322,12 +324,18 @@ public class NegotiationService {
         
         requireNegotiationManager(user.getId());
 
+        Pageable sortedPageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(Sort.Direction.DESC, "id")
+        );
+
         return negotiationRepository.findAll(
-            NegotiationSpecification.hasStatus(status)
-            .and(NegotiationSpecification.hasPerformerId(performerId))
-            .and(NegotiationSpecification.hasOfferId(offerId))
-            .and(NegotiationSpecification.hasCurrentStateId(stateId)), 
-            pageable
+                NegotiationSpecification.hasStatus(status)
+                .and(NegotiationSpecification.hasPerformerId(performerId))
+                .and(NegotiationSpecification.hasOfferId(offerId))
+                .and(NegotiationSpecification.hasCurrentStateId(stateId)), 
+                sortedPageable
         );
     }
 }
