@@ -9,15 +9,25 @@ import java.util.Comparator;
 
 public class NegotiationMapper {
 
-    public static NegotiationResponse toResponse(Negotiation n) {
+public static NegotiationResponse toResponse(Negotiation n) {
+
+    LocalDateTime startedAt = null;
+    if (n.getHistory() != null && !n.getHistory().isEmpty()) {
+        startedAt = n.getHistory().stream()
+                .map(NegotiationStateHistory::getEntryTime)
+                .min(Comparator.naturalOrder())
+                .orElse(null);
+    }
+
     return NegotiationResponse.builder()
         .id(n.getId())
         .performerName(n.getPerformer().getStageName())
         .offerTitle(n.getOffer().getLocation())
         .currentStateName(n.getCurrentState().getName())
         .status(n.getStatus())
+        .startedAt(startedAt)
         .build();
-    }
+}
 
     public static NegotiationDetailsResponse toDetailsResponse(Negotiation n, List<NegotiationStateHistory> history, List<NegotiationConditionValue> conditions, List<TransitionDto> transitions) {
 
