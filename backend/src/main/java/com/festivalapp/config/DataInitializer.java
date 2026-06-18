@@ -377,29 +377,13 @@ public class DataInitializer implements ApplicationRunner {
         ensureRequestResources(djSnake, List.of(sound, lights, specialFx));
         ensureCustomRequestResource(djSnake, "Hologram projector", "Equipment", 1);
 
-        EventReservationRequest bicep = ensureReservation(festival, stageTwo, "Bicep",
-            LocalDate.of(2026, 6, 22), LocalTime.of(22, 0), LocalTime.of(23, 0), EventReservationStatus.APPROVED, "Approved electronic set");
-        ensureRequestResources(bicep, List.of(sound, lights, technicians, specialFx));
-
-        EventReservationRequest massiveAttack = ensureReservation(festival, vipStage, "Massive Attack",
-            LocalDate.of(2026, 6, 21), LocalTime.of(21, 0), LocalTime.of(21, 55), EventReservationStatus.PENDING, "VIP stage request");
-        ensureRequestResources(massiveAttack, List.of(sound, lights, screens));
-
         EventReservationRequest florence = ensureReservation(festival, mainStage, "Florence + The Machine",
             LocalDate.of(2026, 6, 23), LocalTime.of(20, 30), LocalTime.of(21, 45), EventReservationStatus.PENDING, "Indie rock headline request");
         ensureRequestResources(florence, List.of(sound, lights, screens, security, technicians));
 
-        EventReservationRequest disclosure = ensureReservation(festival, stageTwo, "Disclosure",
-            LocalDate.of(2026, 6, 23), LocalTime.of(22, 0), LocalTime.of(23, 0), EventReservationStatus.PENDING, "Electronic live set request");
-        ensureRequestResources(disclosure, List.of(sound, lights, specialFx, technicians));
-
         EventReservationRequest sigrid = ensureReservation(festival, smallStage, "Sigrid",
             LocalDate.of(2026, 6, 24), LocalTime.of(18, 30), LocalTime.of(19, 20), EventReservationStatus.PENDING, "Pop showcase request");
         ensureRequestResources(sigrid, List.of(sound, lights, technicians));
-
-        EventReservationRequest kaytranada = ensureReservation(festival, vipStage, "Kaytranada",
-            LocalDate.of(2026, 6, 24), LocalTime.of(21, 0), LocalTime.of(22, 0), EventReservationStatus.PENDING, "VIP dance set request");
-        ensureRequestResources(kaytranada, List.of(sound, lights, specialFx));
 
         EventReservationRequest lorde = ensureReservation(festival, mainStage, "Lorde",
             LocalDate.of(2026, 6, 25), LocalTime.of(19, 45), LocalTime.of(20, 45), EventReservationStatus.PENDING, "Alternative pop performance request");
@@ -444,6 +428,28 @@ public class DataInitializer implements ApplicationRunner {
         EventReservationRequest trisha = ensureReservation(festival, stageTwo, "Thrisha Paytas",
             LocalDate.of(2026, 5, 6), LocalTime.of(19, 0), LocalTime.of(20, 15), EventReservationStatus.APPROVED, "Past performance");
         ensureRequestResources(trisha, List.of(sound, lights, technicians));
+
+        // Procurement test: shareable resource with totalQuantity=2, already fully consumed at 20:00-21:00 on Jul 10
+        EventResource confettiCannon = eventResourceRepository
+            .findByFestival_FestivalIdOrderByNameAsc(festival.getFestivalId()).stream()
+            .filter(r -> r.getName().equalsIgnoreCase("Confetti cannon"))
+            .findFirst()
+            .orElseGet(() -> eventResourceRepository.save(EventResource.builder()
+                .name("Confetti cannon")
+                .type("Special FX")
+                .description("totalQuantity=2, shareable – use to test PROCUREMENT task creation")
+                .totalQuantity(2)
+                .shareable(true)
+                .festival(festival)
+                .build()));
+
+        EventReservationRequest amaarae = ensureReservation(festival, mainStage, "Amaarae",
+            LocalDate.of(2026, 7, 10), LocalTime.of(20, 0), LocalTime.of(21, 0), EventReservationStatus.APPROVED, "Procurement baseline – consumes confetti cannon slot 1");
+        ensureRequestResources(amaarae, List.of(confettiCannon));
+
+        EventReservationRequest arca = ensureReservation(festival, stageTwo, "Arca",
+            LocalDate.of(2026, 7, 10), LocalTime.of(20, 0), LocalTime.of(21, 0), EventReservationStatus.APPROVED, "Procurement baseline – consumes confetti cannon slot 2");
+        ensureRequestResources(arca, List.of(confettiCannon));
 
         log.info("Event organization reservation requests seeded");
     }
@@ -723,11 +729,6 @@ public class DataInitializer implements ApplicationRunner {
     // ─── Demo contracts for performer manager ────────────────────────────────
 
     private void seedNegotiationsAndContracts() {
-        if (contractRepository.count() > 0) {
-            log.info("Demo contracts seed skipped – contracts already exist");
-            return;
-        }
-
         Festival festival = festivalRepository.findAll().stream().findFirst().orElse(null);
         if (festival == null) {
             return;
@@ -779,6 +780,60 @@ public class DataInitializer implements ApplicationRunner {
         seedDemoContract(negotiationManager, template, finalState, vipStage, festival,
             "Bicep", "Electronic", PerformerPopularity.POPULAR, 60, "United Kingdom",
             LocalDateTime.of(2026, 6, 22, 22, 0), 60);
+        seedDemoContract(negotiationManager, template, finalState, mainStage, festival,
+            "Gorillaz", "Alternative", PerformerPopularity.HEADLINER, 90, "United Kingdom",
+            LocalDateTime.of(2026, 6, 20, 20, 0), 75);
+        seedDemoContract(negotiationManager, template, finalState, stageTwo, festival,
+            "Four Tet", "Electronic", PerformerPopularity.POPULAR, 60, "United Kingdom",
+            LocalDateTime.of(2026, 6, 25, 21, 0), 60);
+        seedDemoContract(negotiationManager, template, finalState, smallStage, festival,
+            "Peggy Gou", "Electronic", PerformerPopularity.POPULAR, 75, "South Korea",
+            LocalDateTime.of(2026, 6, 26, 22, 0), 60);
+        seedDemoContract(negotiationManager, template, finalState, vipStage, festival,
+            "Fred Again", "Electronic", PerformerPopularity.EMERGING, 60, "United Kingdom",
+            LocalDateTime.of(2026, 6, 27, 21, 0), 60);
+        seedDemoContract(negotiationManager, template, finalState, stageTwo, festival,
+            "Jamie xx", "Electronic", PerformerPopularity.POPULAR, 60, "United Kingdom",
+            LocalDateTime.of(2026, 6, 28, 20, 0), 60);
+        seedDemoContract(negotiationManager, template, finalState, smallStage, festival,
+            "Caribou", "Electronic", PerformerPopularity.EMERGING, 60, "Canada",
+            LocalDateTime.of(2026, 6, 29, 19, 0), 60);
+        seedDemoContract(negotiationManager, template, finalState, mainStage, festival,
+            "Aphex Twin", "Electronic", PerformerPopularity.HEADLINER, 90, "United Kingdom",
+            LocalDateTime.of(2026, 7, 1, 22, 0), 75);
+        seedDemoContract(negotiationManager, template, finalState, stageTwo, festival,
+            "Bonobo", "Electronic", PerformerPopularity.POPULAR, 75, "United Kingdom",
+            LocalDateTime.of(2026, 7, 2, 20, 0), 60);
+        seedDemoContract(negotiationManager, template, finalState, vipStage, festival,
+            "Nicolas Jaar", "Electronic", PerformerPopularity.POPULAR, 90, "United States",
+            LocalDateTime.of(2026, 7, 3, 21, 0), 75);
+        seedDemoContract(negotiationManager, template, finalState, smallStage, festival,
+            "Glass Animals", "Indie", PerformerPopularity.POPULAR, 75, "United Kingdom",
+            LocalDateTime.of(2026, 7, 4, 19, 0), 60);
+        seedDemoContract(negotiationManager, template, finalState, mainStage, festival,
+            "Moderat", "Electronic", PerformerPopularity.POPULAR, 80, "Germany",
+            LocalDateTime.of(2026, 7, 5, 21, 0), 75);
+        seedDemoContract(negotiationManager, template, finalState, stageTwo, festival,
+            "Jon Hopkins", "Electronic", PerformerPopularity.EMERGING, 60, "United Kingdom",
+            LocalDateTime.of(2026, 7, 6, 20, 0), 60);
+
+        // Procurement test contracts – Jul 10, Main Stage and Stage 2 are occupied 20:00-21:00 by Amaarae/Arca
+        // Schedule these at 20:00 and request Confetti cannon → both units already CONFIRMED → PROCUREMENT task
+        seedDemoContract(negotiationManager, template, finalState, smallStage, festival,
+            "Burial", "Electronic", PerformerPopularity.POPULAR, 60, "United Kingdom",
+            LocalDateTime.of(2026, 7, 10, 20, 0), 60);
+        seedDemoContract(negotiationManager, template, finalState, vipStage, festival,
+            "Actress", "Electronic", PerformerPopularity.EMERGING, 60, "United Kingdom",
+            LocalDateTime.of(2026, 7, 10, 20, 0), 60);
+        seedDemoContract(negotiationManager, template, finalState, smallStage, festival,
+            "HEALTH", "Industrial", PerformerPopularity.EMERGING, 60, "United States",
+            LocalDateTime.of(2026, 7, 10, 21, 0), 60);
+        seedDemoContract(negotiationManager, template, finalState, vipStage, festival,
+            "Objekt", "Electronic", PerformerPopularity.EMERGING, 60, "Germany",
+            LocalDateTime.of(2026, 7, 10, 22, 0), 60);
+        seedDemoContract(negotiationManager, template, finalState, smallStage, festival,
+            "Sega Bodega", "Electronic", PerformerPopularity.EMERGING, 60, "United Kingdom",
+            LocalDateTime.of(2026, 7, 10, 22, 0), 60);
 
         log.info("Demo contracts seeded for performer manager view");
     }

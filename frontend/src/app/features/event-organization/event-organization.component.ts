@@ -569,14 +569,12 @@ export class EventOrganizationComponent implements OnInit {
       startTime: this.selectedScheduleStart
     }).subscribe({
       next: request => {
-        this.confirmedReservation = request;
-        this.confirmedReservationTasks = [];
         this.successMessage = 'Reservation confirmed.';
         this.timetableMode = 'static';
         this.selectedScheduleStart = null;
         this.reloadReservationRequests(request.id);
         this.loadTimetable();
-        this.loadTasksForConfirmation(request.id);
+        this.loadTasksForConfirmation(request);
       },
       error: err => this.errorMessage = err.error?.message || 'Unable to reserve selected time slot.'
     });
@@ -671,14 +669,16 @@ export class EventOrganizationComponent implements OnInit {
     });
   }
 
-  private loadTasksForConfirmation(reservationRequestId: number): void {
+  private loadTasksForConfirmation(reservation: EventReservationRequest): void {
     this.taskService.getTasks().subscribe({
       next: tasks => {
         this.tasks = tasks;
-        this.confirmedReservationTasks = tasks.filter(task => task.reservationRequestId === reservationRequestId);
+        this.confirmedReservationTasks = tasks.filter(task => task.reservationRequestId === reservation.id);
+        this.confirmedReservation = reservation;
       },
       error: () => {
         this.confirmedReservationTasks = [];
+        this.confirmedReservation = reservation;
         this.errorMessage = 'Reservation confirmed, but tasks could not be loaded.';
       }
     });

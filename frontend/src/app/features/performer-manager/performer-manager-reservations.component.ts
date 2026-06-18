@@ -136,9 +136,10 @@ export class PerformerManagerReservationsComponent implements OnInit {
   private validateExistingResources(resources: { resourceId: number; quantity: number }[]): boolean {
     if (!this.selectedContract) return false;
     for (const resource of resources) {
-      const stageResource = this.selectedContract.stageResources.find(item => item.resourceId === resource.resourceId);
-      if (!stageResource || resource.quantity < 1 || resource.quantity > stageResource.quantity) {
-        this.errorMessage = 'Requested stage resource quantities must fit the available stage inventory.';
+      const stageResource = this.selectedContract.stageResources.find(r => r.resourceId === resource.resourceId);
+      const max = stageResource?.totalQuantity ?? Infinity;
+      if (resource.quantity < 1 || resource.quantity > max) {
+        this.errorMessage = `Requested quantity for ${stageResource?.resourceName ?? 'resource'} must be between 1 and ${max}.`;
         return false;
       }
     }

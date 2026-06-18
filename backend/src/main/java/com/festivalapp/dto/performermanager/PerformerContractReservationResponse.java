@@ -3,11 +3,13 @@ package com.festivalapp.dto.performermanager;
 import com.festivalapp.dto.eventorganization.StageResourceResponse;
 import com.festivalapp.model.Contract;
 import com.festivalapp.model.PerformerSchedulingStatus;
+import com.festivalapp.model.eventorganization.EventResource;
 import com.festivalapp.model.eventorganization.EventReservationRequest;
 import com.festivalapp.model.eventorganization.EventReservationStatus;
 import com.festivalapp.model.eventorganization.StageResource;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 public record PerformerContractReservationResponse(
@@ -26,11 +28,16 @@ public record PerformerContractReservationResponse(
     public static PerformerContractReservationResponse from(
             Contract contract,
             EventReservationRequest reservationRequest,
-            List<StageResource> stageResources) {
+            List<StageResource> stageResources,
+            List<EventResource> additionalShareable) {
         var negotiation = contract.getNegotiation();
         var offer = negotiation.getOffer();
         var performer = negotiation.getPerformer();
         var stage = contract.getStage();
+
+        List<StageResourceResponse> resources = new ArrayList<>();
+        stageResources.forEach(sr -> resources.add(StageResourceResponse.from(sr)));
+        additionalShareable.forEach(r -> resources.add(StageResourceResponse.fromEventResource(r)));
 
         return new PerformerContractReservationResponse(
             contract.getId(),
@@ -43,7 +50,7 @@ public record PerformerContractReservationResponse(
             contract.getSchedulingStatus(),
             reservationRequest == null ? null : reservationRequest.getId(),
             reservationRequest == null ? null : reservationRequest.getStatus(),
-            stageResources.stream().map(StageResourceResponse::from).toList()
+            resources
         );
     }
 }

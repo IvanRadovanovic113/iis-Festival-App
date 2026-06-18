@@ -8,6 +8,7 @@ import java.util.Optional;
 
 public interface EventResourceRepository extends JpaRepository<EventResource, Long> {
     List<EventResource> findByFestival_FestivalIdOrderByNameAsc(Long festivalId);
+    List<EventResource> findByFestival_FestivalIdAndShareableTrueOrderByNameAsc(Long festivalId);
     Optional<EventResource> findByFestival_FestivalIdAndNameIgnoreCaseAndTypeIgnoreCaseAndShareable(
         Long festivalId,
         String name,

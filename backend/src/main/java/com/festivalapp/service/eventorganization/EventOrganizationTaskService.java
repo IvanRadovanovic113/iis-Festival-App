@@ -9,13 +9,10 @@ import com.festivalapp.model.eventorganization.EventOrganizationTask;
 import com.festivalapp.model.eventorganization.EventOrganizationTaskStatus;
 import com.festivalapp.model.eventorganization.EventOrganizationTaskType;
 import com.festivalapp.model.eventorganization.EventReservationRequest;
-import com.festivalapp.model.eventorganization.EventResource;
 import com.festivalapp.model.eventorganization.RequestResource;
 import com.festivalapp.model.eventorganization.RequestResourceStatus;
-import com.festivalapp.model.eventorganization.StageResource;
 import com.festivalapp.repository.eventorganization.EventOrganizationTaskRepository;
 import com.festivalapp.repository.eventorganization.RequestResourceRepository;
-import com.festivalapp.repository.eventorganization.StageResourceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -32,7 +29,6 @@ public class EventOrganizationTaskService {
 
     private final EventOrganizationTaskRepository taskRepository;
     private final RequestResourceRepository requestResourceRepository;
-    private final StageResourceRepository stageResourceRepository;
     private final EventOrganizationAccessService accessService;
 
     @Transactional
@@ -94,7 +90,11 @@ public class EventOrganizationTaskService {
     public void createTasksForReservation(EventReservationRequest reservation) {
         List<RequestResource> resources = requestResourceRepository.findByReservationRequest_IdOrderByResource_NameAsc(reservation.getId());
         for (RequestResource requestResource : resources) {
-            if (!needsTask(requestResource)) continue;
+            if (!needsTask(requestResource)) {
+                requestResource.setStatus(RequestResourceStatus.CONFIRMED);
+                requestResourceRepository.save(requestResource);
+                continue;
+            }
             if (taskRepository.existsByRequestResource_Id(requestResource.getId())) continue;
             taskRepository.save(EventOrganizationTask.builder()
                 .requestResource(requestResource)
@@ -117,62 +117,25 @@ public class EventOrganizationTaskService {
         return task;
     }
 
-    // Provera da za resurs treba da se kreira task
-    private boolean needsTask(RequestResource requestResource) {
-        // ne treba task
-        if (requestResource.getStatus() == RequestResourceStatus.CONFIRMED) {
-            return false;
-        }
-        // NON-EXISTING
-        if (requestResource.getResource() == null) {
-            return true;
-        }
-        //PROCUREMENT
-        if (requestResource.getStatus() == RequestResourceStatus.UNAVAILABLE) {
-            return true;
-        }
-        // PROCUREMENT 
-        return !canFulfill(requestResource);
-    }
-
-    // Da li moze da se pozajmi resurs sa neke druge bine
-    private boolean canFulfill(RequestResource requestResource) {
-        EventReservationRequest reservationRequest = requestResource.getReservationRequest();
-        EventResource resource = requestResource.getResource();
-        if (resource == null) {
-            return false;
-        }
-        Integer overlappingQuantity = requestResourceRepository.sumOverlappingQuantityByResource(
-            resource.getId(),
-            reservationRequest.getId(),
-            reservationRequest.getPerformanceDate(),
-            reservationRequest.getStartTime(),
-            reservationRequest.getEndTime(),
-            RequestResourceStatus.CONFIRMED
-        );
-        int availableQuantity = resource.getTotalQuantity() - overlappingQuantity;
-        if (availableQuantity < requestResource.getQuantity()) {
-            return false;
-        }
-
-        boolean assignedToReservationStage = stageResourceRepository
-            .findByStage_StageIdAndResource_Id(reservationRequest.getStage().getStageId(), resource.getId())
-            .filter(stageResource -> stageResource.getQuantity() >= requestResource.getQuantity())
-            .isPresent();
-        if (assignedToReservationStage) {
-            return true;
-        }
-        if (!Boolean.TRUE.equals(resource.getShareable())) {
-            return false;
-        }
-
-        return stageResourceRepository.findByResource_Id(resource.getId()).stream()
-            .anyMatch(sr -> !sr.getStage().getStageId().equals(reservationRequest.getStage().getStageId()));
-    }
-
     // HELPERI
 
-    // Odredjivanje tipa taska
+    private boolean needsTask(RequestResource requestResource) {
+        if (requestResource.getResource() == null) {
+            return true; // custom resurs, uvek kreira task
+        }
+        EventReservationRequest reservation = requestResource.getReservationRequest();
+        Integer confirmed = requestResourceRepository.sumOverlappingQuantityByResource(
+            requestResource.getResource().getId(),
+            reservation.getId(),
+            reservation.getPerformanceDate(),
+            reservation.getStartTime(),
+            reservation.getEndTime(),
+            RequestResourceStatus.CONFIRMED
+        );
+        int available = requestResource.getResource().getTotalQuantity() - (confirmed != null ? confirmed : 0);
+        return available < requestResource.getQuantity();
+    }
+
     private EventOrganizationTaskType resolveTaskType(RequestResource requestResource) {
         return requestResource.getResource() == null
             ? EventOrganizationTaskType.NON_EXISTING

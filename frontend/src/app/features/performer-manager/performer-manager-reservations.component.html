@@ -88,9 +88,9 @@
             </div>
           } @else {
             <section class="resource-section">
-              <h3>Stage resources</h3>
+              <h3>Resources</h3>
               @if (!selectedContract.stageResources.length) {
-                <p class="muted">This stage has no assigned resources yet.</p>
+                <p class="muted">No resources available for this festival.</p>
               }
 
               @for (resource of selectedContract.stageResources; track resource.resourceId) {
@@ -101,12 +101,12 @@
                     (change)="toggleResource(resource.resourceId, $any($event.target).checked)">
                   <span>
                     <strong>{{ resource.resourceName }}</strong>
-                    <small>{{ resource.resourceType }} · available on stage: {{ resource.quantity }}</small>
+                    <small>{{ resource.resourceType }} · max: {{ resource.totalQuantity }}</small>
                   </span>
                   <input
                     type="number"
                     min="1"
-                    [max]="resource.quantity"
+                    [max]="resource.totalQuantity"
                     [disabled]="!selectedResources[resource.resourceId]"
                     [ngModel]="resourceQuantities[resource.resourceId]"
                     (ngModelChange)="resourceQuantities[resource.resourceId] = $event">

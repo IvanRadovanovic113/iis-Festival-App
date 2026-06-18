@@ -14,10 +14,11 @@ import java.util.Optional;
 
 public interface RequestResourceRepository extends JpaRepository<RequestResource, Long> {
     @Query("""
-        select requestResource
-        from RequestResource requestResource
-        where requestResource.reservationRequest.id = :reservationRequestId
-        order by lower(coalesce(requestResource.resource.name, requestResource.requestedName)) asc
+        select rr
+        from RequestResource rr
+        left join rr.resource res
+        where rr.reservationRequest.id = :reservationRequestId
+        order by lower(coalesce(res.name, rr.requestedName)) asc
     """)
     List<RequestResource> findByReservationRequest_IdOrderByResource_NameAsc(@Param("reservationRequestId") Long reservationRequestId);
 

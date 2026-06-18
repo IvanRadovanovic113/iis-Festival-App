@@ -11,6 +11,7 @@ import com.festivalapp.model.NegotiationStatus;
 import com.festivalapp.model.Role;
 import com.festivalapp.model.User;
 import com.festivalapp.model.UserFestivalAssignment;
+import com.festivalapp.model.eventorganization.EventResource;
 import com.festivalapp.model.eventorganization.EventReservationRequest;
 import com.festivalapp.model.eventorganization.EventReservationStatus;
 import com.festivalapp.model.eventorganization.RequestResource;
@@ -18,6 +19,7 @@ import com.festivalapp.model.eventorganization.RequestResourceStatus;
 import com.festivalapp.model.eventorganization.StageResource;
 import com.festivalapp.repository.ContractRepository;
 import com.festivalapp.repository.UserFestivalAssignmentRepository;
+import com.festivalapp.repository.eventorganization.EventResourceRepository;
 import com.festivalapp.repository.eventorganization.EventReservationRequestRepository;
 import com.festivalapp.repository.eventorganization.RequestResourceRepository;
 import com.festivalapp.repository.eventorganization.StageResourceRepository;
@@ -32,6 +34,7 @@ import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +43,7 @@ public class PerformerManagerReservationService {
     private final ContractRepository contractRepository;
     private final EventReservationRequestRepository reservationRequestRepository;
     private final RequestResourceRepository requestResourceRepository;
+    private final EventResourceRepository eventResourceRepository;
     private final StageResourceRepository stageResourceRepository;
     private final UserFestivalAssignmentRepository assignmentRepository;
 
@@ -47,12 +51,26 @@ public class PerformerManagerReservationService {
     public List<PerformerContractReservationResponse> getContracts(User user) {
         Festival festival = requirePerformerManagerFestival(user);
 
+        List<EventResource> allShareable = eventResourceRepository
+            .findByFestival_FestivalIdAndShareableTrueOrderByNameAsc(festival.getFestivalId());
+
         return contractRepository.findCompletedStageAssignedByFestival(festival.getFestivalId()).stream()
-            .map(contract -> PerformerContractReservationResponse.from(
-                contract,
-                reservationRequestRepository.findByContract_Id(contract.getId()).orElse(null),
-                stageResourceRepository.findByStage_StageIdOrderByResource_NameAsc(contract.getStage().getStageId())
-            ))
+            .map(contract -> {
+                List<StageResource> stageResources = stageResourceRepository
+                    .findByStage_StageIdOrderByResource_NameAsc(contract.getStage().getStageId());
+                Set<Long> stageResourceIds = stageResources.stream()
+                    .map(sr -> sr.getResource().getId())
+                    .collect(Collectors.toSet());
+                List<EventResource> additionalShareable = allShareable.stream()
+                    .filter(r -> !stageResourceIds.contains(r.getId()))
+                    .toList();
+                return PerformerContractReservationResponse.from(
+                    contract,
+                    reservationRequestRepository.findByContract_Id(contract.getId()).orElse(null),
+                    stageResources,
+                    additionalShareable
+                );
+            })
             .toList();
     }
 
@@ -95,23 +113,32 @@ public class PerformerManagerReservationService {
     }
 
     private void saveRequestedResources(EventReservationRequest reservationRequest, CreateContractReservationRequest request) {
+        Festival festival = reservationRequest.getFestival();
         Set<Long> existingResourceIds = new HashSet<>();
         for (ContractReservationResourceRequest resourceRequest : safeExistingResources(request)) {
             if (!existingResourceIds.add(resourceRequest.getResourceId())) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Resource is requested more than once");
             }
 
-            StageResource stageResource = stageResourceRepository
-                .findByStage_StageIdAndResource_Id(reservationRequest.getStage().getStageId(), resourceRequest.getResourceId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Resource is not available on the agreed stage"));
+            EventResource resource = eventResourceRepository.findById(resourceRequest.getResourceId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Resource not found"));
 
-            if (resourceRequest.getQuantity() > stageResource.getQuantity()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Requested quantity exceeds stage resource quantity");
+            if (!resource.getFestival().getFestivalId().equals(festival.getFestivalId())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Resource does not belong to your festival");
+            }
+            boolean isOnStage = stageResourceRepository.existsByStage_StageIdAndResource_Id(
+                reservationRequest.getStage().getStageId(), resource.getId());
+            if (!isOnStage && !Boolean.TRUE.equals(resource.getShareable())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Resource is not available for this reservation");
+            }
+            if (resourceRequest.getQuantity() < 1 || resourceRequest.getQuantity() > resource.getTotalQuantity()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Quantity must be between 1 and " + resource.getTotalQuantity());
             }
 
             requestResourceRepository.save(RequestResource.builder()
                 .reservationRequest(reservationRequest)
-                .resource(stageResource.getResource())
+                .resource(resource)
                 .quantity(resourceRequest.getQuantity())
                 .status(RequestResourceStatus.REQUESTED)
                 .build());
