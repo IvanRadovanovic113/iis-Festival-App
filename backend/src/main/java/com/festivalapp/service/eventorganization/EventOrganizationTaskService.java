@@ -9,7 +9,6 @@ import com.festivalapp.model.eventorganization.EventOrganizationTask;
 import com.festivalapp.model.eventorganization.EventOrganizationTaskStatus;
 import com.festivalapp.model.eventorganization.EventOrganizationTaskType;
 import com.festivalapp.model.eventorganization.EventReservationRequest;
-import com.festivalapp.model.eventorganization.EventReservationStatus;
 import com.festivalapp.model.eventorganization.EventResource;
 import com.festivalapp.model.eventorganization.RequestResource;
 import com.festivalapp.model.eventorganization.RequestResourceStatus;
@@ -39,7 +38,6 @@ public class EventOrganizationTaskService {
     @Transactional
     public List<EventOrganizationTaskResponse> getTasks(EventOrganizationTaskStatus status, User user) {
         Festival festival = accessService.requireEventOrganizerFestival(user);
-        syncOpenTasks(festival);
 
         List<EventOrganizationTask> tasks;
         if (festival == null) {
@@ -93,25 +91,21 @@ public class EventOrganizationTaskService {
     }
 
     @Transactional
-    public void syncOpenTasks(Festival festival) {
-        List<RequestResource> requestResources = festival == null
-            ? requestResourceRepository.findAll()
-            : requestResourceRepository.findByReservationRequest_Festival(festival);
-
-        requestResources.stream()
-            .filter(requestResource -> requestResource.getReservationRequest().getStatus() == EventReservationStatus.APPROVED)
-            .filter(this::needsTask)
-            .filter(requestResource -> !taskRepository.existsByRequestResource_Id(requestResource.getId()))
-            .map(requestResource -> EventOrganizationTask.builder()
+    public void createTasksForReservation(EventReservationRequest reservation) {
+        List<RequestResource> resources = requestResourceRepository.findByReservationRequest_IdOrderByResource_NameAsc(reservation.getId());
+        for (RequestResource requestResource : resources) {
+            if (!needsTask(requestResource)) continue;
+            if (taskRepository.existsByRequestResource_Id(requestResource.getId())) continue;
+            taskRepository.save(EventOrganizationTask.builder()
                 .requestResource(requestResource)
                 .type(resolveTaskType(requestResource))
                 .status(EventOrganizationTaskStatus.OPEN)
                 .title(taskTitle(requestResource))
-                .performerName(requestResource.getReservationRequest().getPerformerName())
-                .stageName(requestResource.getReservationRequest().getStage().getName())
+                .performerName(reservation.getPerformerName())
+                .stageName(reservation.getStage().getName())
                 .deadline(taskDeadline(requestResource))
-                .build())
-            .forEach(taskRepository::save);
+                .build());
+        }
     }
 
     private EventOrganizationTask requireTask(Long taskId, Festival festival) {
@@ -173,8 +167,7 @@ public class EventOrganizationTaskService {
         }
 
         return stageResourceRepository.findByResource_Id(resource.getId()).stream()
-            .filter(stageResource -> !stageResource.getStage().getStageId().equals(reservationRequest.getStage().getStageId()))
-            .anyMatch(stageResource -> stageResource.getQuantity() >= requestResource.getQuantity());
+            .anyMatch(sr -> !sr.getStage().getStageId().equals(reservationRequest.getStage().getStageId()));
     }
 
     // HELPERI
