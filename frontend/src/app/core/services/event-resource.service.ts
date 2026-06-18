@@ -23,7 +23,5 @@ export class EventResourceService {
     return this.http.put<EventResource>(`${this.API}/${resourceId}`, request);
   }
 
-  deleteResource(resourceId: number): Observable<void> {
-    return this.http.delete<void>(`${this.API}/${resourceId}`);
-  }
+}
 }

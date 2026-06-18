@@ -123,19 +123,25 @@ public class EventOrganizationTaskService {
         return task;
     }
 
+    // Provera da za resurs treba da se kreira task
     private boolean needsTask(RequestResource requestResource) {
+        // ne treba task
         if (requestResource.getStatus() == RequestResourceStatus.CONFIRMED) {
             return false;
         }
+        // NON-EXISTING
         if (requestResource.getResource() == null) {
             return true;
         }
+        //PROCUREMENT
         if (requestResource.getStatus() == RequestResourceStatus.UNAVAILABLE) {
             return true;
         }
+        // PROCUREMENT 
         return !canFulfill(requestResource);
     }
 
+    // Da li moze da se pozajmi resurs sa neke druge bine
     private boolean canFulfill(RequestResource requestResource) {
         EventReservationRequest reservationRequest = requestResource.getReservationRequest();
         EventResource resource = requestResource.getResource();
@@ -171,12 +177,16 @@ public class EventOrganizationTaskService {
             .anyMatch(stageResource -> stageResource.getQuantity() >= requestResource.getQuantity());
     }
 
+    // HELPERI
+
+    // Odredjivanje tipa taska
     private EventOrganizationTaskType resolveTaskType(RequestResource requestResource) {
         return requestResource.getResource() == null
             ? EventOrganizationTaskType.NON_EXISTING
             : EventOrganizationTaskType.PROCUREMENT;
     }
 
+    // Odredjivanje naziva taska
     private String taskTitle(RequestResource requestResource) {
         EventOrganizationTaskType type = resolveTaskType(requestResource);
         String resourceName = requestResource.getResource() == null
@@ -185,6 +195,7 @@ public class EventOrganizationTaskService {
         return (type == EventOrganizationTaskType.PROCUREMENT ? "Procure: " : "Request: ") + resourceName;
     }
 
+    // Odredjivanje roka za resavanje/odbijanje taska
     private LocalDate taskDeadline(RequestResource requestResource) {
         return requestResource.getReservationRequest().getPerformanceDate().minusDays(1);
     }
