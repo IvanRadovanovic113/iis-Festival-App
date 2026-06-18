@@ -17,8 +17,7 @@ export class NegotiationListComponent implements OnInit {
   searchTerm: string = '';
   selectedStatus: string = '';
   
-  // Pretpostavka za dostupne statuse (prilagodi svom Enum-u)
-  statuses = ['ACTIVE', 'CONCLUDED', 'FAILED'];
+  statuses = ['ACTIVE', 'COMPLETED', 'FAILED'];
 
   constructor(private negotiationService: NegotiationService) {}
 
