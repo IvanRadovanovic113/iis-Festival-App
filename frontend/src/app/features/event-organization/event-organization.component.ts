@@ -90,7 +90,6 @@ export class EventOrganizationComponent implements OnInit {
   stages: Stage[] = [];
   reservationRequests: EventReservationRequest[] = [];
   selectedReservationRequest: EventReservationRequest | null = null;
-  selectedRequestResources: RequestResource[] = [];
   requestResourceCounts: Record<number, number> = {};
   requestResourcesByRequestId: Record<number, RequestResource[]> = {};
   tasks: EventOrganizationTask[] = [];
@@ -109,14 +108,6 @@ export class EventOrganizationComponent implements OnInit {
   inventoryStageFilter = 'All';
   timetableWeekOffset = 0;
   timetableHours = ['14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
-
-  requestResourceForm = this.fb.group({
-    mode: ['existing' as 'existing' | 'custom'],
-    resourceId: [null as number | null],
-    requestedName: [''],
-    requestedType: ['Equipment'],
-    quantity: [1, [Validators.required, Validators.min(1)]]
-  });
 
   resourceForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
@@ -251,11 +242,9 @@ export class EventOrganizationComponent implements OnInit {
         this.reservationRequests = requests;
         this.selectedReservationRequest = requests[0] ?? null;
         this.selectedStageId = stages[0]?.stageId ?? null;
-        this.requestResourceForm.patchValue({ resourceId: resources[0]?.id ?? null });
         this.resourceForm.patchValue({ stageId: this.selectedStageId });
         this.refreshStageData();
         this.loadRequestResourceCounts();
-        this.loadSelectedRequestResources();
         this.loadTasks();
       },
       error: () => this.errorMessage = 'Unable to load event organization data.'
@@ -325,96 +314,7 @@ export class EventOrganizationComponent implements OnInit {
 
   selectReservationRequest(request: EventReservationRequest): void {
     this.selectedReservationRequest = request;
-    this.resetRequestResourceForm();
-    this.loadSelectedRequestResources();
     this.clearMessages();
-  }
-
-  approveSelectedRequest(): void {
-    if (!this.selectedReservationRequest) return;
-
-    this.eventReservationService.approveReservationRequest(this.selectedReservationRequest.id).subscribe({
-      next: request => {
-        this.successMessage = 'Reservation request approved.';
-        this.reloadReservationRequests(request.id);
-        if (this.activeTab === 'timetable') {
-          this.loadTimetable();
-        }
-      },
-      error: err => this.errorMessage = err.error?.message || 'Unable to approve reservation request.'
-    });
-  }
-
-  rejectSelectedRequest(): void {
-    if (!this.selectedReservationRequest) return;
-
-    this.eventReservationService.rejectReservationRequest(this.selectedReservationRequest.id).subscribe({
-      next: request => {
-        this.successMessage = 'Reservation request rejected.';
-        this.reloadReservationRequests(request.id);
-      },
-      error: err => this.errorMessage = err.error?.message || 'Unable to reject reservation request.'
-    });
-  }
-
-  addResourceToSelectedRequest(): void {
-    if (!this.selectedReservationRequest) return;
-
-    const value = this.requestResourceForm.getRawValue();
-    const quantity = Number(value.quantity);
-    const payload = value.mode === 'custom'
-      ? {
-          resourceId: null,
-          requestedName: value.requestedName?.trim() || null,
-          requestedType: value.requestedType?.trim() || null,
-          quantity
-        }
-      : {
-          resourceId: value.resourceId == null ? null : Number(value.resourceId),
-          quantity
-        };
-
-    if (this.requestResourceForm.invalid || (value.mode === 'existing' && !payload.resourceId) || (value.mode === 'custom' && (!payload.requestedName || !payload.requestedType))) {
-      this.requestResourceForm.markAllAsTouched();
-      this.errorMessage = 'Please enter the requested resource details.';
-      return;
-    }
-
-    this.requestResourceService.addResourceToRequest(this.selectedReservationRequest.id, payload).subscribe({
-      next: () => {
-        this.successMessage = 'Resource requested for performance.';
-        this.resetRequestResourceForm();
-        this.loadSelectedRequestResources();
-      },
-      error: err => this.errorMessage = err.error?.message || 'Unable to add resource to request.'
-    });
-  }
-
-  confirmRequestResource(resource: RequestResource): void {
-    if (!this.selectedReservationRequest) return;
-
-    this.requestResourceService.confirmRequestResource(this.selectedReservationRequest.id, resource.id).subscribe({
-      next: () => {
-        this.successMessage = 'Resource availability confirmed.';
-        this.loadSelectedRequestResources();
-      },
-      error: err => {
-        this.errorMessage = err.error?.message || 'Unable to confirm resource availability.';
-        this.loadSelectedRequestResources();
-      }
-    });
-  }
-
-  removeRequestResource(resource: RequestResource): void {
-    if (!this.selectedReservationRequest) return;
-
-    this.requestResourceService.removeResourceFromRequest(this.selectedReservationRequest.id, resource.id).subscribe({
-      next: () => {
-        this.successMessage = 'Resource removed from request.';
-        this.loadSelectedRequestResources();
-      },
-      error: () => this.errorMessage = 'Unable to remove resource from request.'
-    });
   }
 
   setResourceTab(tab: ResourceTab): void {
@@ -669,14 +569,12 @@ export class EventOrganizationComponent implements OnInit {
       startTime: this.selectedScheduleStart
     }).subscribe({
       next: request => {
-        this.confirmedReservation = request;
-        this.confirmedReservationTasks = [];
         this.successMessage = 'Reservation confirmed.';
         this.timetableMode = 'static';
         this.selectedScheduleStart = null;
         this.reloadReservationRequests(request.id);
         this.loadTimetable();
-        this.loadTasksForConfirmation(request.id);
+        this.loadTasksForConfirmation(request);
       },
       error: err => this.errorMessage = err.error?.message || 'Unable to reserve selected time slot.'
     });
@@ -739,34 +637,8 @@ export class EventOrganizationComponent implements OnInit {
           ?? this.filteredReservationRequests[0]
           ?? null;
         this.loadRequestResourceCounts();
-        this.loadSelectedRequestResources();
       },
       error: () => this.errorMessage = 'Unable to reload reservation requests.'
-    });
-  }
-
-  private loadSelectedRequestResources(): void {
-    if (!this.selectedReservationRequest) {
-      this.selectedRequestResources = [];
-      return;
-    }
-
-    this.requestResourceService.getRequestResources(this.selectedReservationRequest.id).subscribe({
-      next: resources => {
-        this.selectedRequestResources = resources;
-        this.requestResourcesByRequestId[this.selectedReservationRequest!.id] = resources;
-      },
-      error: () => this.errorMessage = 'Unable to load request resources.'
-    });
-  }
-
-  private resetRequestResourceForm(): void {
-    this.requestResourceForm.reset({
-      mode: 'existing',
-      resourceId: this.resources[0]?.id ?? null,
-      requestedName: '',
-      requestedType: 'Equipment',
-      quantity: 1
     });
   }
 
@@ -797,14 +669,16 @@ export class EventOrganizationComponent implements OnInit {
     });
   }
 
-  private loadTasksForConfirmation(reservationRequestId: number): void {
+  private loadTasksForConfirmation(reservation: EventReservationRequest): void {
     this.taskService.getTasks().subscribe({
       next: tasks => {
         this.tasks = tasks;
-        this.confirmedReservationTasks = tasks.filter(task => task.reservationRequestId === reservationRequestId);
+        this.confirmedReservationTasks = tasks.filter(task => task.reservationRequestId === reservation.id);
+        this.confirmedReservation = reservation;
       },
       error: () => {
         this.confirmedReservationTasks = [];
+        this.confirmedReservation = reservation;
         this.errorMessage = 'Reservation confirmed, but tasks could not be loaded.';
       }
     });

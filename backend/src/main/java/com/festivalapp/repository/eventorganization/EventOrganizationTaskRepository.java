@@ -14,19 +14,23 @@ public interface EventOrganizationTaskRepository extends JpaRepository<EventOrga
     @Query("""
         select task
         from EventOrganizationTask task
-        where task.requestResource.reservationRequest.festival = :festival
-        order by task.requestResource.reservationRequest.performanceDate asc,
-                 lower(coalesce(task.requestResource.resource.name, task.requestResource.requestedName)) asc
+        left join task.requestResource rr
+        left join rr.resource res
+        where rr.reservationRequest.festival = :festival
+        order by rr.reservationRequest.performanceDate asc,
+                 lower(coalesce(res.name, rr.requestedName)) asc
     """)
     List<EventOrganizationTask> findByFestival(@Param("festival") Festival festival);
 
     @Query("""
         select task
         from EventOrganizationTask task
-        where task.requestResource.reservationRequest.festival = :festival
+        left join task.requestResource rr
+        left join rr.resource res
+        where rr.reservationRequest.festival = :festival
           and task.status = :status
-        order by task.requestResource.reservationRequest.performanceDate asc,
-                 lower(coalesce(task.requestResource.resource.name, task.requestResource.requestedName)) asc
+        order by rr.reservationRequest.performanceDate asc,
+                 lower(coalesce(res.name, rr.requestedName)) asc
     """)
     List<EventOrganizationTask> findByFestivalAndStatus(
         @Param("festival") Festival festival,
@@ -36,17 +40,21 @@ public interface EventOrganizationTaskRepository extends JpaRepository<EventOrga
     @Query("""
         select task
         from EventOrganizationTask task
+        left join task.requestResource rr
+        left join rr.resource res
         where task.status = :status
-        order by task.requestResource.reservationRequest.performanceDate asc,
-                 lower(coalesce(task.requestResource.resource.name, task.requestResource.requestedName)) asc
+        order by rr.reservationRequest.performanceDate asc,
+                 lower(coalesce(res.name, rr.requestedName)) asc
     """)
     List<EventOrganizationTask> findByStatusOrdered(@Param("status") EventOrganizationTaskStatus status);
 
     @Query("""
         select task
         from EventOrganizationTask task
-        order by task.requestResource.reservationRequest.performanceDate asc,
-                 lower(coalesce(task.requestResource.resource.name, task.requestResource.requestedName)) asc
+        left join task.requestResource rr
+        left join rr.resource res
+        order by rr.reservationRequest.performanceDate asc,
+                 lower(coalesce(res.name, rr.requestedName)) asc
     """)
     List<EventOrganizationTask> findAllOrdered();
 

@@ -13,7 +13,6 @@ import com.festivalapp.model.eventorganization.RequestResourceStatus;
 import com.festivalapp.repository.eventorganization.EventReservationRequestRepository;
 import com.festivalapp.repository.eventorganization.RequestResourceRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,13 +21,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.IntStream;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class EventReservationService {
 
     private static final String AVAILABLE_STATUS = "AVAILABLE";
@@ -66,7 +62,7 @@ public class EventReservationService {
         reservationRequest.setStatus(EventReservationStatus.APPROVED);
         reservationRequest.setReviewedAt(LocalDateTime.now());
         EventReservationRequest savedRequest = reservationRequestRepository.save(reservationRequest);
-        syncTasksWithoutBlockingReservation(festival, savedRequest.getId());
+        taskService.createTasksForReservation(savedRequest);
         return EventReservationResponse.from(savedRequest);
     }
 
@@ -96,7 +92,7 @@ public class EventReservationService {
         reservationRequest.setStatus(EventReservationStatus.APPROVED);
         reservationRequest.setReviewedAt(LocalDateTime.now());
         EventReservationRequest savedRequest = reservationRequestRepository.save(reservationRequest);
-        syncTasksWithoutBlockingReservation(festival, savedRequest.getId());
+        taskService.createTasksForReservation(savedRequest);
         return EventReservationResponse.from(savedRequest);
     }
 
@@ -146,35 +142,47 @@ public class EventReservationService {
             return new SlotSuggestionResponse(null);
         }
 
-        int targetMinutes = resolveTargetMinutes(request);
+        int targetMinutes = resolveTargetMinutes(request); // idealno vreme pocetka 
 
-        List<int[]> occupied = reservationRequestRepository.findOccupiedOnStageDate(
+        List<EventReservationRequest> occupiedRequests = reservationRequestRepository.findOccupiedOnStageDate(
             request.getStage().getStageId(),
             request.getPerformanceDate(),
             List.of(EventReservationStatus.PENDING, EventReservationStatus.APPROVED),
             requestId
-        ).stream().map(r -> new int[]{
-            r.getStartTime().getHour() * 60 + r.getStartTime().getMinute(),
-            r.getEndTime().getHour() * 60 + r.getEndTime().getMinute()
-        }).toList();
+        );
 
-        String bestStart = IntStream.rangeClosed(14, 23)
-            .map(h -> h * 60)
-            .filter(startMin -> startMin + durationMinutes < 24 * 60)
-            .filter(startMin -> {
-                int endMin = startMin + durationMinutes;
-                return occupied.stream().noneMatch(interval -> interval[0] < endMin && interval[1] > startMin);
-            })
-            .boxed()
-            .min(Comparator.comparingInt(startMin -> {
-                int timeScore = Math.abs(startMin - targetMinutes);
-                int penalty = computeResourcePenalty(request, startMin, durationMinutes);
-                return timeScore + penalty;
-            }))
-            .map(startMin -> String.format("%02d:00", startMin / 60))
-            .orElse(null);
+        Integer bestStartMin = null;
+        int bestScore = Integer.MAX_VALUE;
 
-        return new SlotSuggestionResponse(bestStart);
+        for (int hour = 14; hour <= 23; hour++) {
+            int startMin = hour * 60;
+            int endMin = startMin + durationMinutes;
+
+            if (endMin >= 24 * 60) continue;
+            if (overlapsAny(startMin, endMin, occupiedRequests)) continue;
+
+            int score = Math.abs(startMin - targetMinutes) + computeResourcePenalty(request, startMin, durationMinutes);
+            if (score < bestScore) {
+                bestScore = score;
+                bestStartMin = startMin;
+            }
+        }
+
+        if (bestStartMin == null) {
+            return new SlotSuggestionResponse(null);
+        }
+        return new SlotSuggestionResponse(String.format("%02d:00", bestStartMin / 60));
+    }
+
+    private boolean overlapsAny(int startMin, int endMin, List<EventReservationRequest> requests) {
+        for (EventReservationRequest occupied : requests) {
+            int occupiedStart = occupied.getStartTime().getHour() * 60 + occupied.getStartTime().getMinute();
+            int occupiedEnd = occupied.getEndTime().getHour() * 60 + occupied.getEndTime().getMinute();
+            if (occupiedStart < endMin && occupiedEnd > startMin) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private int resolveTargetMinutes(EventReservationRequest request) {
@@ -194,26 +202,27 @@ public class EventReservationService {
         };
     }
 
+    // Da li je resurs potpuno zauzet
     private int computeResourcePenalty(EventReservationRequest request, int candidateStartMin, int durationMinutes) {
         LocalTime candidateStart = LocalTime.of(candidateStartMin / 60, candidateStartMin % 60);
         LocalTime candidateEnd = LocalTime.of((candidateStartMin + durationMinutes) / 60, (candidateStartMin + durationMinutes) % 60);
-        long unavailable = requestResourceRepository
-            .findByReservationRequest_IdOrderByResource_NameAsc(request.getId())
-            .stream()
-            .filter(rr -> rr.getResource() != null)
-            .filter(rr -> {
-                Integer overlapping = requestResourceRepository.sumOverlappingQuantityByResource(
-                    rr.getResource().getId(),
-                    request.getId(),
-                    request.getPerformanceDate(),
-                    candidateStart,
-                    candidateEnd,
-                    RequestResourceStatus.CONFIRMED
-                );
-                return overlapping != null && overlapping >= rr.getResource().getTotalQuantity();
-            })
-            .count();
-        return (int) unavailable * 30;
+
+        int penalty = 0;
+        for (var rr : requestResourceRepository.findByReservationRequest_IdOrderByResource_NameAsc(request.getId())) {
+            if (rr.getResource() == null) continue;
+            Integer overlapping = requestResourceRepository.sumOverlappingQuantityByResource(
+                rr.getResource().getId(),
+                request.getId(),
+                request.getPerformanceDate(),
+                candidateStart,
+                candidateEnd,
+                RequestResourceStatus.CONFIRMED
+            );
+            if (overlapping != null && overlapping >= rr.getResource().getTotalQuantity()) {
+                penalty += 30;
+            }
+        }
+        return penalty;
     }
 
     private void validateReservationTime(LocalTime startTime, LocalTime endTime) {
@@ -235,11 +244,4 @@ public class EventReservationService {
         }
     }
 
-    private void syncTasksWithoutBlockingReservation(Festival festival, Long reservationRequestId) {
-        try {
-            taskService.syncOpenTasks(festival);
-        } catch (RuntimeException ex) {
-            log.warn("Reservation {} was approved, but task synchronization failed", reservationRequestId, ex);
-        }
-    }
 }

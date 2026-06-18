@@ -9,14 +9,10 @@ import com.festivalapp.model.eventorganization.EventOrganizationTask;
 import com.festivalapp.model.eventorganization.EventOrganizationTaskStatus;
 import com.festivalapp.model.eventorganization.EventOrganizationTaskType;
 import com.festivalapp.model.eventorganization.EventReservationRequest;
-import com.festivalapp.model.eventorganization.EventReservationStatus;
-import com.festivalapp.model.eventorganization.EventResource;
 import com.festivalapp.model.eventorganization.RequestResource;
 import com.festivalapp.model.eventorganization.RequestResourceStatus;
-import com.festivalapp.model.eventorganization.StageResource;
 import com.festivalapp.repository.eventorganization.EventOrganizationTaskRepository;
 import com.festivalapp.repository.eventorganization.RequestResourceRepository;
-import com.festivalapp.repository.eventorganization.StageResourceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -33,13 +29,11 @@ public class EventOrganizationTaskService {
 
     private final EventOrganizationTaskRepository taskRepository;
     private final RequestResourceRepository requestResourceRepository;
-    private final StageResourceRepository stageResourceRepository;
     private final EventOrganizationAccessService accessService;
 
     @Transactional
     public List<EventOrganizationTaskResponse> getTasks(EventOrganizationTaskStatus status, User user) {
         Festival festival = accessService.requireEventOrganizerFestival(user);
-        syncOpenTasks(festival);
 
         List<EventOrganizationTask> tasks;
         if (festival == null) {
@@ -93,25 +87,25 @@ public class EventOrganizationTaskService {
     }
 
     @Transactional
-    public void syncOpenTasks(Festival festival) {
-        List<RequestResource> requestResources = festival == null
-            ? requestResourceRepository.findAll()
-            : requestResourceRepository.findByReservationRequest_Festival(festival);
-
-        requestResources.stream()
-            .filter(requestResource -> requestResource.getReservationRequest().getStatus() == EventReservationStatus.APPROVED)
-            .filter(this::needsTask)
-            .filter(requestResource -> !taskRepository.existsByRequestResource_Id(requestResource.getId()))
-            .map(requestResource -> EventOrganizationTask.builder()
+    public void createTasksForReservation(EventReservationRequest reservation) {
+        List<RequestResource> resources = requestResourceRepository.findByReservationRequest_IdOrderByResource_NameAsc(reservation.getId());
+        for (RequestResource requestResource : resources) {
+            if (!needsTask(requestResource)) {
+                requestResource.setStatus(RequestResourceStatus.CONFIRMED);
+                requestResourceRepository.save(requestResource);
+                continue;
+            }
+            if (taskRepository.existsByRequestResource_Id(requestResource.getId())) continue;
+            taskRepository.save(EventOrganizationTask.builder()
                 .requestResource(requestResource)
                 .type(resolveTaskType(requestResource))
                 .status(EventOrganizationTaskStatus.OPEN)
                 .title(taskTitle(requestResource))
-                .performerName(requestResource.getReservationRequest().getPerformerName())
-                .stageName(requestResource.getReservationRequest().getStage().getName())
+                .performerName(reservation.getPerformerName())
+                .stageName(reservation.getStage().getName())
                 .deadline(taskDeadline(requestResource))
-                .build())
-            .forEach(taskRepository::save);
+                .build());
+        }
     }
 
     private EventOrganizationTask requireTask(Long taskId, Festival festival) {
@@ -123,52 +117,23 @@ public class EventOrganizationTaskService {
         return task;
     }
 
-    private boolean needsTask(RequestResource requestResource) {
-        if (requestResource.getStatus() == RequestResourceStatus.CONFIRMED) {
-            return false;
-        }
-        if (requestResource.getResource() == null) {
-            return true;
-        }
-        if (requestResource.getStatus() == RequestResourceStatus.UNAVAILABLE) {
-            return true;
-        }
-        return !canFulfill(requestResource);
-    }
+    // HELPERI
 
-    private boolean canFulfill(RequestResource requestResource) {
-        EventReservationRequest reservationRequest = requestResource.getReservationRequest();
-        EventResource resource = requestResource.getResource();
-        if (resource == null) {
-            return false;
+    private boolean needsTask(RequestResource requestResource) {
+        if (requestResource.getResource() == null) {
+            return true; // custom resurs, uvek kreira task
         }
-        Integer overlappingQuantity = requestResourceRepository.sumOverlappingQuantityByResource(
-            resource.getId(),
-            reservationRequest.getId(),
-            reservationRequest.getPerformanceDate(),
-            reservationRequest.getStartTime(),
-            reservationRequest.getEndTime(),
+        EventReservationRequest reservation = requestResource.getReservationRequest();
+        Integer confirmed = requestResourceRepository.sumOverlappingQuantityByResource(
+            requestResource.getResource().getId(),
+            reservation.getId(),
+            reservation.getPerformanceDate(),
+            reservation.getStartTime(),
+            reservation.getEndTime(),
             RequestResourceStatus.CONFIRMED
         );
-        int availableQuantity = resource.getTotalQuantity() - overlappingQuantity;
-        if (availableQuantity < requestResource.getQuantity()) {
-            return false;
-        }
-
-        boolean assignedToReservationStage = stageResourceRepository
-            .findByStage_StageIdAndResource_Id(reservationRequest.getStage().getStageId(), resource.getId())
-            .filter(stageResource -> stageResource.getQuantity() >= requestResource.getQuantity())
-            .isPresent();
-        if (assignedToReservationStage) {
-            return true;
-        }
-        if (!Boolean.TRUE.equals(resource.getShareable())) {
-            return false;
-        }
-
-        return stageResourceRepository.findByResource_Id(resource.getId()).stream()
-            .filter(stageResource -> !stageResource.getStage().getStageId().equals(reservationRequest.getStage().getStageId()))
-            .anyMatch(stageResource -> stageResource.getQuantity() >= requestResource.getQuantity());
+        int available = requestResource.getResource().getTotalQuantity() - (confirmed != null ? confirmed : 0);
+        return available < requestResource.getQuantity();
     }
 
     private EventOrganizationTaskType resolveTaskType(RequestResource requestResource) {
@@ -177,6 +142,7 @@ public class EventOrganizationTaskService {
             : EventOrganizationTaskType.PROCUREMENT;
     }
 
+    // Odredjivanje naziva taska
     private String taskTitle(RequestResource requestResource) {
         EventOrganizationTaskType type = resolveTaskType(requestResource);
         String resourceName = requestResource.getResource() == null
@@ -185,6 +151,7 @@ public class EventOrganizationTaskService {
         return (type == EventOrganizationTaskType.PROCUREMENT ? "Procure: " : "Request: ") + resourceName;
     }
 
+    // Odredjivanje roka za resavanje/odbijanje taska
     private LocalDate taskDeadline(RequestResource requestResource) {
         return requestResource.getReservationRequest().getPerformanceDate().minusDays(1);
     }

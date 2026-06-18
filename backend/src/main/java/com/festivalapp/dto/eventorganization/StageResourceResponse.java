@@ -1,5 +1,6 @@
 package com.festivalapp.dto.eventorganization;
 
+import com.festivalapp.model.eventorganization.EventResource;
 import com.festivalapp.model.eventorganization.StageResource;
 
 public record StageResourceResponse(
@@ -20,6 +21,18 @@ public record StageResourceResponse(
             stageResource.getResource().getType(),
             stageResource.getQuantity(),
             stageResource.getResource().getTotalQuantity()
+        );
+    }
+
+    public static StageResourceResponse fromEventResource(EventResource resource) {
+        return new StageResourceResponse(
+            null,
+            null,
+            resource.getId(),
+            resource.getName(),
+            resource.getType(),
+            resource.getTotalQuantity(),
+            resource.getTotalQuantity()
         );
     }
 }
