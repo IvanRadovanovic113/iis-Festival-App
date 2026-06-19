@@ -1,8 +1,8 @@
-package com.festivalapp.repository.eventorganization;
+package com.festivalapp.repository.eventorganization.analytics;
 
-import com.festivalapp.dto.eventorganization.ResourceAnalyticsResponse;
-import com.festivalapp.dto.eventorganization.ResourceStageOccupancyResponse;
-import com.festivalapp.dto.eventorganization.ResourceTopResourceResponse;
+import com.festivalapp.dto.eventorganization.analytics.ResourceAnalyticsResponse;
+import com.festivalapp.dto.eventorganization.analytics.ResourceStageOccupancyResponse;
+import com.festivalapp.dto.eventorganization.analytics.ResourceTopResourceResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;

@@ -1,4 +1,4 @@
-package com.festivalapp.dto.eventorganization;
+package com.festivalapp.dto.eventorganization.analytics;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
