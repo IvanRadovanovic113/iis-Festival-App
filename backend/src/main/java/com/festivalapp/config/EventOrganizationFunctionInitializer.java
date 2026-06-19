@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class DatabaseFunctionInitializer implements ApplicationRunner {
+public class EventOrganizationFunctionInitializer implements ApplicationRunner {
 
     private final JdbcTemplate jdbcTemplate;
 
