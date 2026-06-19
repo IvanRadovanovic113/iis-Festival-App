@@ -108,3 +108,26 @@ export interface ResolveTaskRequest {
 export interface RejectTaskRequest {
   reason: string;
 }
+
+export interface ResourceTopResource {
+  resourceName: string;
+  requestCount: number;
+}
+
+export interface ResourceStageOccupancy {
+  stageId: number;
+  stageName: string;
+  totalReservations: number;
+  approvedReservations: number;
+  occupancyPercent: number;
+}
+
+export interface ResourceAnalytics {
+  totalReservations: number;
+  mostUsedResourceName: string;
+  mostUsedResourceCount: number;
+  avgStageOccupancy: number;
+  extraResourceRequests: number;
+  topResources: ResourceTopResource[];
+  stageOccupancies: ResourceStageOccupancy[];
+}
