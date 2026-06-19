@@ -1,57 +1,60 @@
 <div class="analytics-page">
-  <div class="page-heading row-heading">
-    <div>
-      <h1>Resource usage analytics</h1>
-      <p>{{ periodLabel }}@if (selectedStageName) { · {{ selectedStageName }} }</p>
-    </div>
-    <button type="button" class="primary-button export-btn" (click)="downloadPdf()" [disabled]="downloading || !analytics">
-      {{ downloading ? 'Exporting...' : 'Export PDF' }}
-    </button>
+  <div class="page-heading">
+    <h1>Resource usage analytics</h1>
+    <p>{{ periodLabel }}@if (selectedStageName) { · {{ selectedStageName }} }</p>
   </div>
 
-  <div class="filter-bar">
-    <div class="period-toggle">
+  <div class="filter-area">
+    <div class="period-row">
       <span class="filter-label">Period:</span>
-      <button type="button" [class.active]="period === 'MONTH'" (click)="setPeriod('MONTH')">Month</button>
-      <button type="button" [class.active]="period === 'YEAR'" (click)="setPeriod('YEAR')">Year</button>
-      <button type="button" [class.active]="period === 'ALL_TIME'" (click)="setPeriod('ALL_TIME')">All time</button>
+      <div class="period-toggle">
+        <button type="button" [class.active]="period === 'MONTH'" (click)="setPeriod('MONTH')">Month</button>
+        <button type="button" [class.active]="period === 'YEAR'" (click)="setPeriod('YEAR')">Year</button>
+        <button type="button" [class.active]="period === 'ALL_TIME'" (click)="setPeriod('ALL_TIME')">All time</button>
+      </div>
     </div>
 
-    @if (period === 'MONTH') {
-      <div class="filter-group">
-        <span class="filter-label">Month:</span>
-        <select [(ngModel)]="selectedMonth" (ngModelChange)="onFilterChanged()">
-          @for (name of monthNames; track $index) {
-            <option [value]="$index + 1">{{ name }}</option>
+    <div class="controls-row">
+      @if (period === 'MONTH') {
+        <div class="select-control">
+          <span class="select-label">Month:</span>
+          <select [(ngModel)]="selectedMonth" (ngModelChange)="onFilterChanged()">
+            @for (name of monthNames; track $index) {
+              <option [value]="$index + 1">{{ name }}</option>
+            }
+          </select>
+        </div>
+      }
+
+      @if (period !== 'ALL_TIME') {
+        <div class="select-control">
+          <span class="select-label">Year:</span>
+          <select [(ngModel)]="selectedYear" (ngModelChange)="onFilterChanged()">
+            @for (year of availableYears; track year) {
+              <option [value]="year">{{ year }}</option>
+            }
+          </select>
+        </div>
+      }
+
+      <div class="select-control">
+        <span class="select-label">Stage:</span>
+        <select [(ngModel)]="selectedStageId" (ngModelChange)="onFilterChanged()">
+          <option [ngValue]="null">All stages</option>
+          @for (stage of stages; track stage.stageId) {
+            <option [ngValue]="stage.stageId">{{ stage.name }}</option>
           }
         </select>
       </div>
-    }
 
-    @if (period !== 'ALL_TIME') {
-      <div class="filter-group">
-        <span class="filter-label">Year:</span>
-        <select [(ngModel)]="selectedYear" (ngModelChange)="onFilterChanged()">
-          @for (year of availableYears; track year) {
-            <option [value]="year">{{ year }}</option>
-          }
-        </select>
-      </div>
-    }
-
-    <div class="filter-group">
-      <span class="filter-label">Stage:</span>
-      <select [(ngModel)]="selectedStageId" (ngModelChange)="onFilterChanged()">
-        <option [ngValue]="null">All stages</option>
-        @for (stage of stages; track stage.stageId) {
-          <option [ngValue]="stage.stageId">{{ stage.name }}</option>
-        }
-      </select>
+      <button type="button" class="export-btn" (click)="downloadPdf()" [disabled]="downloading || !analytics">
+        {{ downloading ? 'Exporting...' : 'Export PDF' }}
+      </button>
     </div>
   </div>
 
   @if (errorMessage) {
-    <div class="alert error">{{ errorMessage }}</div>
+    <div class="alert-error">{{ errorMessage }}</div>
   }
 
   @if (loading) {
@@ -61,22 +64,22 @@
   @if (analytics && !loading) {
     <div #pdfContent>
       <div class="kpi-row">
-        <div class="kpi-card">
+        <div class="kpi-card kpi-white">
           <span class="kpi-label">Total reservations</span>
           <span class="kpi-value">{{ analytics.totalReservations }}</span>
           <span class="kpi-sub">{{ periodLabel }}</span>
         </div>
-        <div class="kpi-card highlight">
+        <div class="kpi-card kpi-green">
           <span class="kpi-label">Most used resource</span>
-          <span class="kpi-value resource-name">{{ analytics.mostUsedResourceName }}</span>
+          <span class="kpi-value kpi-resource-name">{{ analytics.mostUsedResourceName }}</span>
           <span class="kpi-sub">{{ analytics.mostUsedResourceCount }} requests</span>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card kpi-orange">
           <span class="kpi-label">Stage occupancy</span>
           <span class="kpi-value">{{ analytics.avgStageOccupancy | number: '1.0-1' }}%</span>
           <span class="kpi-sub">avg all stages</span>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card kpi-pink">
           <span class="kpi-label">Extra resource requests</span>
           <span class="kpi-value">{{ analytics.extraResourceRequests }}</span>
           <span class="kpi-sub">non-existing</span>
@@ -84,7 +87,7 @@
       </div>
 
       <div class="charts-row">
-        <div class="chart-card">
+        <div class="chart-card chart-occupancy">
           <h2>Stage occupancy</h2>
           <p class="chart-subtitle">{{ periodLabel }}</p>
 
@@ -112,7 +115,7 @@
           }
         </div>
 
-        <div class="chart-card">
+        <div class="chart-card chart-resources">
           <h2>Top resources</h2>
           <p class="chart-subtitle">Most requested{{ period !== 'ALL_TIME' ? ' this ' + (period === 'MONTH' ? 'month' : 'year') : '' }}</p>
 
@@ -120,13 +123,13 @@
             <p class="empty-note">No resource requests found for this period.</p>
           } @else {
             <div class="resource-list">
-              @for (resource of topResources; track resource.resourceName) {
+              @for (item of topResourcesWithColors; track item.resourceName) {
                 <div class="resource-row">
-                  <span class="resource-row-name">{{ resource.resourceName }}</span>
+                  <span class="resource-row-name">{{ item.resourceName }}</span>
                   <div class="resource-bar-wrap">
-                    <div class="resource-bar" [style.width.%]="(resource.requestCount / maxTopResourceCount) * 100"></div>
+                    <div class="resource-bar" [style.width.%]="(item.requestCount / maxTopResourceCount) * 100" [style.background]="item.color"></div>
                   </div>
-                  <span class="resource-row-count">{{ resource.requestCount }}x</span>
+                  <span class="resource-row-count">{{ item.requestCount }}x</span>
                 </div>
               }
             </div>

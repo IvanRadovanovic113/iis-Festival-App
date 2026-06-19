@@ -22,6 +22,8 @@ export class AnalyticsTabComponent implements OnInit {
 
   private readonly analyticsService = inject(ResourceAnalyticsService);
 
+  private readonly resourceColors = ['#5b8eed', '#cf4d7b', '#5bb8a0', '#f4a259', '#7d5ba6'];
+
   analytics: ResourceAnalytics | null = null;
   loading = false;
   errorMessage = '';
@@ -64,6 +66,13 @@ export class AnalyticsTabComponent implements OnInit {
 
   get topResources(): ResourceTopResource[] {
     return this.analytics?.topResources ?? [];
+  }
+
+  get topResourcesWithColors(): Array<ResourceTopResource & { color: string }> {
+    return this.topResources.map((resource, index) => ({
+      ...resource,
+      color: this.resourceColors[index % this.resourceColors.length]
+    }));
   }
 
   get maxTopResourceCount(): number {
