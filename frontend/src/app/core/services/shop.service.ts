@@ -19,11 +19,11 @@ export class ShopService {
     });
   }
 
-  purchase(ticketTypeId: number, quantity: number, promoCode: string | null): Observable<PurchaseResult> {
+  purchase(ticketTypeId: number, quantity: number, priceLockId: number): Observable<PurchaseResult> {
     return this.http.post<PurchaseResult>('/api/shop/purchase', {
       ticketTypeId,
       quantity,
-      promoCode: promoCode || null
+      priceLockId
     });
   }
 

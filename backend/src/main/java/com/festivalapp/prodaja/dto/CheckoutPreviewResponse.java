@@ -31,4 +31,7 @@ public class CheckoutPreviewResponse {
     private BigDecimal finalPrice;         // baseTotal × (1 - totalDiscountPercent/100)
 
     private Integer availableCount;        // koliko karata još ima na stanju
+
+    private Long priceLockId;
+    private java.time.LocalDateTime priceLockExpiresAt;
 }

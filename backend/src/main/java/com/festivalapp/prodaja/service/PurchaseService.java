@@ -12,6 +12,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -38,6 +39,7 @@ public class PurchaseService {
     private final PromoCodeRepository promoCodeRepository;
     private final KupovinaRepository kupovinaRepository;
     private final KartaRepository kartaRepository;
+    private final PriceLockRepository priceLockRepository;
     private final TierConfigService tierConfigService;
     private final TicketMailService ticketMailService;
 
@@ -45,49 +47,93 @@ public class PurchaseService {
     // PUBLIC API
     // ────────────────────────────────────────────────────────────────────────
 
+    @Transactional
     public CheckoutPreviewResponse preview(PurchaseRequest req, User user) {
         Kupac kupac = requireBuyer(user);
         Checkout c = buildCheckout(req, kupac);
-        return toPreviewResponse(c);
+
+        LocalDateTime now = LocalDateTime.now();
+        PriceLock lock = priceLockRepository.save(PriceLock.builder()
+            .ticketType(c.ticketType())
+            .kupac(kupac)
+            .promoCode(c.promoCode())
+            .bundleDeal(c.bestBundle())
+            .lockedQuantity(req.getQuantity())
+            .lockedPricePerTicket(c.pricePerTicket())
+            .lockedBaseTotal(c.baseTotal())
+            .lockedFinalPrice(c.finalPrice())
+            .lockedTotalTickets(c.totalTickets())
+            .lockedFreeTickets(c.freeTickets())
+            .lockedPromoDiscountPct(c.promoDiscountPct())
+            .lockedTierDiscountPct(c.tierDiscountPct())
+            .lockedTotalDiscountPct(c.totalDiscountPct())
+            .lockedBundleApplications(c.bundleApplications())
+            .lockedAt(now)
+            .expiresAt(now.plusMinutes(10))
+            .used(false)
+            .build());
+
+        return toPreviewResponse(c, lock);
     }
 
     @Transactional
     public PurchaseResponse purchase(PurchaseRequest req, User user) {
         Kupac kupac = requireBuyer(user);
-        Checkout c = buildCheckout(req, kupac);
 
-        // Snimi kupovinu
+        PriceLock lock = priceLockRepository.findById(req.getPriceLockId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Price lock not found"));
+
+        if (lock.isUsed())
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Price lock already used");
+        if (lock.getExpiresAt().isBefore(LocalDateTime.now()))
+            throw new ResponseStatusException(HttpStatus.GONE, "Price lock expired — please preview again");
+        if (!lock.getKupac().getKupacId().equals(kupac.getKupacId()))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Price lock belongs to another user");
+        if (!lock.getTicketType().getTicketTypeId().equals(req.getTicketTypeId()))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Price lock ticket type mismatch");
+
+        // Jedina re-validacija: dostupnost karata
+        TicketType ticketType = lock.getTicketType();
+        int available = ticketType.getTotalQuantity() - ticketType.getSoldCount();
+        if (lock.getLockedQuantity() > available) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "Not enough tickets available. Requested: " + lock.getLockedQuantity() + ", available: " + available);
+        }
+
+        lock.setUsed(true);
+        priceLockRepository.save(lock);
+
+        // Snimi kupovinu — sve vrednosti dolaze iz locka
         Kupovina kupovina = Kupovina.builder()
             .kupac(kupac)
-            .ticketType(c.ticketType)
-            .promoCode(c.promoCode)
-            .bundleDeal(c.bestBundle)
+            .ticketType(ticketType)
+            .promoCode(lock.getPromoCode())
+            .bundleDeal(lock.getBundleDeal())
             .datum(LocalDateTime.now())
-            .kolicina(c.totalTickets)
-            .ukupnaCena(c.finalPrice)
+            .kolicina(lock.getLockedTotalTickets())
+            .ukupnaCena(lock.getLockedFinalPrice())
             .build();
         kupovina = kupovinaRepository.save(kupovina);
 
         // Ažuriraj usedCount promo koda
-        if (c.promoCode != null) {
-            c.promoCode.setUsedCount(c.promoCode.getUsedCount() + 1);
-            promoCodeRepository.save(c.promoCode);
+        if (lock.getPromoCode() != null) {
+            lock.getPromoCode().setUsedCount(lock.getPromoCode().getUsedCount() + 1);
+            promoCodeRepository.save(lock.getPromoCode());
         }
 
-        // Ažuriraj usedCount bundle deal-a (broj primena)
-        if (c.bestBundle != null && c.bundleApplications > 0) {
-            c.bestBundle.setUsedCount(c.bestBundle.getUsedCount() + c.bundleApplications);
-            bundleDealRepository.save(c.bestBundle);
+        // Ažuriraj usedCount bundle deal-a
+        if (lock.getBundleDeal() != null && lock.getLockedBundleApplications() > 0) {
+            lock.getBundleDeal().setUsedCount(lock.getBundleDeal().getUsedCount() + lock.getLockedBundleApplications());
+            bundleDealRepository.save(lock.getBundleDeal());
         }
 
         // Kreiraj karte (DB trigger ažurira soldCount i ukupnoKupovina)
         List<Karta> karte = new ArrayList<>();
-        for (int i = 0; i < c.totalTickets; i++) {
-            Karta karta = Karta.builder()
+        for (int i = 0; i < lock.getLockedTotalTickets(); i++) {
+            karte.add(kartaRepository.save(Karta.builder()
                 .kupovina(kupovina)
                 .qrKod(generateQrKod())
-                .build();
-            karte.add(kartaRepository.save(karta));
+                .build()));
         }
 
         // Flush pa refresh — trigger je ažurirao ukupnoKupovina direktno u DB,
@@ -107,6 +153,12 @@ public class PurchaseService {
             .stream()
             .map(k -> PurchaseResponse.from(k, kartaRepository.findByKupovina_KupovinaId(k.getKupovinaId())))
             .toList();
+    }
+
+    @Scheduled(fixedRate = 3_600_000)
+    @Transactional
+    public void cleanupExpiredLocks() {
+        priceLockRepository.deleteExpiredLocks(LocalDateTime.now());
     }
 
     // ────────────────────────────────────────────────────────────────────────
@@ -220,27 +272,29 @@ public class PurchaseService {
         return UUID.randomUUID().toString().replace("-", "").toUpperCase();
     }
 
-    private CheckoutPreviewResponse toPreviewResponse(Checkout c) {
-        String bundleDesc = c.bestBundle != null
-            ? "Kupi " + c.bestBundle.getKupiKarata() + ", dobij " + c.bestBundle.getDobijaKarata() + " gratis"
+    private CheckoutPreviewResponse toPreviewResponse(Checkout c, PriceLock lock) {
+        String bundleDesc = c.bestBundle() != null
+            ? "Kupi " + c.bestBundle().getKupiKarata() + ", dobij " + c.bestBundle().getDobijaKarata() + " gratis"
             : null;
 
         return CheckoutPreviewResponse.builder()
-            .ticketTypeId(c.ticketType.getTicketTypeId())
-            .ticketTypeName(c.ticketType.getName())
-            .pricePerTicket(c.pricePerTicket)
-            .quantityPaid(c.totalTickets - c.freeTickets)
-            .baseTotal(c.baseTotal)
-            .promoCodeApplied(c.promoCode != null ? c.promoCode.getCode() : null)
-            .promoDiscountPercent(c.promoDiscountPct)
-            .tierName(c.tierLevel == KupacTier.STANDARD ? null : c.tierLevel.name())
-            .tierDiscountPercent(c.tierDiscountPct)
-            .totalDiscountPercent(c.totalDiscountPct)
-            .freeTickets(c.freeTickets)
+            .ticketTypeId(c.ticketType().getTicketTypeId())
+            .ticketTypeName(c.ticketType().getName())
+            .pricePerTicket(c.pricePerTicket())
+            .quantityPaid(c.totalTickets() - c.freeTickets())
+            .baseTotal(c.baseTotal())
+            .promoCodeApplied(c.promoCode() != null ? c.promoCode().getCode() : null)
+            .promoDiscountPercent(c.promoDiscountPct())
+            .tierName(c.tierLevel() == KupacTier.STANDARD ? null : c.tierLevel().name())
+            .tierDiscountPercent(c.tierDiscountPct())
+            .totalDiscountPercent(c.totalDiscountPct())
+            .freeTickets(c.freeTickets())
             .bundleDealDescription(bundleDesc)
-            .totalTickets(c.totalTickets)
-            .finalPrice(c.finalPrice)
-            .availableCount(c.availableCount)
+            .totalTickets(c.totalTickets())
+            .finalPrice(c.finalPrice())
+            .availableCount(c.availableCount())
+            .priceLockId(lock.getId())
+            .priceLockExpiresAt(lock.getExpiresAt())
             .build();
     }
 

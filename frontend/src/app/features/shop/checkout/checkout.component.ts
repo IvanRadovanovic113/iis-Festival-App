@@ -114,7 +114,7 @@ export class CheckoutComponent implements OnInit {
     if (this.purchasing || !this.preview) return;
     this.purchasing = true;
     this.purchaseError = '';
-    this.shopService.purchase(this.ticketTypeId, this.quantity, this.appliedPromo)
+    this.shopService.purchase(this.ticketTypeId, this.quantity, this.preview.priceLockId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: res => {

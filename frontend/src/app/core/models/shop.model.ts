@@ -31,6 +31,8 @@ export interface CheckoutPreview {
   totalTickets: number;
   finalPrice: number;
   availableCount: number;
+  priceLockId: number;
+  priceLockExpiresAt: string;
 }
 
 export interface KartaDto {
