@@ -33,6 +33,7 @@ import {
   TimetableMode
 } from './event-organization.types';
 import { PlaceholderTabComponent } from './placeholder-tab.component';
+import { AnalyticsTabComponent } from './analytics/analytics-tab.component';
 import { RequestsTabComponent } from './requests-tab.component';
 import { ResourceModalComponent } from './resource-modal.component';
 import { ResourcesTabComponent } from './resources-tab.component';
@@ -56,6 +57,7 @@ interface InitialEventOrganizationData {
     TasksTabComponent,
     TimetableTabComponent,
     PlaceholderTabComponent,
+    AnalyticsTabComponent,
     ResourceModalComponent,
     ConfirmationModalComponent,
     DeleteResourceModalComponent
