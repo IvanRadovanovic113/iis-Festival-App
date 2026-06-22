@@ -1,8 +1,6 @@
-import { Component, Input, OnInit, ViewChild, ElementRef, inject } from '@angular/core';
+import { Component, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { Stage } from '../../../core/models/bina.model';
 import { ResourceAnalytics, ResourceStageOccupancy, ResourceTopResource } from '../../../core/models/event-organization.model';
 import { ResourceAnalyticsService } from '../../../core/services/resource-analytics.service';
@@ -18,7 +16,6 @@ type Period = 'MONTH' | 'YEAR' | 'ALL_TIME';
 })
 export class AnalyticsTabComponent implements OnInit {
   @Input() stages: Stage[] = [];
-  @ViewChild('pdfContent') pdfContent?: ElementRef<HTMLElement>;
 
   private readonly analyticsService = inject(ResourceAnalyticsService);
 
@@ -108,40 +105,30 @@ export class AnalyticsTabComponent implements OnInit {
     this.loadAnalytics();
   }
 
-  async downloadPdf(): Promise<void> {
-    if (!this.analytics || !this.pdfContent?.nativeElement || this.downloading) return;
+  downloadPdf(): void {
+    if (!this.analytics || this.downloading) return;
 
     this.downloading = true;
-    try {
-      const canvas = await html2canvas(this.pdfContent.nativeElement, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        useCORS: true
-      });
+    this.errorMessage = '';
 
-      const imageData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 10;
-      const contentWidth = pageWidth - margin * 2;
-      const contentHeight = (canvas.height * contentWidth) / canvas.width;
+    const year = this.period !== 'ALL_TIME' ? this.selectedYear : null;
+    const month = this.period === 'MONTH' ? this.selectedMonth : null;
 
-      let remainingHeight = contentHeight;
-      pdf.addImage(imageData, 'PNG', margin, margin, contentWidth, contentHeight);
-      remainingHeight -= pageHeight - margin * 2;
-
-      while (remainingHeight > 0) {
-        pdf.addPage();
-        const positionY = margin - (contentHeight - remainingHeight);
-        pdf.addImage(imageData, 'PNG', margin, positionY, contentWidth, contentHeight);
-        remainingHeight -= pageHeight - margin * 2;
+    this.analyticsService.downloadPdf(year, month, this.selectedStageId, this.selectedStageName).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'resource-analytics.pdf';
+        a.click();
+        URL.revokeObjectURL(url);
+        this.downloading = false;
+      },
+      error: () => {
+        this.errorMessage = 'Failed to export PDF.';
+        this.downloading = false;
       }
-
-      pdf.save('resource-analytics.pdf');
-    } finally {
-      this.downloading = false;
-    }
+    });
   }
 
   private buildYearOptions(): number[] {
