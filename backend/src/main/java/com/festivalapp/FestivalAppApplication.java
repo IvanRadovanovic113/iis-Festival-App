@@ -12,6 +12,7 @@ import java.util.TimeZone;
 @EnableAsync
 public class FestivalAppApplication {
     public static void main(String[] args) {
+        System.setProperty("java.awt.headless", "true");
         TimeZone.setDefault(TimeZone.getTimeZone("Europe/Belgrade"));
         SpringApplication.run(FestivalAppApplication.class, args);
     }

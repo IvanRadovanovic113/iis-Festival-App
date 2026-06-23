@@ -143,3 +143,17 @@
 
 .premium-positive { color: #059669; font-weight: 600; }
 .premium-negative { color: #dc2626; font-weight: 600; }
+
+.btn-pdf {
+  margin-left: auto;
+  padding: 8px 18px;
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.btn-pdf:hover:not(:disabled) { background: #b91c1c; }
+.btn-pdf:disabled { opacity: 0.6; cursor: default; }

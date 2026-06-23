@@ -53,4 +53,8 @@ export class AnalyticsService {
   getDynamicPricingAnalytics(festivalId: number): Observable<DynamicPricingAnalytics> {
     return this.http.get<DynamicPricingAnalytics>(`/api/festivals/${festivalId}/analytics/dynamic-pricing`);
   }
+
+  generatePdfReport(festivalId: number): Observable<Blob> {
+    return this.http.get(`/api/festivals/${festivalId}/analytics/pdf`, { responseType: 'blob' });
+  }
 }

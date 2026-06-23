@@ -45,3 +45,5 @@ app:
     from: ${APP_MAIL_FROM:${SPRING_MAIL_USERNAME:}}
   storage:
     upload-dir: ${APP_STORAGE_UPLOAD_DIR:uploads}
+  pdf:
+    output-dir: ${APP_PDF_OUTPUT_DIR:../pdf izvestaji}

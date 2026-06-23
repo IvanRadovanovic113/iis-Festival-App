@@ -4,6 +4,9 @@
     @if (overview) {
       <span class="festival-label">{{ overview.festivalName }}</span>
     }
+    <button class="btn-pdf" (click)="downloadPdf()" [disabled]="pdfLoading || loading">
+      {{ pdfLoading ? 'Generisanje...' : 'Preuzmi PDF izveštaj' }}
+    </button>
   </div>
 
   @if (loading) {

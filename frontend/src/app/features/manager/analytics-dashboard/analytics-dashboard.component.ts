@@ -36,6 +36,9 @@ export class AnalyticsDashboardComponent implements OnInit, OnDestroy {
   private salesDetailChart: Chart | null  = null;
   private priceHistoryChart: Chart | null = null;
 
+  private festivalId: number | null = null;
+  pdfLoading = false;
+
   // Overview state
   loading = true;
   error = '';
@@ -68,6 +71,7 @@ export class AnalyticsDashboardComponent implements OnInit, OnDestroy {
       this.loading = false;
       return;
     }
+    this.festivalId = festivalId;
 
     forkJoin({
       overview:       this.analyticsService.getOverview(festivalId),
@@ -162,6 +166,27 @@ export class AnalyticsDashboardComponent implements OnInit, OnDestroy {
         },
         error: err => {
           this.detailError = err.error?.message || 'Failed to update chart.';
+        }
+      });
+  }
+
+  downloadPdf(): void {
+    if (!this.festivalId) return;
+    this.pdfLoading = true;
+    this.analyticsService.generatePdfReport(this.festivalId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `izvestaj-${new Date().toISOString().split('T')[0]}.pdf`;
+          a.click();
+          URL.revokeObjectURL(url);
+          this.pdfLoading = false;
+        },
+        error: () => {
+          this.pdfLoading = false;
         }
       });
   }
