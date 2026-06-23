@@ -80,6 +80,9 @@ public class PurchaseService {
     public PurchaseResponse purchase(PurchaseRequest req, User user) {
         Kupac kupac = requireBuyer(user);
 
+        if (req.getPriceLockId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Price lock is required — please load checkout preview first");
+        }
         PriceLock lock = priceLockRepository.findById(req.getPriceLockId())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Price lock not found"));
 

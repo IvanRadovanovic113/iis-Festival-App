@@ -17,6 +17,11 @@
       <ul class="nav-list">
         @if (currentUser?.assignment?.festivalRole === 'SALES_DIRECTOR') {
           <li>
+            <a routerLink="analytics" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">📊</span> Analytics
+            </a>
+          </li>
+          <li>
             <a routerLink="stages" routerLinkActive="active" class="nav-item">
               <span class="nav-icon">🎪</span> Stages
             </a>

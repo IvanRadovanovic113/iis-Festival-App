@@ -13,4 +13,6 @@ public interface CenovnaIstorijaRepository extends JpaRepository<CenovnaIstorija
 
     List<CenovnaIstorija> findTop5ByTicketType_TicketTypeIdAndPricingPeriod_PricingPeriodIdAndJeRucnaPromenaFalseOrderByDatumDesc(
             Long ticketTypeId, Long pricingPeriodId);
+
+    List<CenovnaIstorija> findByTicketType_TicketTypeIdOrderByDatumAsc(Long ticketTypeId);
 }

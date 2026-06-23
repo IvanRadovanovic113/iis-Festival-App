@@ -64,6 +64,11 @@ export const routes: Routes = [
     children: [
       { path: '', redirectTo: 'ticket-types', pathMatch: 'full' },
       {
+        path: 'analytics',
+        loadComponent: () =>
+          import('./features/manager/analytics-dashboard/analytics-dashboard.component').then(m => m.AnalyticsDashboardComponent)
+      },
+      {
         path: 'stages',
         loadComponent: () =>
           import('./features/stages/stage-list/stage-list.component').then(m => m.StageListComponent)

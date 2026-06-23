@@ -19,6 +19,5 @@ public class PurchaseRequest {
     /** Opcioni promo kod — null ili prazan string znači "bez koda" */
     private String promoCode;
 
-    @NotNull
     private Long priceLockId;
 }
