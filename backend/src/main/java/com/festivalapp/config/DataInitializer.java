@@ -18,6 +18,7 @@ import com.festivalapp.model.Offer;
 import com.festivalapp.model.OfferStatus;
 import com.festivalapp.model.Negotiation;
 import com.festivalapp.model.NegotiationStatus;
+import com.festivalapp.model.NegotiationStateHistory;
 import com.festivalapp.model.WorkflowTemplate;
 import com.festivalapp.model.WorkflowState;
 import com.festivalapp.model.Contract;
@@ -49,6 +50,12 @@ import com.festivalapp.repository.NegotiationRepository;
 import com.festivalapp.repository.ContractRepository;
 import com.festivalapp.repository.WorkflowTemplateRepository;
 import com.festivalapp.repository.WorkflowStateRepository;
+import com.festivalapp.repository.WorkflowTransitionRepository;
+import com.festivalapp.repository.TransitionConditionRepository;
+import com.festivalapp.model.TransitionCondition;
+import com.festivalapp.model.ConditionDataType;
+import com.festivalapp.model.WorkflowTransition;
+import com.festivalapp.repository.NegotiationStateHistoryRepository;
 import com.festivalapp.service.AdVersionSnapshotService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -95,6 +102,9 @@ public class DataInitializer implements ApplicationRunner {
     private final ContractRepository contractRepository;
     private final WorkflowTemplateRepository workflowTemplateRepository;
     private final WorkflowStateRepository workflowStateRepository;
+    private final WorkflowTransitionRepository workflowTransitionRepository;
+    private final TransitionConditionRepository transitionConditionRepository;
+    private final NegotiationStateHistoryRepository negotiationStateHistoryRepository;
 
     @Override
     @Transactional
@@ -116,6 +126,10 @@ public class DataInitializer implements ApplicationRunner {
         seedEventOrganizationRequests();
         assignUnassignedEventResources();
         seedNegotiationsAndContracts();
+        seedWorkflowTemplates();
+        seedPerformers();
+        seedOffers();
+        seedNegotiations();
         seedTierConfig();
         createTriggers();
     }
@@ -838,6 +852,201 @@ public class DataInitializer implements ApplicationRunner {
         log.info("Demo contracts seeded for performer manager view");
     }
 
+    @Transactional
+    public void seedWorkflowTemplates() {
+        log.info("--- POKREĆEM SEEDOVANJE ŠABLONA ---");
+        // 1. Definiši uslove prelaza (Condition)
+        TransitionCondition priceCondition = transitionConditionRepository.save(TransitionCondition.builder()
+                .conditionKey("MIN_PRICE").label("Minimalna cena").dataType(ConditionDataType.NUMBER).necessary(true).build());
+        TransitionCondition venueCondition = transitionConditionRepository.save(TransitionCondition.builder()
+                .conditionKey("VENUE_CONFIRMED").label("Lokacija potvrđena").dataType(ConditionDataType.BOOLEAN).necessary(true).build());
+
+        // 2. Kreiraj 3 šablona
+        String[] templateNames = {"Brzi sablon", "Standardni sablon", "Kompleksni sablon"};
+        
+        for (String name : templateNames) {
+            WorkflowTemplate template = workflowTemplateRepository.save(WorkflowTemplate.builder().name(name).build());
+
+            // Kreiraj stanja zavisno od kompleksnosti šablona
+            WorkflowState start = workflowStateRepository.save(WorkflowState.builder().name("Pocetak").initial(true).template(template).defaultDeadlineDays(1).build());
+            WorkflowState mid = workflowStateRepository.save(WorkflowState.builder().name("Pregovaranje").template(template).defaultDeadlineDays(7).build());
+            WorkflowState end = workflowStateRepository.save(WorkflowState.builder().name("Finalizacija").finalState(true).template(template).defaultDeadlineDays(2).build());
+
+            // Kreiraj prelaze (Transitions) i poveži uslove
+            // Start -> Pregovaranje
+            WorkflowTransition t1 = workflowTransitionRepository.save(WorkflowTransition.builder()
+                    .label("Pokreni pregovore").sourceState(start).targetState(mid).build());
+            t1.getConditions().add(priceCondition);
+            workflowTransitionRepository.save(t1);
+
+            // Pregovaranje -> Finalizacija
+            WorkflowTransition t2 = workflowTransitionRepository.save(WorkflowTransition.builder()
+                    .label("Zaključi").sourceState(mid).targetState(end).build());
+            t2.getConditions().add(venueCondition);
+            workflowTransitionRepository.save(t2);
+            
+            // Dodaj listu stanja u template (zbog bi-direkcione veze ako je potrebna)
+            template.getStates().add(start);
+            template.getStates().add(mid);
+            template.getStates().add(end);
+            workflowTemplateRepository.save(template);
+        }
+    }
+
+    @Transactional
+    public void seedPerformers() {
+        log.info("--- POKREĆEM SEEDOVANJE PERFORMERA ---");
+        
+        String[] names = {"The Rockers", "Jazz Masters", "Electro Vibes", "Pop Star", "Indie Soul", 
+                        "Metal Core", "Blues Legend", "Classical Duo", "Techno King", "Folk Spirit"};
+        String[] genres = {"Rock", "Jazz", "Electronic", "Pop", "Indie", "Metal", "Blues", "Classical", "Techno", "Folk"};
+        PerformerPopularity[] popularities = {PerformerPopularity.HEADLINER, PerformerPopularity.POPULAR, PerformerPopularity.EMERGING};
+        PerformerType[] types = {PerformerType.BAND, PerformerType.SOLO};
+
+        for (int i = 0; i < 10; i++) {
+            Performer performer = Performer.builder()
+                    .stageName(names[i])
+                    .firstName(i % 2 == 0 ? "John" : "Jane")
+                    .lastName("Doe" + i)
+                    .genre(genres[i])
+                    .popularity(popularities[i % 3]) // Distribucija popularnosti
+                    .averageDurationMinutes(45 + (i * 5))
+                    .countryOfOrigin("Serbia")
+                    .performerType(i % 3 == 0 ? types[0] : types[1])
+                    .numberOfMembers(i % 3 == 0 ? 4 : 1)
+                    .status(PerformerStatus.ACTIVE)
+                    .bio("Biografija za " + names[i])
+                    .build();
+            
+            performerRepository.save(performer);
+        }
+    }
+
+    @Transactional
+    public void seedOffers() {
+        log.info("--- POKREĆEM SEEDOVANJE OFFER-A ---");
+
+        List<WorkflowTemplate> templates = workflowTemplateRepository.findAll();
+        List<Performer> performers = performerRepository.findAll();
+        User admin = userRepository.findByUsername("negotiation.manager").orElseThrow();
+
+        if (templates.isEmpty() || performers.isEmpty()) {
+            log.warn("Nema šablona ili performera, preskačem seedovanje offer-a.");
+            return;
+        }
+
+        OfferStatus[] statuses = OfferStatus.values();
+
+        for (int i = 0; i < 30; i++) {
+            // Rotiraj šablone (0, 1, 2)
+            WorkflowTemplate template = templates.get(i % templates.size());
+            // Rotiraj statuse
+            OfferStatus status = statuses[i % statuses.length];
+            
+            Offer offer = Offer.builder()
+                    .price(BigDecimal.valueOf(1000 + (i * 100)))
+                    .performanceDate(LocalDateTime.now().plusDays(i + 10))
+                    .location("Stage " + (i % 3 + 1))
+                    .durationMinutes(60 + (i * 5))
+                    .status(status)
+                    .additionalRequirements("Standardni uslovi za offer " + i)
+                    .workflowTemplateId(template.getId())
+                    .createdBy(admin)
+                    .build();
+
+            if (status == OfferStatus.ARCHIVED) {
+                offer.setArchivedAt(LocalDateTime.now().minusDays(i));
+            } else if (status == OfferStatus.ACCEPTED) {
+                offer.setAcceptedAt(LocalDateTime.now().minusDays(i));
+            }
+
+            // Dodaj 1-2 nasumična performera
+            List<Performer> interested = new ArrayList<>();
+            interested.add(performers.get(i % performers.size()));
+            if (i % 2 == 0) {
+                interested.add(performers.get((i + 1) % performers.size()));
+            }
+            offer.setInterestedPerformers(interested);
+
+            offerRepository.save(offer);
+        }
+    }
+
+    @Transactional
+    public void seedNegotiations() {
+        log.info("--- POKREĆEM SEEDOVANJE PREGOVORA SA RAZLIČITIM STATUSIMA ---");
+
+        List<Offer> offers = offerRepository.findAll();
+        User admin = userRepository.findByUsername("negotiation.manager").orElseThrow();
+
+        for (int i = 0; i < offers.size(); i++) {
+            Offer offer = offers.get(i);
+            WorkflowTemplate template = workflowTemplateRepository.findById(offer.getWorkflowTemplateId()).orElseThrow();
+            List<WorkflowState> states = workflowStateRepository.findByTemplateId(template.getId());
+
+            if (states.size() < 2) continue;
+
+            // ODREĐIVANJE STATUSA (otprilike: 60% ACTIVE, 25% COMPLETED, 15% FAILED)
+            double random = Math.random();
+            NegotiationStatus status;
+            int stateIndex;
+
+            if (random < 0.60) {
+                status = NegotiationStatus.ACTIVE;
+                stateIndex = states.size() - 1; // Još je u toku
+            } else if (random < 0.85) {
+                status = NegotiationStatus.COMPLETED;
+                stateIndex = states.size() - 1; // Završio je poslednje stanje
+            } else {
+                status = NegotiationStatus.FAILED;
+                stateIndex = (int) (Math.random() * (states.size() - 1)); // Pao negde usput
+            }
+
+            int randomDays = (int) (Math.random() * 30);
+            LocalDateTime currentTime = LocalDateTime.now().minusDays(randomDays);
+            
+            LocalDateTime finishedAt = null;
+            if (status != NegotiationStatus.ACTIVE) {
+                int randomDurationHours = (int) (Math.random() * 120) + 1;
+                finishedAt = currentTime.plusHours(randomDurationHours);
+            }
+
+            Negotiation negotiation = Negotiation.builder()
+                    .offer(offer)
+                    .performer(offer.getInterestedPerformers().isEmpty() ? null : offer.getInterestedPerformers().get(0))
+                    .startedBy(admin)
+                    .currentState(states.get(stateIndex))
+                    .status(status)
+                    .createdAt(currentTime)
+                    .finishedAt(finishedAt)
+                    .build();
+            negotiationRepository.save(negotiation);
+
+            // KREIRANJE ISTORIJE
+            for (int j = 0; j < states.size(); j++) {
+                WorkflowState currentState = states.get(j);
+                
+                // Logika završetka istorije:
+                // Ako je status FAILED, istorija staje kad pregovori puknu
+                // Ako je status COMPLETED/ACTIVE, istorija ide do kraja
+                if (status == NegotiationStatus.FAILED && j > stateIndex) break;
+
+                int randomHours = (int) (Math.random() * 23) + 1;
+                LocalDateTime entryTime = currentTime;
+                
+                // Ako je FAILED i ovo je poslednje aktivno stanje, nema exitTime (ili je isti kao entry)
+                LocalDateTime exitTime = (status != NegotiationStatus.ACTIVE && j == stateIndex) ? null : currentTime.plusHours(randomHours);
+
+                NegotiationStateHistory history = new NegotiationStateHistory(
+                        null, negotiation, currentState, entryTime, exitTime
+                );
+                negotiationStateHistoryRepository.save(history);
+
+                currentTime = (exitTime != null) ? exitTime : currentTime;
+            }
+        }
+    }
+
     private void seedDemoContract(
             User negotiationManager,
             WorkflowTemplate template,
@@ -889,6 +1098,8 @@ public class DataInitializer implements ApplicationRunner {
             .startedBy(negotiationManager)
             .currentState(finalState)
             .status(NegotiationStatus.COMPLETED)
+            .createdAt(LocalDateTime.now().minusDays(1))
+            .finishedAt(LocalDateTime.now())
             .build());
 
         contractRepository.save(Contract.builder()

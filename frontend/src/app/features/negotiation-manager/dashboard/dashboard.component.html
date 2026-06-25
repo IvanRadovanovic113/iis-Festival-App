@@ -1,75 +1,57 @@
 <div class="dashboard-wrapper">
+  <div class="toolbar" style="margin-bottom: 20px; text-align: right;">
+    <button (click)="downloadReport()" class="btn-download">
+      Preuzmi PDF Izvestaj
+    </button>
+  </div>
+
   <div class="stats-grid">
     <div class="stat-card">
       <span class="card-title">ACTIVE NEGOTIATIONS</span>
       <div class="card-value">{{ activeNegotiationsCount }}</div>
-      <span class="card-trend trend-up">↑ 2 this week</span>
     </div>
 
     <div class="stat-card">
       <span class="card-title">PUBLISHED OFFERS</span>
       <div class="card-value">{{ publishedOffersCount }}</div>
-      <span class="card-trend text-muted">0 frozen, {{ publishedOffersCount }} open</span>
-    </div>
-
-    <div class="stat-card">
-      <span class="card-title">CONTRACTS SIGNED</span>
-      <div class="card-value">{{ contractsSignedCount }}</div>
-      <span class="card-trend trend-up">↑ 4 this month</span>
     </div>
 
     <div class="stat-card">
       <span class="card-title">SUCCESS RATE</span>
       <div class="card-value">{{ successRate }}</div>
-      <span class="card-trend text-muted">last 30 days</span>
     </div>
-  </div>
-
-  <div class="alert-banner">
-    <span class="alert-icon">⚠️</span>
-    <p><strong>3 negotiations</strong> have exceeded their state deadline. <a href="#" class="alert-link">Review now →</a></p>
   </div>
 
   <div class="dashboard-main-grid">
     
     <div class="grid-col-left">
       <div class="panel-card">
-        <div class="panel-header">
-          <div>
-            <h3>Active Negotiations</h3>
-            <span class="panel-subtitle">Requires your attention</span>
+          <div class="panel-header">
+            <h3>Top Performers</h3>
           </div>
-          <button class="btn-secondary-sm">View all →</button>
-        </div>
-
-        <table class="dashboard-table">
-          <thead>
-            <tr>
-              <th>PERFORMER</th>
-              <th>OFFER</th>
-              <th>CURRENT STATE</th>
-              <th>DEADLINE</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (neg of activeNegotiations; track neg.performer) {
+          <table class="dashboard-table">
+            <thead>
               <tr>
-                <td><a href="#" class="link-performer">{{ neg.performer }}</a></td>
-                <td class="text-muted">{{ neg.offer }}</td>
-                <td><span class="state-badge">{{ neg.state }}</span></td>
-                <td>
-                  <span [class.text-danger]="neg.isOverdue" [class.text-muted]="!neg.isOverdue">
-                    {{ neg.isOverdue ? '⚠️ ' : '' }}{{ neg.deadline }}
-                  </span>
-                </td>
-                <td class="text-right">
-                  <button class="btn-action-outline">Open</button>
-                </td>
+                <th>NAME</th>
+                <th>SUCCESS</th>
+                <th>RATE</th>
               </tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              @for (stat of performerStats.slice(0, 5); track stat.stageName) {
+                <tr>
+                  <td>{{ stat.stageName }}</td>
+                  <td>{{ stat.successfulNegotiations }} / {{ stat.totalNegotiations }}</td>
+                  <td>
+                    <div class="progress-bar-bg">
+                      <div class="progress-bar-fill" [style.width.%]="stat.successRate"></div>
+                    </div>
+                    {{ stat.successRate | number:'1.0-0' }}%
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
       </div>
     </div>
 
@@ -81,21 +63,103 @@
         </div>
         <div class="overview-list">
           <div class="overview-row">
-            <span class="badge-status status-draft">● Draft</span>
+            <span class="badge-status status-draft">Draft</span>
             <span class="overview-value">{{ draftOffersCount }} offers</span>
           </div>
           <div class="overview-row">
-            <span class="badge-status status-published">● Published</span>
+            <span class="badge-status status-published">Published</span>
             <span class="overview-value">{{ publishedOffersCount }} offers</span>
           </div>
           <div class="overview-row">
-            <span class="badge-status status-archived">● Archived</span>
+            <span class="badge-status status-archived">Archived</span>
             <span class="overview-value">{{ archivedOffersCount }} offers</span>
           </div>
         </div>
       </div>
 
     </div>
-
   </div>
+      <div class="panel-card">
+      <div class="panel-header">
+        <h3>Workflow Bottlenecks by Process</h3>
+      </div>
+
+      @for (workflow of workflowNames; track workflow) {
+        <div class="workflow-section">
+          <h4>{{ workflow }}</h4>
+          <table class="dashboard-table">
+            <thead>
+              <tr>
+                <th>STATE</th>
+                <th>AVG DURATION</th>
+                <th>NEGOTIATIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of bottlenecksGrouped[workflow]; track item.stateName) {
+                <tr [class.text-danger]="isBottleneck(item, bottlenecksGrouped[workflow])">
+                  <td>
+                    {{ item.stateName }}
+                    @if (isBottleneck(item, bottlenecksGrouped[workflow])) {
+                      <span class="badge-danger"> (Bottleneck)</span>
+                    }
+                  </td>
+                  <td>{{ item.averageDurationHours | number:'1.1-1' }}h</td>
+                  <td>{{ item.count }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+
+    <div class="panel-card" style="margin-top: 20px; height: 350px;">
+      <div class="panel-header">
+        <h3>Negotiation Duration Trend (Hours)</h3>
+      </div>
+      <ngx-charts-line-chart
+        [results]="durationTrendData"
+        [xAxis]="true"
+        [yAxis]="true"
+        [showXAxisLabel]="true"
+        [showYAxisLabel]="true"
+        xAxisLabel="Month"
+        yAxisLabel="Hours"
+        [animations]="true">
+      </ngx-charts-line-chart>
+    </div>
+
+    <div class="panel-card" style="margin-top: 20px; text-align: center;">
+      <div class="panel-header">
+        <h3>Negotiation Efficiency</h3>
+      </div>
+      
+      <div *ngIf="efficiencyData" style="height: 200px;">
+        <ngx-charts-gauge
+          [results]="gaugeData"
+          [min]="0"
+          [max]="100"
+          [units]="'%'"
+          [bigSegments]="10"
+          [smallSegments]="5">
+        </ngx-charts-gauge>
+        
+        <div style="margin-top: -50px;">
+          <p>Total: {{ efficiencyData.totalCount }} | Completed: {{ efficiencyData.successfulCount }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-card" style="margin-top: 20px; height: 350px;">
+      <div class="panel-header">
+        <h3>Offer Outcomes Distribution</h3>
+      </div>
+      <ngx-charts-pie-chart
+        [results]="offerOutcomesData"
+        [labels]="true"
+        [doughnut]="true"
+        [legend]="true">
+      </ngx-charts-pie-chart>
+    </div>
 </div>

@@ -20,11 +20,16 @@ import com.festivalapp.dto.TransitionConditionResponse;
 import com.festivalapp.dto.NegotiationMapper;
 import com.festivalapp.dto.NegotiationDetailsResponse;
 import com.festivalapp.dto.FailReasonRequest;
+import com.festivalapp.dto.PerformerStatsDto;
 import java.util.ArrayList;
 import java.util.Map;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-
+import com.festivalapp.dto.StatePerformanceDTO;
+import com.festivalapp.dto.NegotiationEfficiencyDTO;
+import com.festivalapp.dto.AnalyticsTrendDTO;
+import com.festivalapp.dto.OfferOutcomeDTO;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Service
@@ -81,6 +86,7 @@ public class NegotiationService {
             .startedBy(user)
             .currentState(initialState)
             .status(NegotiationStatus.ACTIVE)
+            .createdAt(LocalDateTime.now())
             .build();
         negotiation = negotiationRepository.save(negotiation);
 
@@ -253,6 +259,7 @@ public class NegotiationService {
 
         // 8. Status pregovora -> COMPLETED
         negotiation.setStatus(NegotiationStatus.COMPLETED);
+        negotiation.setFinishedAt(LocalDateTime.now());
         negotiationRepository.save(negotiation);
 
         // 9. Status ponude -> ACCEPTED
@@ -337,5 +344,77 @@ public class NegotiationService {
                 .and(NegotiationSpecification.hasCurrentStateId(stateId)), 
                 sortedPageable
         );
+    }
+
+    // Statistika po izvodjacima
+    @Transactional(readOnly = true)
+    public List<PerformerStatsDto> getPerformerPerformanceReport(
+            LocalDateTime startDate, 
+            LocalDateTime endDate, 
+            String genre, 
+            PerformerType type) {
+        
+        // Pozivamo repozitorijum
+        List<PerformerStatsDto> stats = negotiationRepository.getPerformerStats(startDate, endDate, genre, type);
+        
+        stats.forEach(dto -> {
+            if (dto.getSuccessRate() != null) {
+                dto.setSuccessRate(Math.round(dto.getSuccessRate() * 100.0) / 100.0);
+            } else {
+                dto.setSuccessRate(0.0);
+            }
+        });
+        
+        return stats;
+    }
+
+    // Uska grla sablona
+    public List<StatePerformanceDTO> getBottleneckReport(Long templateId) {
+        List<Object[]> results = negotiationRepository.getBottleneckReport(templateId);
+        
+        return results.stream().map(obj -> new StatePerformanceDTO(
+            (String) obj[0],
+            (String) obj[1],
+            ((Number) obj[2]).doubleValue(),
+            ((Number) obj[3]).longValue()  
+        )).collect(Collectors.toList());
+    }
+
+    // Efikasnost pregovora
+    @Transactional(readOnly = true)
+    public NegotiationEfficiencyDTO getNegotiationEfficiency(LocalDate startDate, LocalDate endDate) {
+        List<Object[]> results = negotiationRepository.getNegotiationEfficiency(startDate, endDate);
+        if (results.isEmpty()) return new NegotiationEfficiencyDTO(0L, 0L, 0.0);
+        
+        Object[] row = results.get(0);
+        return new NegotiationEfficiencyDTO(
+            ((Number) row[0]).longValue(),
+            ((Number) row[1]).longValue(),
+            ((Number) row[2]).doubleValue()
+        );
+    }
+
+    // Trend prosečnog trajanja pregovora
+    @Transactional(readOnly = true)
+    public List<AnalyticsTrendDTO> getNegotiationDurationTrend(LocalDate startDate, LocalDate endDate, String interval) {
+        return negotiationRepository.getNegotiationDurationTrend(startDate, endDate, interval).stream()
+            .map(row -> new AnalyticsTrendDTO((String) row[0], ((Number) row[1]).doubleValue()))
+            .collect(Collectors.toList());
+    }
+
+    // Ishodi ponuda
+    @Transactional(readOnly = true)
+    public List<OfferOutcomeDTO> getOfferOutcomes(LocalDate startDate, LocalDate endDate) {
+        return negotiationRepository.getOfferOutcomes(startDate, endDate).stream()
+            .map(row -> new OfferOutcomeDTO((String) row[0], ((Number) row[1]).longValue()))
+            .collect(Collectors.toList());
+    }
+
+    // Trend trajanja ponuda
+    @Transactional(readOnly = true)
+    public List<AnalyticsTrendDTO> getOfferDurationTrend(LocalDate startDate, LocalDate endDate, String interval) {
+        return negotiationRepository.getOfferDurationTrend(startDate, endDate, interval).stream()
+            .map(row -> new AnalyticsTrendDTO((String) row[0], ((Number) row[1]).doubleValue()))
+            .collect(Collectors.toList());
     }
 }

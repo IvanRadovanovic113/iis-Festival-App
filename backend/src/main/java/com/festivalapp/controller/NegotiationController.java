@@ -17,6 +17,11 @@ import com.festivalapp.repository.NegotiationConditionValueRepository;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import com.festivalapp.dto.FailReasonRequest;
 import java.util.List;
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDateTime;
+import java.time.LocalDate;
+import com.festivalapp.dto.PerformerStatsDto;
+import com.festivalapp.model.PerformerType;
 
 @RestController
 @RequestMapping("/api/negotiation-manager/negotiations")

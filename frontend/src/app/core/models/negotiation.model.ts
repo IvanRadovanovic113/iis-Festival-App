@@ -50,3 +50,34 @@ export interface NegotiationStateHistoryDto {
   exitTime?: Date;
   duration?: string;
 }
+
+export interface PerformerStatsDto {
+  stageName: string;
+  totalNegotiations: number;
+  successfulNegotiations: number;
+  failedNegotiations: number;
+  successRate: number;
+}
+
+export interface StatePerformance {
+  stateName: string;
+  templateName: string;
+  averageDurationHours: number;
+  count: number;
+}
+
+export interface NegotiationEfficiency {
+  totalCount: number;
+  successfulCount: number;
+  successPercentage: number;
+}
+
+export interface AnalyticsTrend {
+  intervalLabel: string;
+  avgValue: number;
+}
+
+export interface OfferOutcome {
+  outcome: 'NEVER_STARTED' | 'FAILED_NEGOTIATION' | 'SUCCESSFUL_CONTRACT';
+  count: number;
+}

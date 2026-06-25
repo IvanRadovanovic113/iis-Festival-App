@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "negotiations")
@@ -40,6 +41,12 @@ public class Negotiation {
 
     @Column(name = "failure_reason", length = 1000)
     private String failureReason;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "finished_at")
+    private LocalDateTime finishedAt;
 
     @OneToMany(mappedBy = "negotiation", cascade = CascadeType.ALL)
     @Builder.Default
