@@ -19,11 +19,9 @@ public class EventOrganizationFunctionInitializer implements ApplicationRunner {
         createSummaryFunction();
         createTopResourcesFunction();
         createStageOccupancyFunction();
-        log.info("Resource analytics PL/pgSQL functions created/updated");
     }
 
-    // Returns the four KPI values shown as cards on the analytics dashboard:
-    // total reservations, most used resource (name + count), avg stage occupancy, extra requests.
+    // 4 kartice
     private void createSummaryFunction() {
         jdbcTemplate.execute("""
             CREATE OR REPLACE FUNCTION fn_resource_analytics_summary(
@@ -47,7 +45,7 @@ public class EventOrganizationFunctionInitializer implements ApplicationRunner {
                 v_avg_stage_occupancy      NUMERIC;
                 v_extra_resource_requests  BIGINT;
             BEGIN
-                -- Total number of reservation requests matching the filters
+                -- Ukupan broj rezervacija
                 SELECT COUNT(*)
                 INTO v_total_reservations
                 FROM event_reservation_requests r
@@ -56,7 +54,7 @@ public class EventOrganizationFunctionInitializer implements ApplicationRunner {
                   AND (p_month   IS NULL OR EXTRACT(MONTH FROM r.performance_date) = p_month)
                   AND (p_stage_id IS NULL OR r.stage_id = p_stage_id);
 
-                -- Resource that appears most often across all request_resources rows
+                -- Najtrazeniji resurs
                 SELECT er.name, COUNT(rr.id)
                 INTO v_most_used_resource_name, v_most_used_resource_count
                 FROM request_resources rr
@@ -71,7 +69,7 @@ public class EventOrganizationFunctionInitializer implements ApplicationRunner {
                 ORDER BY COUNT(rr.id) DESC
                 LIMIT 1;
 
-                -- Average occupancy = approved reservations / all reservations * 100
+                -- Prosecno zauzece bine = approved rezervacije / ukupno rezervacija * 100
                 SELECT COALESCE(
                     ROUND(
                         100.0 * SUM(CASE WHEN r.status = 'APPROVED' THEN 1 ELSE 0 END)
@@ -86,8 +84,7 @@ public class EventOrganizationFunctionInitializer implements ApplicationRunner {
                   AND (p_month   IS NULL OR EXTRACT(MONTH FROM r.performance_date) = p_month)
                   AND (p_stage_id IS NULL OR r.stage_id = p_stage_id);
 
-                -- Extra requests = rows in request_resources where resource_id is NULL
-                -- (the user typed a resource name that does not exist in the system)
+                -- Custom resursi
                 SELECT COUNT(*)
                 INTO v_extra_resource_requests
                 FROM request_resources rr
@@ -109,7 +106,7 @@ public class EventOrganizationFunctionInitializer implements ApplicationRunner {
             """);
     }
 
-    // Returns the top 5 resources ordered by how many times they were requested.
+    // Top 5 resursa
     private void createTopResourcesFunction() {
         jdbcTemplate.execute("""
             CREATE OR REPLACE FUNCTION fn_resource_top_resources(
@@ -127,7 +124,7 @@ public class EventOrganizationFunctionInitializer implements ApplicationRunner {
                 RETURN QUERY
                 SELECT
                     er.name::TEXT,
-                    COUNT(rr.id)::BIGINT AS request_count
+                    COUNT(rr.id) AS request_count
                 FROM request_resources rr
                 JOIN event_resources er ON er.id = rr.resource_id
                 JOIN event_reservation_requests req ON req.id = rr.reservation_request_id
@@ -144,9 +141,7 @@ public class EventOrganizationFunctionInitializer implements ApplicationRunner {
             """);
     }
 
-    // Returns occupancy percentage per stage.
-    // Occupancy = (approved reservations / total reservations) * 100 for each stage.
-    // Stage filter does not apply here because this function is used for the per-stage bar chart.
+    // Zauzetost svake bine
     private void createStageOccupancyFunction() {
         jdbcTemplate.execute("""
             CREATE OR REPLACE FUNCTION fn_resource_stage_occupancy(
@@ -167,8 +162,8 @@ public class EventOrganizationFunctionInitializer implements ApplicationRunner {
                 SELECT
                     s.stage_id,
                     s.name::TEXT,
-                    COUNT(r.id)::BIGINT AS total_reservations,
-                    COUNT(CASE WHEN r.status = 'APPROVED' THEN 1 END)::BIGINT AS approved_reservations,
+                    COUNT(r.id) AS total_reservations,
+                    COUNT(CASE WHEN r.status = 'APPROVED' THEN 1 END) AS approved_reservations,
                     COALESCE(
                         ROUND(
                             100.0 * COUNT(CASE WHEN r.status = 'APPROVED' THEN 1 END)
