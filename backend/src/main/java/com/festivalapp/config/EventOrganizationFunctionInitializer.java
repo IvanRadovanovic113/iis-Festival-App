@@ -123,7 +123,7 @@ public class EventOrganizationFunctionInitializer implements ApplicationRunner {
             BEGIN
                 RETURN QUERY
                 SELECT
-                    er.name,
+                    er.name::TEXT,
                     COUNT(rr.id) AS request_count
                 FROM request_resources rr
                 JOIN event_resources er ON er.id = rr.resource_id
@@ -161,7 +161,7 @@ public class EventOrganizationFunctionInitializer implements ApplicationRunner {
                 RETURN QUERY
                 SELECT
                     s.stage_id,
-                    s.name,
+                    s.name::TEXT,
                     COUNT(r.id) AS total_reservations,
                     COUNT(CASE WHEN r.status = 'APPROVED' THEN 1 END) AS approved_reservations,
                     COALESCE(
