@@ -119,7 +119,7 @@ export class AnalyticsTabComponent implements OnInit {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'resource-analytics.pdf';
+        a.download = this.buildPdfFilename();
         a.click();
         URL.revokeObjectURL(url);
         this.downloading = false;
@@ -129,6 +129,12 @@ export class AnalyticsTabComponent implements OnInit {
         this.downloading = false;
       }
     });
+  }
+
+  private buildPdfFilename(): string {
+    const period = this.periodLabel.replace(/\s+/g, '-');
+    const stage = this.selectedStageName ? `-${this.selectedStageName.replace(/\s+/g, '-')}` : '';
+    return `analytics-${period}${stage}.pdf`;
   }
 
   private buildYearOptions(): number[] {
