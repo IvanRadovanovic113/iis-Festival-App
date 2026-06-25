@@ -19,7 +19,6 @@ public class EventOrganizationFunctionInitializer implements ApplicationRunner {
         createSummaryFunction();
         createTopResourcesFunction();
         createStageOccupancyFunction();
-        log.info("Resource analytics PL/pgSQL functions created/updated");
     }
 
     // 4 kartice
@@ -124,8 +123,8 @@ public class EventOrganizationFunctionInitializer implements ApplicationRunner {
             BEGIN
                 RETURN QUERY
                 SELECT
-                    er.name::TEXT,
-                    COUNT(rr.id)::BIGINT AS request_count
+                    er.name,
+                    COUNT(rr.id) AS request_count
                 FROM request_resources rr
                 JOIN event_resources er ON er.id = rr.resource_id
                 JOIN event_reservation_requests req ON req.id = rr.reservation_request_id
@@ -162,9 +161,9 @@ public class EventOrganizationFunctionInitializer implements ApplicationRunner {
                 RETURN QUERY
                 SELECT
                     s.stage_id,
-                    s.name::TEXT,
-                    COUNT(r.id)::BIGINT AS total_reservations,
-                    COUNT(CASE WHEN r.status = 'APPROVED' THEN 1 END)::BIGINT AS approved_reservations,
+                    s.name,
+                    COUNT(r.id) AS total_reservations,
+                    COUNT(CASE WHEN r.status = 'APPROVED' THEN 1 END) AS approved_reservations,
                     COALESCE(
                         ROUND(
                             100.0 * COUNT(CASE WHEN r.status = 'APPROVED' THEN 1 END)
