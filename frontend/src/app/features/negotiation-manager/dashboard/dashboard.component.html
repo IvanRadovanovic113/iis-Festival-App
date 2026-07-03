@@ -22,6 +22,40 @@
     </div>
   </div>
 
+  @if (criticalAlerts.length > 0) {
+    <div class="panel-card" style="margin-bottom: 24px; border: 1px solid #ffe0b2;">
+      <div class="panel-header" style="margin-bottom: 10px;">
+        <h3 style="color: #b27b00; display: flex; align-items: center; gap: 8px;">
+          <i class="fa fa-exclamation-triangle"></i> 
+          Critical Overdue Negotiations ({{ criticalAlerts.length }})
+        </h3>
+      </div>
+      <table class="dashboard-table">
+        <thead>
+          <tr>
+            <th>PERFORMER</th>
+            <th>OVERDUE BY</th>
+            <th>DEADLINE</th>
+            <th style="text-align: right;">ACTION</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (alert of criticalAlerts; track alert.negotiationId) {
+            <tr>
+              <td><strong>{{ alert.performerName }}</strong></td>
+              <td class="text-danger">{{ alert.overdueHours | number:'1.1-1' }} hours</td>
+              <td>{{ alert.deadline | date:'short' }}</td>
+              <td style="text-align: right;">
+                <a [routerLink]="['/negotiation-manager/negotiations', alert.negotiationId]" 
+                  class="btn-view-link">View Details</a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
   <div class="dashboard-main-grid">
     
     <div class="grid-col-left">

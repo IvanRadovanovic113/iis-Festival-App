@@ -5,6 +5,7 @@ import com.festivalapp.dto.StatePerformanceDTO;
 import com.festivalapp.dto.NegotiationEfficiencyDTO;
 import com.festivalapp.dto.AnalyticsTrendDTO;
 import com.festivalapp.dto.OfferOutcomeDTO;
+import com.festivalapp.dto.CriticalNegotiationDTO;
 import com.festivalapp.model.PerformerType;
 import com.festivalapp.service.NegotiationService;
 import lombok.RequiredArgsConstructor;
@@ -74,5 +75,10 @@ public class ReportController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(defaultValue = "YYYY-MM") String interval) {
         return ResponseEntity.ok(negotiationService.getOfferDurationTrend(startDate, endDate, interval));
+    }
+
+    @GetMapping("/critical-alerts")
+    public ResponseEntity<List<CriticalNegotiationDTO>> getCriticalAlerts() {
+        return ResponseEntity.ok(negotiationService.getCriticalNegotiations());
     }
 }

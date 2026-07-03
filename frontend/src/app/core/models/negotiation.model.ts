@@ -81,3 +81,10 @@ export interface OfferOutcome {
   outcome: 'NEVER_STARTED' | 'FAILED_NEGOTIATION' | 'SUCCESSFUL_CONTRACT';
   count: number;
 }
+
+export interface CriticalNegotiationDto {
+  negotiationId: number;
+  performerName: string;
+  overdueHours: number;
+  deadline: Date;
+}

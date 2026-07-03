@@ -64,4 +64,13 @@ public interface NegotiationRepository extends JpaRepository<Negotiation, Long>,
 
     @Query(value = "SELECT * FROM fn_offer_duration_trend(:start, :end, :interval)", nativeQuery = true)
     List<Object[]> getOfferDurationTrend(@Param("start") LocalDate start, @Param("end") LocalDate end, @Param("interval") String interval);
+
+    @Query(value = """
+        SELECT n.id, p.stage_name, log.overdue_hours, log.deadline
+        FROM negotiation_overdue_log log
+        JOIN negotiations n ON log.negotiation_id = n.id
+        JOIN performers p ON n.performer_id = p.performer_id
+        ORDER BY log.overdue_hours DESC
+        """, nativeQuery = true)
+    List<Object[]> getCriticalNegotiations();
 }

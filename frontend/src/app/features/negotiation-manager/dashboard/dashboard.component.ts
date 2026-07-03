@@ -4,7 +4,7 @@ import { RouterModule } from '@angular/router';
 import { OfferService } from '../../../core/services/offer.service';
 import { OfferStatus } from '../../../core/models/offer.model';
 import { NegotiationService } from '../../../core/services/negotiation.service';
-import { NegotiationResponse, PerformerStatsDto, StatePerformance } from '../../../core/models/negotiation.model';
+import { NegotiationResponse, PerformerStatsDto, StatePerformance, CriticalNegotiationDto } from '../../../core/models/negotiation.model';
 import { forkJoin } from 'rxjs';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
 import { jsPDF } from "jspdf";
@@ -32,6 +32,7 @@ export class DashboardComponent implements OnInit {
   efficiencyData: any = null;
   gaugeData: any[] = [];
   offerOutcomesData: any[] = [];
+  criticalAlerts: CriticalNegotiationDto[] = [];
 
   constructor(private offerService: OfferService,
               private negotiationService: NegotiationService
@@ -45,6 +46,7 @@ export class DashboardComponent implements OnInit {
     this.loadDurationTrend();
     this.loadEfficiency();
     this.loadOfferOutcomes();
+    this.loadCriticalAlerts();
   }
 
   loadOfferStats(): void {
@@ -150,6 +152,12 @@ loadNegotiations(): void {
           value: item.count
         }));
       });
+  }
+
+  loadCriticalAlerts(): void {
+    this.negotiationService.getCriticalAlerts().subscribe(data => {
+      this.criticalAlerts = data;
+    });
   }
 
   get activeNegotiationsCount(): number {

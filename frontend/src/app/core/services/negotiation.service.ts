@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { NegotiationResponse, NegotiationDetailsResponse, PerformerStatsDto, ConditionValueDto, StatePerformance, NegotiationEfficiency, AnalyticsTrend, OfferOutcome } from '../models/negotiation.model';
+import { NegotiationResponse, NegotiationDetailsResponse, PerformerStatsDto, ConditionValueDto, StatePerformance, NegotiationEfficiency, AnalyticsTrend, OfferOutcome, CriticalNegotiationDto } from '../models/negotiation.model';
 
 @Injectable({ providedIn: 'root' })
 export class NegotiationService {
@@ -80,5 +80,9 @@ export class NegotiationService {
       .set('endDate', endDate)
       .set('interval', interval);
     return this.http.get<AnalyticsTrend[]>(`${this.reportUrl}/offer-duration-trend`, { params });
+  }
+
+  getCriticalAlerts(): Observable<CriticalNegotiationDto[]> {
+    return this.http.get<CriticalNegotiationDto[]>(`${this.reportUrl}/critical-alerts`);
   }
 }

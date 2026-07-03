@@ -19,6 +19,7 @@ public class NegotiationAnalyticsInitializer implements ApplicationRunner {
         createAverageDurationFunction();
         createOfferOutcomeFunction();
         createOfferDurationFunction();
+        createNegotiationAuditTrigger();
     }
 
     // 1. Efikasnost pregovora (Ukupno, Uspešno, Procenat)
@@ -107,6 +108,55 @@ public class NegotiationAnalyticsInitializer implements ApplicationRunner {
                 GROUP BY 1 ORDER BY 1;
             END;
             $$ LANGUAGE plpgsql;
+        """);
+    }
+
+    private void createNegotiationAuditTrigger() {
+        jdbcTemplate.execute("""
+            CREATE TABLE negotiation_overdue_log (
+                negotiation_id BIGINT PRIMARY KEY REFERENCES negotiations(id) ON DELETE CASCADE,
+                created_at TIMESTAMP NOT NULL,
+                deadline TIMESTAMP NOT NULL,
+                overdue_hours NUMERIC,
+                current_status VARCHAR(50),
+                last_updated TIMESTAMP DEFAULT NOW()
+            );
+        """);
+
+        // Kreiranje funkcije za trigger
+        jdbcTemplate.execute("""
+            CREATE OR REPLACE FUNCTION fn_track_overdue_negotiations()
+            RETURNS TRIGGER AS $$
+            DECLARE
+                v_deadline TIMESTAMP;
+                v_overdue_hours NUMERIC;
+            BEGIN
+                v_deadline := NEW.created_at + INTERVAL '72 hours';
+
+                IF NEW.status IN ('COMPLETED', 'FAILED') THEN
+                    DELETE FROM negotiation_overdue_log WHERE negotiation_id = NEW.id;
+                
+                ELSIF NEW.status = 'ACTIVE' AND v_deadline < NOW() THEN
+                    v_overdue_hours := ROUND(EXTRACT(EPOCH FROM (NOW() - v_deadline))/3600, 2);
+                    
+                    INSERT INTO negotiation_overdue_log (negotiation_id, created_at, deadline, overdue_hours, current_status)
+                    VALUES (NEW.id, NEW.created_at, v_deadline, v_overdue_hours, NEW.status::text)
+                    ON CONFLICT (negotiation_id) DO UPDATE 
+                    SET overdue_hours = EXCLUDED.overdue_hours, 
+                        last_updated = NOW();
+                END IF;
+
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql;
+        """);
+
+        // Kreiranje samog triggera
+        jdbcTemplate.execute("""
+            CREATE TRIGGER trg_negotiation_overdue
+            AFTER INSERT OR UPDATE ON negotiations
+            FOR EACH ROW
+            EXECUTE FUNCTION fn_track_overdue_negotiations();
         """);
     }
 }

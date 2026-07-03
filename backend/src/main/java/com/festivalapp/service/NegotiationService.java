@@ -29,6 +29,7 @@ import com.festivalapp.dto.StatePerformanceDTO;
 import com.festivalapp.dto.NegotiationEfficiencyDTO;
 import com.festivalapp.dto.AnalyticsTrendDTO;
 import com.festivalapp.dto.OfferOutcomeDTO;
+import com.festivalapp.dto.CriticalNegotiationDTO;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -417,4 +418,14 @@ public class NegotiationService {
             .map(row -> new AnalyticsTrendDTO((String) row[0], ((Number) row[1]).doubleValue()))
             .collect(Collectors.toList());
     }
+
+    public List<CriticalNegotiationDTO> getCriticalNegotiations() {
+    List<Object[]> results = negotiationRepository.getCriticalNegotiations();
+    return results.stream().map(obj -> new CriticalNegotiationDTO(
+        ((Number) obj[0]).longValue(),
+        (String) obj[1],
+        ((Number) obj[2]).doubleValue(),
+        ((java.sql.Timestamp) obj[3]).toLocalDateTime()
+    )).collect(Collectors.toList());
+}
 }
